@@ -1,6 +1,5 @@
 import Layout from '../components/Layout'
 import Link from 'next/link'
-import ToosiiAiWidget from '../components/ToosiiAiWidget'
 import './home.css'
 
 export default function Home() {
@@ -28,38 +27,8 @@ export default function Home() {
 
   return (
     <Layout>
-      {/* Toosii AI Featured — top of page */}
-      <section className="section tai-feature-section" style={{ paddingTop: '5rem' }}>
-        <div className="page-wrapper">
-          <div className="tai-feature-inner">
-            <div className="tai-feature-left">
-              <p className="tai-feature-label">✦ New — Free AI Tool</p>
-              <h2 className="tai-feature-title">Meet Toosii AI —<br />Your Smart Assistant</h2>
-              <p className="tai-feature-sub">Ask anything and get instant, intelligent answers. No sign-up, no payment — powered by Toosii Tech and available right now on any device.</p>
-              <div className="tai-feature-bullets">
-                {[
-                  'Powered by ChatGPT — fast, accurate answers',
-                  'Ask questions, write stories, get advice',
-                  'Works perfectly on phone and desktop',
-                  'Completely free, no account needed',
-                ].map(b => (
-                  <div key={b} className="tai-bullet">
-                    <div className="tai-bullet-dot" />
-                    {b}
-                  </div>
-                ))}
-              </div>
-              <Link href="/tools/ai" className="btn-primary" style={{ width: 'fit-content' }}>
-                Open Toosii AI →
-              </Link>
-            </div>
-            <ToosiiAiWidget />
-          </div>
-        </div>
-      </section>
-
       {/* Hero */}
-      <section className="hero" style={{ paddingTop: '3rem' }}>
+      <section className="hero">
         <div className="page-wrapper">
           <div className="hero-badge badge">
             <span>🟢</span> TOOSII XD ULTRA — Active & Updated
@@ -78,6 +47,9 @@ export default function Home() {
             <Link href="/tools/ai" className="btn-primary">Toosii AI 🤖</Link>
             <Link href="/session" className="btn-outline">Generate Session Key</Link>
           </div>
+          <p style={{ fontSize: '0.78rem', color: '#475569', marginTop: '-1.5rem', marginBottom: '2rem' }}>
+            ✦ Toosii AI — Powered by Toosii Tech · Fast & accurate answers, always free
+          </p>
           <div className="hero-stats">
             {stats.map(s => (
               <div key={s.label} className="stat-card">
