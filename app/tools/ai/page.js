@@ -53,21 +53,31 @@ export default function ToosiiAI() {
   useEffect(() => { setSessions(getSessions()) }, [])
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, loading])
 
+  // Auto-grow textarea
+  useEffect(() => {
+    const el = inputRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px'
+  }, [input])
+
   const send = async (text) => {
     let q = (text || input).trim()
     if (!q && !attachedFile) return
     if (loading) return
 
-    // Append file content to prompt if attached
-    let fileNote = ''
+    // Build structured prompt with file context if attached
+    let fullPrompt = q
+    let displayMsg = q
     if (attachedFile) {
-      fileNote = attachedFile.content
-        ? `\n\n[Attached file: ${attachedFile.name}]\n\`\`\`\n${attachedFile.content}\n\`\`\``
-        : `\n\n[Attached file: ${attachedFile.name}]`
-      if (!q) q = `Here is a file I uploaded: ${attachedFile.name}`
+      if (!q) q = `Please read and summarize the attached file: ${attachedFile.name}`
+      displayMsg = `${q}\n📎 ${attachedFile.name}`
+      if (attachedFile.content) {
+        fullPrompt = `The user has shared a file named "${attachedFile.name}". Read the full file content carefully and answer the user's question based on it.\n\n=== FILE: ${attachedFile.name} ===\n${attachedFile.content}\n=== END OF FILE ===\n\nUser's question: ${q}`
+      } else {
+        fullPrompt = `${q}\n[Attached file: ${attachedFile.name} — binary/unsupported format, content not available]`
+      }
     }
-    const fullPrompt = q + fileNote
-    const displayMsg = attachedFile ? `${q}${attachedFile.content ? '' : ''}\n📎 ${attachedFile.name}` : q
 
     setMessages(prev => [...prev, { role: 'user', text: displayMsg }])
     setInput(''); setError(''); setAttachedFile(null)
