@@ -49,6 +49,7 @@ export default function ToosiiAI() {
   const bottomRef  = useRef()
   const inputRef   = useRef()
   const fileRef    = useRef()
+  const pageRef    = useRef()
 
   useEffect(() => { setSessions(getSessions()) }, [])
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, loading])
@@ -60,6 +61,26 @@ export default function ToosiiAI() {
     el.style.height = 'auto'
     el.style.height = Math.min(el.scrollHeight, 120) + 'px'
   }, [input])
+
+  // Pin layout to visual viewport so keyboard never covers content
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+    const update = () => {
+      if (pageRef.current) {
+        pageRef.current.style.height = vv.height + 'px'
+      }
+      // scroll last message into view when keyboard opens/closes
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
+    vv.addEventListener('resize', update)
+    vv.addEventListener('scroll', update)
+    update()
+    return () => {
+      vv.removeEventListener('resize', update)
+      vv.removeEventListener('scroll', update)
+    }
+  }, [])
 
   const send = async (text) => {
     let q = (text || input).trim()
@@ -142,7 +163,7 @@ export default function ToosiiAI() {
 
   return (
     <Layout>
-      <div className="tai-page">
+      <div className="tai-page" ref={pageRef}>
         {/* Header */}
         <div className="tai-header">
           <div className="tai-logo">
