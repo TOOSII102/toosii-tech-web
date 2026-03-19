@@ -1,5 +1,6 @@
 import Layout from '../components/Layout'
 import Link from 'next/link'
+import ToosiiAiWidget from '../components/ToosiiAiWidget'
 import './home.css'
 
 export default function Home() {
@@ -16,7 +17,6 @@ export default function Home() {
     { icon: '🔑', title: 'Session Generator', desc: 'Get your WhatsApp session ID instantly via pair code or QR scan.', href: '/session', label: 'Generate Now' },
     { icon: '🎬', title: 'Video Downloader', desc: 'Download YouTube, TikTok & Instagram videos in 720p HD, no ads.', href: '/downloader/video', label: 'Download Video' },
     { icon: '🎧', title: 'MP3 Downloader', desc: 'Extract high-quality audio from any YouTube video — free, fast.', href: '/downloader/audio', label: 'Download MP3' },
-    { icon: '🤖', title: 'Toosii AI', desc: 'Chat with AI — ask anything, get instant answers. Powered by Toosii Tech, always free.', href: '/tools/ai', label: 'Chat Now' },
   ]
 
   const stats = [
@@ -54,6 +54,36 @@ export default function Home() {
                 <span className="stat-label">{s.label}</span>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Toosii AI Featured */}
+      <section className="section tai-feature-section">
+        <div className="page-wrapper">
+          <div className="tai-feature-inner">
+            <div className="tai-feature-left">
+              <p className="tai-feature-label">✦ New — Free AI Tool</p>
+              <h2 className="tai-feature-title">Meet Toosii AI —<br />Your Smart Assistant</h2>
+              <p className="tai-feature-sub">Ask anything and get instant, intelligent answers. No sign-up, no payment — powered by Toosii Tech and available right now on any device.</p>
+              <div className="tai-feature-bullets">
+                {[
+                  'Powered by ChatGPT — fast, accurate answers',
+                  'Ask questions, write stories, get advice',
+                  'Works perfectly on phone and desktop',
+                  'Completely free, no account needed',
+                ].map(b => (
+                  <div key={b} className="tai-bullet">
+                    <div className="tai-bullet-dot" />
+                    {b}
+                  </div>
+                ))}
+              </div>
+              <Link href="/tools/ai" className="btn-primary" style={{ width: 'fit-content' }}>
+                Open Toosii AI →
+              </Link>
+            </div>
+            <ToosiiAiWidget />
           </div>
         </div>
       </section>
