@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import ytdl from '@distube/ytdl-core'
 
 const GT  = 'https://api.giftedtech.co.ke/api/download'
 const KEY = 'gifted'
@@ -11,7 +10,7 @@ function detect(url) {
   if (/instagram\.com/i.test(url))               return 'instagram'
   if (/facebook\.com|fb\.watch/i.test(url))      return 'facebook'
   if (/twitter\.com|x\.com/i.test(url))          return 'twitter'
-  return 'unknown'
+  return null
 }
 
 async function gt(path) {
@@ -22,86 +21,100 @@ async function gt(path) {
   return res.json()
 }
 
+// loader.to for YouTube video (720p)
+async function loaderToVideo(url) {
+  const initRes = await fetch(
+    `https://loader.to/ajax/download.php?format=720&url=${encodeURIComponent(url)}`,
+    { signal: AbortSignal.timeout(12000) }
+  )
+  const init = await initRes.json()
+  if (!init.success || !init.id) return null
+  for (let i = 0; i < 18; i++) {
+    await new Promise(r => setTimeout(r, 4000))
+    try {
+      const prog = await fetch(
+        `https://loader.to/api/progress?id=${init.id}`,
+        { signal: AbortSignal.timeout(8000) }
+      ).then(r => r.json())
+      if (prog.download_url) return { download_url: prog.download_url, quality: '720p' }
+    } catch {}
+  }
+  return null
+}
+
 export async function POST(request) {
   const { url } = await request.json()
   if (!url?.trim()) return NextResponse.json({ error: 'URL is required' }, { status: 400 })
 
-  const trimmed = url.trim()
-  const enc     = encodeURIComponent(trimmed)
+  const trimmed  = url.trim()
+  const enc      = encodeURIComponent(trimmed)
   const platform = detect(trimmed)
 
+  if (!platform) {
+    return NextResponse.json(
+      { error: 'Unsupported URL. Paste a YouTube, TikTok, Instagram, Facebook or Twitter link.' },
+      { status: 400 }
+    )
+  }
+
   try {
-    // ── YouTube ──────────────────────────────────────────────────────────
+    // ── TikTok via tikwm (keyless, reliable) ─────────────────────────────
+    if (platform === 'tiktok') {
+      const data = await fetch(
+        `https://tikwm.com/api/?url=${enc}`,
+        { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(20000) }
+      ).then(r => r.json())
+      if (data.code === 0 && data.data?.play) {
+        const d = data.data
+        return NextResponse.json({
+          platform,
+          download_url: d.play,
+          title: d.title, thumbnail: d.cover,
+          author: d.author?.nickname || null,
+          duration: d.duration ? `${d.duration}s` : null,
+        })
+      }
+    }
+
+    // ── YouTube via loader.to (keyless) ───────────────────────────────────
     if (platform === 'youtube') {
-      // Primary: GiftedTech ytv (returns stable CDN link)
+      // Metadata from oEmbed
+      let title = null, thumbnail = null
+      try {
+        const meta = await fetch(
+          `https://www.youtube.com/oembed?url=${enc}&format=json`,
+          { signal: AbortSignal.timeout(6000) }
+        ).then(r => r.json())
+        title = meta.title; thumbnail = meta.thumbnail_url
+      } catch {}
+
+      const vid = await loaderToVideo(trimmed)
+      if (vid?.download_url) {
+        return NextResponse.json({ platform, title, thumbnail, ...vid })
+      }
+
+      // Fallback: GiftedTech ytv (works if key not exceeded)
       try {
         const d = await gt(`ytv?apikey=${KEY}&url=${enc}`)
         if (d.success && d.result?.download_url) {
           return NextResponse.json({
-            platform,
-            download_url: d.result.download_url,
-            title:     d.result.title,
-            thumbnail: d.result.thumbnail,
-            quality:   d.result.quality,
-            duration:  d.result.duration,
+            platform, download_url: d.result.download_url,
+            title: d.result.title, thumbnail: d.result.thumbnail,
+            quality: d.result.quality, duration: d.result.duration,
           })
         }
-      } catch (e) { console.error('[gt-ytv]', e.message) }
-
-      // Fallback: ytdl-core
-      if (ytdl.validateURL(trimmed)) {
-        try {
-          const info = await ytdl.getInfo(trimmed)
-          const fmt = [
-            ...info.formats.filter(f => f.container === 'mp4' && f.hasVideo && f.hasAudio),
-            ...info.formats.filter(f => f.container === 'mp4' && f.hasVideo),
-          ].filter(f => f.url).sort((a, b) => (b.height || 0) - (a.height || 0))[0]
-
-          if (fmt?.url) {
-            const vd = info.videoDetails
-            return NextResponse.json({
-              platform,
-              download_url: fmt.url,
-              title: vd.title,
-              thumbnail: vd.thumbnails?.at(-1)?.url || null,
-              quality: fmt.qualityLabel || `${fmt.height}p`,
-              size: fmt.contentLength ? `${(+fmt.contentLength / 1048576).toFixed(1)} MB` : null,
-              author: vd.author?.name || null,
-            })
-          }
-        } catch (e) { console.error('[ytdl-core]', e.message) }
-      }
+      } catch {}
     }
 
-    // ── TikTok ───────────────────────────────────────────────────────────
-    if (platform === 'tiktok') {
-      const d = await gt(`tiktok?apikey=${KEY}&url=${enc}`)
-      if (d.success && d.result?.video) {
-        return NextResponse.json({
-          platform,
-          download_url: d.result.video,
-          title:     d.result.title,
-          thumbnail: d.result.cover,
-          author:    d.result.author?.name || null,
-          duration:  d.result.duration ? `${d.result.duration}s` : null,
-        })
-      }
-    }
-
-    // ── Instagram ────────────────────────────────────────────────────────
+    // ── Instagram ─────────────────────────────────────────────────────────
     if (platform === 'instagram') {
       const d = await gt(`instadl?apikey=${KEY}&url=${enc}`)
       if (d.success && d.result?.download_url) {
-        return NextResponse.json({
-          platform,
-          download_url: d.result.download_url,
-          thumbnail: d.result.thumbnail,
-          title: 'Instagram Reel',
-        })
+        return NextResponse.json({ platform, download_url: d.result.download_url, thumbnail: d.result.thumbnail, title: 'Instagram Reel' })
       }
     }
 
-    // ── Facebook ─────────────────────────────────────────────────────────
+    // ── Facebook ──────────────────────────────────────────────────────────
     if (platform === 'facebook') {
       const d = await gt(`facebook?apikey=${KEY}&url=${enc}`)
       if (d.success && (d.result?.hd_video || d.result?.sd_video)) {
@@ -109,37 +122,31 @@ export async function POST(request) {
           platform,
           download_url:    d.result.hd_video || d.result.sd_video,
           download_url_sd: d.result.sd_video || null,
-          title:     d.result.title,
-          thumbnail: d.result.thumbnail,
-          duration:  d.result.duration,
-          quality:   d.result.hd_video ? 'HD' : 'SD',
+          title: d.result.title, thumbnail: d.result.thumbnail,
+          duration: d.result.duration, quality: d.result.hd_video ? 'HD' : 'SD',
         })
       }
     }
 
-    // ── Twitter / X ──────────────────────────────────────────────────────
+    // ── Twitter / X ───────────────────────────────────────────────────────
     if (platform === 'twitter') {
       const d = await gt(`twitter?apikey=${KEY}&url=${enc}`)
       if (d.success && d.result?.videoUrls?.length) {
         const sorted = [...d.result.videoUrls].sort((a, b) => (parseInt(b.quality) || 0) - (parseInt(a.quality) || 0))
         return NextResponse.json({
-          platform,
-          download_url:   sorted[0].url,
-          thumbnail:      d.result.thumbnail,
-          quality:        sorted[0].quality,
-          title:          'Twitter / X Video',
-          all_qualities:  sorted,
+          platform, download_url: sorted[0].url,
+          thumbnail: d.result.thumbnail, quality: sorted[0].quality,
+          title: 'Twitter / X Video', all_qualities: sorted,
         })
       }
     }
 
   } catch (e) {
-    console.error('[download/video]', platform, e.message)
+    console.error('[video]', platform, e.message)
   }
 
-  const label = platform === 'unknown' ? 'this URL' : platform
   return NextResponse.json(
-    { error: `Could not download from ${label}. Check the link and try again.` },
+    { error: `Could not download from ${platform}. The service may be temporarily rate-limited — please try again in a few minutes.` },
     { status: 500 }
   )
 }
