@@ -41,7 +41,10 @@ export default function Footer() {
         <div className="footer-contact">
           <h4>Contact</h4>
           <a href="mailto:toosiitechcompany@gmail.com">toosiitechcompany@gmail.com</a>
-          <a href="tel:+254748340864">+254 748 340 864</a>
+          <a href="https://wa.me/254748340864" target="_blank" rel="noopener noreferrer">+254 748 340 864</a>
+          <a href="https://wa.me/254746677793" target="_blank" rel="noopener noreferrer">+254 746 677 793</a>
+          <a href="https://wa.me/254788781373" target="_blank" rel="noopener noreferrer">+254 788 781 373</a>
+          <a href="https://t.me/toosiitech" target="_blank" rel="noopener noreferrer">@toosiitech (Telegram)</a>
           <span>Nairobi, Kenya</span>
         </div>
       </div>
