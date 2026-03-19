@@ -3,15 +3,21 @@ import Layout from '../../../components/Layout'
 import { useState } from 'react'
 import './video.css'
 
+const STEPS = ['Fetching video info…', 'Finding best quality stream…', 'Almost done…']
+
 export default function VideoDownloader() {
   const [url, setUrl] = useState('')
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [step, setStep] = useState(0)
   const [error, setError] = useState('')
 
   const download = async () => {
     if (!url.trim()) return setError('Paste a video URL first')
-    setLoading(true); setError(''); setResult(null)
+    setLoading(true); setError(''); setResult(null); setStep(0)
+
+    const stepTimer = setInterval(() => setStep(s => Math.min(s + 1, STEPS.length - 1)), 4000)
+
     try {
       const res = await fetch('/api/download/video', {
         method: 'POST',
@@ -27,6 +33,7 @@ export default function VideoDownloader() {
     } catch {
       setError('Network error. Please try again.')
     } finally {
+      clearInterval(stepTimer)
       setLoading(false)
     }
   }
@@ -49,14 +56,22 @@ export default function VideoDownloader() {
                 type="url"
                 placeholder="Paste video URL here… (YouTube, TikTok, Instagram…)"
                 value={url}
-                onChange={e => setUrl(e.target.value)}
+                onChange={e => { setUrl(e.target.value); setError('') }}
                 className="text-input"
-                onKeyDown={e => e.key === 'Enter' && download()}
+                onKeyDown={e => e.key === 'Enter' && !loading && download()}
+                disabled={loading}
               />
               <button onClick={download} disabled={loading} className="btn-primary">
                 {loading ? 'Processing…' : 'Download'}
               </button>
             </div>
+
+            {loading && (
+              <div className="progress-box">
+                <div className="spinner" />
+                <span>{STEPS[step]}</span>
+              </div>
+            )}
 
             {error && <div className="error-box" style={{ marginTop: '1rem' }}>{error}</div>}
 
@@ -67,11 +82,19 @@ export default function VideoDownloader() {
                 )}
                 <div className="result-info">
                   {result.title && <h3 className="result-title">{result.title}</h3>}
+                  {result.author && <p className="result-author">by {result.author}</p>}
                   <div className="result-meta">
                     {result.quality && <span className="badge">📺 {result.quality}</span>}
                     {result.size && <span className="badge">💾 {result.size}</span>}
                   </div>
-                  <a href={result.download_url} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ width: 'fit-content', marginTop: '1rem' }}>
+                  <p className="expire-note">⚡ Download now — this link expires in a few minutes</p>
+                  <a
+                    href={result.download_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-primary"
+                    style={{ width: 'fit-content', marginTop: '0.75rem' }}
+                  >
                     ⬇ Download Video
                   </a>
                 </div>
