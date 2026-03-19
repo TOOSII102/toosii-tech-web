@@ -7,23 +7,101 @@
   align-items: start;
 }
 
-.contact-info-cards {
+.contact-left { display: flex; flex-direction: column; gap: 1.5rem; }
+
+/* WhatsApp section */
+.wa-section { display: flex; flex-direction: column; gap: 0.85rem; }
+
+.wa-section-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #25d366;
+}
+
+.wa-cards { display: flex; flex-direction: column; gap: 0.65rem; }
+
+.wa-card {
+  display: block;
+  text-decoration: none;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(37, 211, 102, 0.25);
+  background: rgba(37, 211, 102, 0.06);
+  transition: background 0.2s, border-color 0.2s, transform 0.2s;
+}
+
+.wa-card:hover {
+  background: rgba(37, 211, 102, 0.12);
+  border-color: rgba(37, 211, 102, 0.45);
+  transform: translateY(-2px);
+}
+
+.wa-card-inner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+}
+
+.wa-icon {
+  width: 40px;
+  height: 40px;
+  background: #25d366;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.wa-info {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 0.1rem;
+  flex: 1;
 }
+
+.wa-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #4ade80;
+  font-weight: 700;
+}
+
+.wa-number {
+  font-size: 1rem;
+  font-weight: 700;
+  color: white;
+  letter-spacing: 0.01em;
+}
+
+.wa-cta {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #25d366;
+  white-space: nowrap;
+}
+
+/* Other contacts */
+.contact-info-cards { display: flex; flex-direction: column; gap: 0.75rem; }
 
 .contact-card {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 1.1rem 1.25rem;
+  padding: 1rem 1.25rem;
 }
 
-.contact-icon { font-size: 1.5rem; flex-shrink: 0; }
+.contact-icon { font-size: 1.4rem; flex-shrink: 0; }
 
 .contact-label {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: #64748b;
@@ -44,10 +122,11 @@
 
 .contact-value:hover { color: #4ade80; }
 
+/* Right column */
 .contact-note { padding: 2rem; }
 
 .contact-note h2 {
-  font-size: 1.3rem;
+  font-size: 1.25rem;
   font-weight: 800;
   color: white;
   margin-bottom: 1.25rem;
@@ -62,11 +141,7 @@
   margin-bottom: 1.75rem;
 }
 
-.contact-note li {
-  font-size: 0.875rem;
-  color: #94a3b8;
-  line-height: 1.5;
-}
+.contact-note li { font-size: 0.875rem; color: #94a3b8; line-height: 1.5; }
 
 .contact-response {
   font-size: 0.82rem;
@@ -80,6 +155,8 @@
 }
 
 @media (max-width: 480px) {
-  .contact-card { padding: 0.9rem 1rem; }
+  .wa-card-inner { padding: 0.9rem 1rem; }
+  .wa-number { font-size: 0.95rem; }
+  .contact-card { padding: 0.85rem 1rem; }
   .contact-note { padding: 1.5rem; }
 }
