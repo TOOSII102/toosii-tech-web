@@ -1,0 +1,16 @@
+export const config = {
+  BOT_NAME: 'TOOSII XD ULTRA',
+  BOT_VERSION: '2.0.0',
+  OWNER_NAME: 'Toosii Tech',
+  OWNER_WA: 'https://wa.me/254748340864',
+  OWNER_TG: 'https://t.me/toosiitech',
+  OWNER_GITHUB: 'https://github.com/TOOSII102',
+  REPO_URL: 'https://github.com/TOOSII102/TOOSII-XD-ULTRA',
+  SESSION_URL: 'https://toosii-session.vercel.app',
+  BOT_LOGO: 'https://files.catbox.moe/qbcebp.jpg',
+  SESSION_PREFIX: 'TOOSII~',
+  SUPPORT_GROUP: process.env.SUPPORT_GROUP || '',
+  PORT: process.env.PORT || 3000,
+  GIFTED_API: 'https://api.giftedtech.co.ke/api',
+  GIFTED_KEY: 'gifted',
+}
