@@ -51,7 +51,7 @@ export default function VideoDownloader() {
     try {
       const enc = encodeURIComponent(trimmed)
 
-      // ── TikTok: always use server-side tikwm (keyless, reliable) ─────────
+      // ── TikTok: server-side tikwm first, then GiftedTech browser fallback ──
       if (platform === 'tiktok') {
         const res = await fetch('/api/download/video', {
           method: 'POST',
@@ -60,7 +60,27 @@ export default function VideoDownloader() {
         })
         const data = await res.json()
         if (data.download_url) { setResult(data); return }
-        setError(data.error || 'Could not download TikTok video.')
+
+        // Browser-direct GiftedTech fallback
+        setStep(2)
+        try {
+          const gtRes = await fetch(`${GT}/tiktok?apikey=gifted&url=${enc}`)
+          const gt = await gtRes.json()
+          if (gt.success && gt.result?.download_url) {
+            setResult({
+              platform, download_url: gt.result.download_url,
+              title: gt.result.title, thumbnail: gt.result.thumbnail,
+              duration: gt.result.duration, author: gt.result.author,
+            })
+            return
+          }
+          const msg = gt.message || ''
+          setError(msg.includes('Limit')
+            ? 'TikTok download service is temporarily overloaded. Please try again in a few minutes.'
+            : 'Could not download TikTok video. Try again shortly.')
+        } catch {
+          setError('Could not download TikTok video. Check your connection and try again.')
+        }
         return
       }
 
