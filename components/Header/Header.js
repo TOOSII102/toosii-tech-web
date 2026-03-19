@@ -8,9 +8,12 @@ const navigationItems = [
   { href: '/', label: 'Home' },
   { href: '/about', label: 'About' },
   { href: '/bot', label: 'XD Ultra Bot' },
-  { href: '/session', label: 'Session Generator' },
-  { href: '/downloader/video', label: 'Video Download' },
-  { href: '/downloader/audio', label: 'MP3 Download' },
+  { href: '/blog', label: 'Blog' },
+  { href: '/projects', label: 'Projects' },
+  { href: '/team', label: 'Team' },
+  { href: '/session', label: 'Session' },
+  { href: '/downloader/video', label: 'Video DL' },
+  { href: '/downloader/audio', label: 'MP3 DL' },
   { href: '/contact', label: 'Contact' },
 ]
 
