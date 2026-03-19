@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server'
+import { execFile }     from 'child_process'
+import { promisify }    from 'util'
+import { findPython3, getYtdlpPath, ytdlpJson } from '../../../../lib/ytdlp'
 
-const GT  = 'https://api.giftedtech.co.ke/api/download'
-const KEY = 'gifted'
-const TO  = 25000
+const execFileAsync = promisify(execFile)
+
+const GT_BASE = 'https://api.giftedtech.co.ke/api/download'
+const GT_KEY  = process.env.GIFTED_API_KEY || 'gifted'
+const EP      = 'https://eliteprotech-apis.zone.id'
 
 function detect(url) {
   if (/youtube\.com|youtu\.be/i.test(url))      return 'youtube'
@@ -13,38 +18,46 @@ function detect(url) {
   return null
 }
 
-async function gt(path) {
-  const res = await fetch(`${GT}/${path}`, {
-    headers: { 'User-Agent': 'Mozilla/5.0' },
-    signal: AbortSignal.timeout(TO),
-  })
+async function giftedFetch(endpoint, url) {
+  const res = await fetch(
+    `${GT_BASE}/${endpoint}?apikey=${GT_KEY}&url=${encodeURIComponent(url)}`,
+    { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(25000) }
+  )
   return res.json()
 }
 
-// loader.to for YouTube video (720p)
-async function loaderToVideo(url) {
-  const initRes = await fetch(
-    `https://loader.to/ajax/download.php?format=720&url=${encodeURIComponent(url)}`,
-    { signal: AbortSignal.timeout(12000) }
-  )
-  const init = await initRes.json()
-  if (!init.success || !init.id) return null
-  for (let i = 0; i < 18; i++) {
-    await new Promise(r => setTimeout(r, 4000))
-    try {
-      const prog = await fetch(
-        `https://loader.to/api/progress?id=${init.id}`,
-        { signal: AbortSignal.timeout(8000) }
-      ).then(r => r.json())
-      if (prog.download_url) return { download_url: prog.download_url, quality: '720p' }
-    } catch {}
+async function youtubeViaYtdlp(url) {
+  const python = await findPython3()
+  const ytdlp  = getYtdlpPath()
+  if (!python || !ytdlp) return null
+
+  const info = await ytdlpJson(url)
+  if (!info || !info.formats?.length) return null
+
+  const combined = info.formats.filter(f =>
+    f.vcodec && f.vcodec !== 'none' &&
+    f.acodec && f.acodec !== 'none' &&
+    f.ext === 'mp4'
+  ).sort((a, b) => (b.height || 0) - (a.height || 0))
+
+  const picked = combined.find(f => (f.height || 0) <= 720) || combined[0]
+  if (!picked?.url) return null
+
+  return {
+    download_url: picked.url,
+    title:        info.title     || null,
+    thumbnail:    info.thumbnail || null,
+    duration:     info.duration  ? `${info.duration}s` : null,
+    quality:      picked.height  ? `${picked.height}p` : 'SD',
+    platform:     'youtube',
   }
-  return null
 }
 
 export async function POST(request) {
   const { url } = await request.json()
-  if (!url?.trim()) return NextResponse.json({ error: 'URL is required' }, { status: 400 })
+  if (!url?.trim()) {
+    return NextResponse.json({ error: 'URL is required' }, { status: 400 })
+  }
 
   const trimmed  = url.trim()
   const enc      = encodeURIComponent(trimmed)
@@ -58,47 +71,94 @@ export async function POST(request) {
   }
 
   try {
-    // ── TikTok via tikwm (keyless, reliable) ─────────────────────────────
-    if (platform === 'tiktok') {
-      const data = await fetch(
-        `https://tikwm.com/api/?url=${enc}`,
-        { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(20000) }
-      ).then(r => r.json())
-      if (data.code === 0 && data.data?.play) {
-        const d = data.data
-        return NextResponse.json({
-          platform,
-          download_url: d.play,
-          title: d.title, thumbnail: d.cover,
-          author: d.author?.nickname || null,
-          duration: d.duration ? `${d.duration}s` : null,
-        })
-      }
-    }
 
-    // ── YouTube via loader.to (keyless) ───────────────────────────────────
-    if (platform === 'youtube') {
-      // Metadata from oEmbed
-      let title = null, thumbnail = null
+    // ── TikTok — tikwm (keyless) → GiftedTech → yt-dlp ──────────────────────
+    if (platform === 'tiktok') {
+      // Source 1: tikwm
       try {
-        const meta = await fetch(
-          `https://www.youtube.com/oembed?url=${enc}&format=json`,
-          { signal: AbortSignal.timeout(6000) }
+        const data = await fetch(
+          `https://tikwm.com/api/?url=${enc}`,
+          { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(15000) }
         ).then(r => r.json())
-        title = meta.title; thumbnail = meta.thumbnail_url
+        if (data.code === 0 && data.data?.play) {
+          const d = data.data
+          return NextResponse.json({
+            platform,
+            download_url: d.play,
+            title: d.title, thumbnail: d.cover,
+            author: d.author?.nickname || null,
+            duration: d.duration ? `${d.duration}s` : null,
+          })
+        }
       } catch {}
 
-      const vid = await loaderToVideo(trimmed)
-      if (vid?.download_url) {
-        return NextResponse.json({ platform, title, thumbnail, ...vid })
-      }
-
-      // Fallback: GiftedTech ytv (works if key not exceeded)
+      // Source 2: GiftedTech
       try {
-        const d = await gt(`ytv?apikey=${KEY}&url=${enc}`)
+        const d = await giftedFetch('tiktok', trimmed)
+        if (d.success && (d.result?.video || d.result?.download_url)) {
+          return NextResponse.json({
+            platform,
+            download_url: d.result.video || d.result.download_url,
+            title: d.result.title || null,
+            thumbnail: d.result.thumbnail || null,
+            author: d.result.author || null,
+            duration: d.result.duration || null,
+          })
+        }
+      } catch {}
+
+      // Source 3: yt-dlp
+      try {
+        const info = await ytdlpJson(trimmed)
+        if (info?.url || info?.formats?.length) {
+          const fmt = info.formats?.find(f => f.vcodec !== 'none' && f.acodec !== 'none') || info.formats?.[0]
+          const dlUrl = info.url || fmt?.url
+          if (dlUrl) {
+            return NextResponse.json({
+              platform,
+              download_url: dlUrl,
+              title: info.title || null,
+              thumbnail: info.thumbnail || null,
+              author: info.uploader || null,
+              duration: info.duration ? `${info.duration}s` : null,
+            })
+          }
+        }
+      } catch (e) { console.error('[video:tiktok:ytdlp]', e.message) }
+    }
+
+    // ── YouTube — yt-dlp → EliteProTech → GiftedTech ─────────────────────────
+    if (platform === 'youtube') {
+      // Source 1: yt-dlp (highest quality, server-side)
+      try {
+        const ytResult = await youtubeViaYtdlp(trimmed)
+        if (ytResult?.download_url) return NextResponse.json(ytResult)
+      } catch (e) { console.error('[video:youtube:ytdlp]', e.message) }
+
+      // Source 2: EliteProTech ytmp4
+      try {
+        const ep = await fetch(
+          `${EP}/ytmp4?url=${encodeURIComponent(trimmed)}`,
+          { signal: AbortSignal.timeout(25000) }
+        ).then(r => r.json())
+        if (ep.status && ep.result?.url) {
+          return NextResponse.json({
+            platform,
+            download_url: ep.result.url,
+            title:     ep.result.title || null,
+            quality:   'MP4',
+            size:      ep.result.size  || null,
+          })
+        }
+      } catch (e) { console.error('[video:youtube:eliteprotech]', e.message) }
+
+      // Source 3: GiftedTech
+      try {
+        const d = await giftedFetch('ytv', trimmed)
         if (d.success && d.result?.download_url) {
           return NextResponse.json({
-            platform, download_url: d.result.download_url,
+            platform,
+            download_url: d.result.download_url,
             title: d.result.title, thumbnail: d.result.thumbnail,
             quality: d.result.quality, duration: d.result.duration,
           })
@@ -106,39 +166,125 @@ export async function POST(request) {
       } catch {}
     }
 
-    // ── Instagram ─────────────────────────────────────────────────────────
+    // ── Instagram — GiftedTech → yt-dlp ──────────────────────────────────────
     if (platform === 'instagram') {
-      const d = await gt(`instadl?apikey=${KEY}&url=${enc}`)
-      if (d.success && d.result?.download_url) {
-        return NextResponse.json({ platform, download_url: d.result.download_url, thumbnail: d.result.thumbnail, title: 'Instagram Reel' })
-      }
+      // Source 1: GiftedTech
+      try {
+        const d = await giftedFetch('instadl', trimmed)
+        if (d.success && d.result?.download_url) {
+          return NextResponse.json({
+            platform,
+            download_url: d.result.download_url,
+            thumbnail: d.result.thumbnail,
+            title: d.result.title || 'Instagram Video',
+          })
+        }
+      } catch {}
+
+      // Source 2: yt-dlp
+      try {
+        const info = await ytdlpJson(trimmed)
+        const fmt = info?.formats?.find(f => f.vcodec !== 'none' && f.acodec !== 'none') || info?.formats?.[0]
+        const dlUrl = info?.url || fmt?.url
+        if (dlUrl) {
+          return NextResponse.json({
+            platform,
+            download_url: dlUrl,
+            title: info.title || 'Instagram Video',
+            thumbnail: info.thumbnail || null,
+          })
+        }
+      } catch (e) { console.error('[video:instagram:ytdlp]', e.message) }
     }
 
-    // ── Facebook ──────────────────────────────────────────────────────────
+    // ── Facebook — EliteProTech → GiftedTech → yt-dlp ────────────────────────
     if (platform === 'facebook') {
-      const d = await gt(`facebook?apikey=${KEY}&url=${enc}`)
-      if (d.success && (d.result?.hd_video || d.result?.sd_video)) {
-        return NextResponse.json({
-          platform,
-          download_url:    d.result.hd_video || d.result.sd_video,
-          download_url_sd: d.result.sd_video || null,
-          title: d.result.title, thumbnail: d.result.thumbnail,
-          duration: d.result.duration, quality: d.result.hd_video ? 'HD' : 'SD',
-        })
-      }
+      // Source 1: EliteProTech
+      try {
+        const ep = await fetch(
+          `https://eliteprotech-apis.zone.id/facebook?url=${enc}`,
+          { signal: AbortSignal.timeout(20000) }
+        ).then(r => r.json())
+        if (ep.success && ep.result) {
+          const vidUrl = ep.result.hd || ep.result.sd || ep.result.video || ep.result.download_url || ep.result.url
+          if (vidUrl) {
+            return NextResponse.json({
+              platform,
+              download_url:    vidUrl,
+              download_url_sd: ep.result.sd || null,
+              title:     ep.result.title    || null,
+              thumbnail: ep.result.thumbnail || null,
+              duration:  ep.result.duration  || null,
+              quality:   ep.result.hd ? 'HD' : 'SD',
+            })
+          }
+        }
+      } catch (e) { console.error('[video:facebook:eliteprotech]', e.message) }
+
+      // Source 2: GiftedTech
+      try {
+        const d = await giftedFetch('facebook', trimmed)
+        if (d.success && (d.result?.hd_video || d.result?.sd_video)) {
+          return NextResponse.json({
+            platform,
+            download_url:    d.result.hd_video || d.result.sd_video,
+            download_url_sd: d.result.sd_video || null,
+            title: d.result.title, thumbnail: d.result.thumbnail,
+            duration: d.result.duration, quality: d.result.hd_video ? 'HD' : 'SD',
+          })
+        }
+      } catch {}
+
+      // Source 3: yt-dlp
+      try {
+        const info = await ytdlpJson(trimmed)
+        const fmt = info?.formats?.find(f => f.vcodec !== 'none' && f.acodec !== 'none') || info?.formats?.[0]
+        const dlUrl = info?.url || fmt?.url
+        if (dlUrl) {
+          return NextResponse.json({
+            platform,
+            download_url: dlUrl,
+            title: info.title || null,
+            thumbnail: info.thumbnail || null,
+          })
+        }
+      } catch (e) { console.error('[video:facebook:ytdlp]', e.message) }
     }
 
-    // ── Twitter / X ───────────────────────────────────────────────────────
+    // ── Twitter / X — GiftedTech → yt-dlp ────────────────────────────────────
     if (platform === 'twitter') {
-      const d = await gt(`twitter?apikey=${KEY}&url=${enc}`)
-      if (d.success && d.result?.videoUrls?.length) {
-        const sorted = [...d.result.videoUrls].sort((a, b) => (parseInt(b.quality) || 0) - (parseInt(a.quality) || 0))
-        return NextResponse.json({
-          platform, download_url: sorted[0].url,
-          thumbnail: d.result.thumbnail, quality: sorted[0].quality,
-          title: 'Twitter / X Video', all_qualities: sorted,
-        })
-      }
+      // Source 1: GiftedTech
+      try {
+        const d = await giftedFetch('twitter', trimmed)
+        if (d.success && d.result?.videoUrls?.length) {
+          const sorted = [...d.result.videoUrls].sort(
+            (a, b) => (parseInt(b.quality) || 0) - (parseInt(a.quality) || 0)
+          )
+          return NextResponse.json({
+            platform,
+            download_url: sorted[0].url,
+            thumbnail: d.result.thumbnail,
+            quality: sorted[0].quality,
+            title: 'Twitter / X Video',
+            all_qualities: sorted,
+          })
+        }
+      } catch {}
+
+      // Source 2: yt-dlp
+      try {
+        const info = await ytdlpJson(trimmed)
+        const fmt = info?.formats?.find(f => f.vcodec !== 'none' && f.acodec !== 'none') || info?.formats?.[0]
+        const dlUrl = info?.url || fmt?.url
+        if (dlUrl) {
+          return NextResponse.json({
+            platform,
+            download_url: dlUrl,
+            title: info.title || 'Twitter / X Video',
+            thumbnail: info.thumbnail || null,
+          })
+        }
+      } catch (e) { console.error('[video:twitter:ytdlp]', e.message) }
     }
 
   } catch (e) {
