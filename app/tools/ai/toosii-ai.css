@@ -211,10 +211,104 @@
   max-width: 760px;
 }
 
+/* History badge */
+.tai-history-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #25d366; color: #07070e;
+  font-size: 0.6rem; font-weight: 800;
+  width: 16px; height: 16px; border-radius: 50%;
+  margin-left: 4px; vertical-align: middle;
+}
+
+/* History panel */
+.tai-history-panel {
+  position: absolute;
+  top: 65px; right: 1.5rem;
+  width: 320px; max-height: 420px;
+  background: #0f1117;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  overflow-y: auto;
+  z-index: 100;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+  display: flex; flex-direction: column;
+}
+.tai-history-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  font-size: 0.8rem; font-weight: 700; color: #94a3b8;
+  position: sticky; top: 0; background: #0f1117;
+}
+.tai-history-clear-all {
+  font-size: 0.72rem; color: #ef4444;
+  background: none; border: none; cursor: pointer; padding: 0;
+  transition: opacity 0.2s;
+}
+.tai-history-clear-all:hover { opacity: 0.75; }
+.tai-history-empty {
+  padding: 1.5rem 1rem; text-align: center;
+  font-size: 0.82rem; color: #475569;
+}
+.tai-history-item {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  cursor: pointer; position: relative;
+  transition: background 0.15s;
+}
+.tai-history-item:hover { background: rgba(255,255,255,0.04); }
+.tai-history-title {
+  font-size: 0.83rem; font-weight: 600; color: #e2e8f0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  padding-right: 1.5rem;
+  margin-bottom: 0.25rem;
+}
+.tai-history-meta {
+  display: flex; gap: 0.4rem;
+  font-size: 0.7rem; color: #475569;
+}
+.tai-history-del {
+  position: absolute; top: 50%; right: 0.85rem;
+  transform: translateY(-50%);
+  background: none; border: none;
+  color: #475569; font-size: 0.75rem; cursor: pointer;
+  padding: 0.2rem 0.3rem; border-radius: 4px;
+  transition: color 0.2s, background 0.2s;
+}
+.tai-history-del:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
+
+/* File attach */
+.tai-attach-btn {
+  background: none; border: none;
+  color: #64748b; font-size: 1rem;
+  cursor: pointer; padding: 0 0.3rem;
+  transition: color 0.2s; flex-shrink: 0;
+  display: flex; align-items: center;
+}
+.tai-attach-btn:hover:not(:disabled) { color: #25d366; }
+.tai-attach-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.tai-file-preview {
+  display: flex; align-items: center; gap: 0.5rem;
+  max-width: 760px; margin: 0 auto 0.5rem;
+  padding: 0.45rem 0.85rem;
+  background: rgba(37,211,102,0.08);
+  border: 1px solid rgba(37,211,102,0.2);
+  border-radius: 8px; font-size: 0.78rem; color: #86efac;
+}
+.tai-file-size { color: #475569; margin-left: auto; white-space: nowrap; }
+.tai-file-remove {
+  background: none; border: none; color: #475569;
+  cursor: pointer; font-size: 0.75rem; padding: 0;
+  margin-left: 0.25rem; transition: color 0.2s;
+}
+.tai-file-remove:hover { color: #ef4444; }
+
 @media (max-width: 600px) {
   .tai-header { padding: 0.85rem 1rem; }
   .tai-body   { padding: 1rem; }
   .tai-input-area { padding: 0.75rem 1rem 1rem; }
   .tai-welcome-title { font-size: 1.3rem; }
   .tai-bubble { font-size: 0.875rem; }
+  .tai-history-panel { width: calc(100vw - 2rem); right: 1rem; }
 }
