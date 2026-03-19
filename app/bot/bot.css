@@ -1,0 +1,79 @@
+.bot-hero {
+  padding: 6rem 0 4rem;
+}
+
+.commands-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.command-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.command-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.command-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.command-header h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 0.3rem;
+}
+
+.command-desc {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+.command-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.cmd-tag {
+  background: rgba(37, 211, 102, 0.08);
+  border: 1px solid rgba(37, 211, 102, 0.2);
+  color: #25d366;
+  font-size: 0.78rem;
+  font-family: 'Courier New', monospace;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+}
+
+.deploy-box {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.deploy-box h2 {
+  font-size: 2rem;
+  font-weight: 800;
+  color: white;
+  margin-bottom: 1rem;
+}
+
+.deploy-box p {
+  font-size: 1rem;
+  color: #94a3b8;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.deploy-box > div {
+  justify-content: center;
+}
