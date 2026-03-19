@@ -29,6 +29,11 @@ const GT_MAP = {
   twitter:   'twitter',
 }
 
+function proxyUrl(url, title, ext = 'mp4') {
+  const name = (title ? title.replace(/[^a-z0-9\s-]/gi, '').trim().slice(0, 60) : 'video') + '.' + ext
+  return `/api/download/proxy?url=${encodeURIComponent(url)}&name=${encodeURIComponent(name)}`
+}
+
 const STEPS = ['Detecting platform…', 'Fetching video info…', 'Preparing download link…']
 
 export default function VideoDownloader() {
@@ -208,11 +213,11 @@ export default function VideoDownloader() {
                   </div>
                   <p className="expire-note">⚡ Download now — this link expires soon</p>
                   <div className="dl-buttons">
-                    <a href={result.download_url} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ width: 'fit-content' }}>
+                    <a href={proxyUrl(result.download_url, result.title)} download className="btn-primary" style={{ width: 'fit-content' }}>
                       ⬇ Download {result.quality || 'Video'}
                     </a>
                     {result.download_url_sd && (
-                      <a href={result.download_url_sd} target="_blank" rel="noopener noreferrer" className="btn-secondary" style={{ width: 'fit-content' }}>
+                      <a href={proxyUrl(result.download_url_sd, result.title ? result.title + ' SD' : null)} download className="btn-secondary" style={{ width: 'fit-content' }}>
                         ⬇ Download SD
                       </a>
                     )}
@@ -221,7 +226,7 @@ export default function VideoDownloader() {
                     <div className="quality-list">
                       <p className="quality-label">All qualities:</p>
                       {result.all_qualities.map((q, i) => (
-                        <a key={i} href={q.url} target="_blank" rel="noopener noreferrer" className="quality-chip">
+                        <a key={i} href={proxyUrl(q.url, result.title ? `${result.title} ${q.quality}` : null)} download className="quality-chip">
                           {q.quality}
                         </a>
                       ))}
