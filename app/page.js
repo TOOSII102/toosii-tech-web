@@ -28,38 +28,8 @@ export default function Home() {
 
   return (
     <Layout>
-      {/* Hero */}
-      <section className="hero">
-        <div className="page-wrapper">
-          <div className="hero-badge badge">
-            <span>🟢</span> TOOSII XD ULTRA — Active & Updated
-          </div>
-          <h1 className="hero-title">
-            The Most Advanced<br />
-            <span className="gradient-text">WhatsApp Bot</span><br />
-            You'll Ever Use
-          </h1>
-          <p className="hero-sub">
-            Built by a self-taught developer from Nairobi, Kenya. 150+ commands spanning AI, media,
-            sports, group management, and developer tools — all in one multi-device bot.
-          </p>
-          <div className="hero-cta">
-            <Link href="/bot" className="btn-primary">Explore Features →</Link>
-            <Link href="/session" className="btn-outline">Generate Session Key</Link>
-          </div>
-          <div className="hero-stats">
-            {stats.map(s => (
-              <div key={s.label} className="stat-card">
-                <span className="stat-num">{s.num}</span>
-                <span className="stat-label">{s.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Toosii AI Featured */}
-      <section className="section tai-feature-section">
+      {/* Toosii AI Featured — top of page */}
+      <section className="section tai-feature-section" style={{ paddingTop: '5rem' }}>
         <div className="page-wrapper">
           <div className="tai-feature-inner">
             <div className="tai-feature-left">
@@ -84,6 +54,36 @@ export default function Home() {
               </Link>
             </div>
             <ToosiiAiWidget />
+          </div>
+        </div>
+      </section>
+
+      {/* Hero */}
+      <section className="hero" style={{ paddingTop: '3rem' }}>
+        <div className="page-wrapper">
+          <div className="hero-badge badge">
+            <span>🟢</span> TOOSII XD ULTRA — Active & Updated
+          </div>
+          <h1 className="hero-title">
+            The Most Advanced<br />
+            <span className="gradient-text">WhatsApp Bot</span><br />
+            You'll Ever Use
+          </h1>
+          <p className="hero-sub">
+            Built by a self-taught developer from Nairobi, Kenya. 150+ commands spanning AI, media,
+            sports, group management, and developer tools — all in one multi-device bot.
+          </p>
+          <div className="hero-cta">
+            <Link href="/bot" className="btn-primary">Explore Features →</Link>
+            <Link href="/session" className="btn-outline">Generate Session Key</Link>
+          </div>
+          <div className="hero-stats">
+            {stats.map(s => (
+              <div key={s.label} className="stat-card">
+                <span className="stat-num">{s.num}</span>
+                <span className="stat-label">{s.label}</span>
+              </div>
+            ))}
           </div>
         </div>
       </section>
