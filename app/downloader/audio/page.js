@@ -7,6 +7,11 @@ const GT = 'https://api.giftedtech.co.ke/api/download'
 
 const STEPS = ['Fetching video info…', 'Converting to MP3…', 'Finalising…']
 
+function proxyUrl(url, title) {
+  const name = (title ? title.replace(/[^a-z0-9\s-]/gi, '').trim().slice(0, 60) : 'audio') + '.mp3'
+  return `/api/download/proxy?url=${encodeURIComponent(url)}&name=${encodeURIComponent(name)}`
+}
+
 export default function AudioDownloader() {
   const [url, setUrl]         = useState('')
   const [result, setResult]   = useState(null)
@@ -116,9 +121,8 @@ export default function AudioDownloader() {
                   </div>
                   <p className="expire-note">⚡ Download now — link expires soon</p>
                   <a
-                    href={result.download_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href={proxyUrl(result.download_url, result.title)}
+                    download
                     className="btn-primary"
                     style={{ width: 'fit-content', marginTop: '0.75rem' }}
                   >
