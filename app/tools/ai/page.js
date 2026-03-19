@@ -64,7 +64,7 @@ export default function ToosiiAI() {
             <div className="tai-logo-icon">T</div>
             <div>
               <div className="tai-logo-name">Toosii AI</div>
-              <div className="tai-logo-sub">Powered by ChatGPT · Always free</div>
+              <div className="tai-logo-sub">Powered by Toosii Tech · Always free</div>
             </div>
           </div>
           {!isEmpty && (
