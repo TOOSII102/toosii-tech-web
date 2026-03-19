@@ -11,25 +11,33 @@ export async function GET(request) {
 
   try {
     const res = await fetch(fileUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-      signal: AbortSignal.timeout(30000),
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept':     '*/*',
+      },
+      signal: AbortSignal.timeout(120000),
     })
 
     if (!res.ok) {
-      return NextResponse.json({ error: 'Could not fetch file' }, { status: 502 })
+      return NextResponse.json(
+        { error: `Upstream returned ${res.status}` },
+        { status: 502 }
+      )
     }
 
     const contentType = res.headers.get('content-type') || 'application/octet-stream'
-    const body = res.body
+    const contentLen  = res.headers.get('content-length')
+    const body        = res.body
 
-    return new Response(body, {
-      status: 200,
-      headers: {
-        'Content-Type': contentType,
-        'Content-Disposition': `attachment; filename="${filename}"`,
-        'Cache-Control': 'no-store',
-      },
-    })
+    const headers = {
+      'Content-Type':        contentType,
+      'Content-Disposition': `attachment; filename="${filename.replace(/"/g, '\\"')}"`,
+      'Cache-Control':       'no-store',
+      'Access-Control-Allow-Origin': '*',
+    }
+    if (contentLen) headers['Content-Length'] = contentLen
+
+    return new Response(body, { status: 200, headers })
   } catch (e) {
     return NextResponse.json({ error: 'Proxy error: ' + e.message }, { status: 500 })
   }
