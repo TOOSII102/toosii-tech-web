@@ -18,7 +18,7 @@ const navigationItems = [
   { href: '/tools/vocal-remover', label: 'Vocal Remover' },
   { href: '/tools/apk', label: 'APK Search' },
   { href: '/tools/story', label: 'Story AI' },
-  { href: '/tools/ai', label: 'AI Chat' },
+  { href: '/tools/ai', label: 'Toosii AI' },
   { href: '/contact', label: 'Contact' },
 ]
 
