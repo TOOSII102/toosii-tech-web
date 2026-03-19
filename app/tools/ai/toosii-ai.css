@@ -305,6 +305,17 @@
   border: 1px solid rgba(37,211,102,0.2);
   border-radius: 8px; font-size: 0.75rem; color: #86efac;
 }
+.tai-file-error {
+  display: flex; align-items: flex-start; gap: 0.5rem;
+  max-width: 760px; margin: 0 auto 0.4rem;
+  padding: 0.45rem 0.85rem;
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.25);
+  border-radius: 8px; font-size: 0.78rem; color: #fca5a5;
+  line-height: 1.5;
+}
+.tai-file-error .tai-file-remove { margin-left: auto; flex-shrink: 0; }
+
 .tai-file-size { color: #475569; margin-left: auto; white-space: nowrap; }
 .tai-file-remove {
   background: none; border: none; color: #475569;
