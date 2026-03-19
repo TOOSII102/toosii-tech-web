@@ -47,6 +47,16 @@
   line-height: 1.65;
 }
 
+.wake-note {
+  font-size: 0.8rem;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.07);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 8px;
+  padding: 0.65rem 0.9rem;
+  line-height: 1.5;
+}
+
 .input-row {
   display: flex;
   gap: 0.75rem;
