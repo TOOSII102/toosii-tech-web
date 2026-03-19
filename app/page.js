@@ -75,6 +75,7 @@ export default function Home() {
           </p>
           <div className="hero-cta">
             <Link href="/bot" className="btn-primary">Explore Features →</Link>
+            <Link href="/tools/ai" className="btn-primary">Toosii AI 🤖</Link>
             <Link href="/session" className="btn-outline">Generate Session Key</Link>
           </div>
           <div className="hero-stats">
