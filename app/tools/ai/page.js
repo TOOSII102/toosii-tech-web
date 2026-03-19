@@ -1,5 +1,4 @@
 'use client'
-import Layout from '../../../components/Layout'
 import { useState, useRef, useEffect } from 'react'
 import '../tools.css'
 import './toosii-ai.css'
@@ -188,7 +187,7 @@ export default function ToosiiAI() {
   const isEmpty = messages.length === 0
 
   return (
-    <Layout>
+    <>
       <div className="tai-page" ref={pageRef}>
         {/* Header */}
         <div className="tai-header">
@@ -338,6 +337,6 @@ export default function ToosiiAI() {
           <p className="tai-disclaimer">Toosii AI can make mistakes. Verify important information.</p>
         </div>
       </div>
-    </Layout>
+    </>
   )
 }
