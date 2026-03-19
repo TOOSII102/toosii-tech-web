@@ -1,0 +1,71 @@
+.dl-hero { padding: 5rem 0 3rem; }
+
+.dl-card {
+  max-width: 760px;
+  margin: 0 auto 3rem;
+  padding: 2.5rem;
+}
+
+.dl-input-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.result-panel {
+  margin-top: 2rem;
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.thumb {
+  width: 180px;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.result-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 0.75rem;
+  line-height: 1.4;
+}
+
+.result-meta {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.platforms {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.platform-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.75rem;
+}
+
+.platform-chip {
+  text-align: center;
+  padding: 0.85rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #cbd5e1;
+  border-radius: 10px;
+}
+
+@media (max-width: 540px) {
+  .dl-input-row { flex-direction: column; }
+  .result-panel { flex-direction: column; }
+  .thumb { width: 100%; height: auto; }
+}
