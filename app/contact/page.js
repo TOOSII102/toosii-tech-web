@@ -22,7 +22,10 @@ export default function Contact() {
           <div className="contact-info-cards">
             {[
               { icon: '📧', label: 'Email', value: 'toosiitechcompany@gmail.com', href: 'mailto:toosiitechcompany@gmail.com' },
-              { icon: '📞', label: 'Phone / WhatsApp', value: '+254 748 340 864', href: 'https://wa.me/254748340864' },
+              { icon: '📱', label: 'WhatsApp', value: '+254 748 340 864', href: 'https://wa.me/254748340864' },
+              { icon: '📱', label: 'WhatsApp 2', value: '+254 746 677 793', href: 'https://wa.me/254746677793' },
+              { icon: '📱', label: 'WhatsApp 3', value: '+254 788 781 373', href: 'https://wa.me/254788781373' },
+              { icon: '✈️', label: 'Telegram', value: '@toosiitech', href: 'https://t.me/toosiitech' },
               { icon: '📍', label: 'Location', value: 'Nairobi, Kenya', href: null },
               { icon: '🐙', label: 'GitHub', value: 'github.com/TOOSII102', href: 'https://github.com/TOOSII102' },
             ].map(c => (
