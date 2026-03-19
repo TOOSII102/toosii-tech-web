@@ -47,6 +47,8 @@ export default function SessionPage() {
     }
   }
 
+  const WAKE_UP_NOTE = 'The session server may take up to 30 seconds to respond on first use (free hosting cold start).'
+
   const copy = () => {
     navigator.clipboard.writeText(sessionId)
     setCopied(true)
@@ -83,6 +85,7 @@ export default function SessionPage() {
             {tab === 'pair' && (
               <div className="tab-content">
                 <p className="tab-desc">Enter your WhatsApp number with country code (e.g. 254712345678). A pairing code will be generated — enter it in WhatsApp → Linked Devices.</p>
+                <p className="wake-note">⚡ {WAKE_UP_NOTE}</p>
                 <div className="input-row">
                   <input
                     type="tel"
@@ -116,6 +119,7 @@ export default function SessionPage() {
             {tab === 'qr' && (
               <div className="tab-content">
                 <p className="tab-desc">Click the button to generate a QR code. Open WhatsApp → Linked Devices → Add Device and scan the code.</p>
+                <p className="wake-note">⚡ {WAKE_UP_NOTE}</p>
                 <button onClick={generateQR} disabled={loading} className="btn-primary" style={{ width: 'fit-content' }}>
                   {loading ? 'Generating QR…' : 'Generate QR Code'}
                 </button>
