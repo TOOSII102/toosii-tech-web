@@ -3,7 +3,9 @@ import Layout from '../../../components/Layout'
 import { useState } from 'react'
 import './audio.css'
 
-const STEPS = ['Fetching video info…', 'Converting to MP3…', 'Almost done…']
+const GT = 'https://api.giftedtech.co.ke/api/download'
+
+const STEPS = ['Fetching video info…', 'Converting to MP3…', 'Finalising…']
 
 export default function AudioDownloader() {
   const [url, setUrl]         = useState('')
@@ -15,21 +17,50 @@ export default function AudioDownloader() {
   const download = async () => {
     const trimmed = url.trim()
     if (!trimmed) return setError('Paste a YouTube URL first')
+    if (!/youtube\.com|youtu\.be/i.test(trimmed)) return setError('Only YouTube links are supported for MP3 download')
 
     setLoading(true); setError(''); setResult(null); setStep(0)
-    const timer = setInterval(() => setStep(s => Math.min(s + 1, STEPS.length - 1)), 8000)
+    const timer = setInterval(() => setStep(s => Math.min(s + 1, STEPS.length - 1)), 7000)
 
     try {
-      const res = await fetch('/api/download/audio', {
+      // 1. Try our server-side route (loader.to — works on Vercel)
+      const serverRes = await fetch('/api/download/audio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: trimmed })
       })
-      const data = await res.json()
-      if (data.download_url) setResult(data)
-      else setError(data.error || 'Could not extract audio. Try a different YouTube URL.')
-    } catch {
-      setError('Network error — please try again.')
+      const serverData = await serverRes.json()
+
+      if (serverData.download_url) {
+        setResult(serverData)
+        clearInterval(timer); setLoading(false)
+        return
+      }
+
+      // 2. Browser-direct fallback: call GiftedTech from user's own IP (CORS open)
+      setStep(1)
+      const enc = encodeURIComponent(trimmed)
+      const gtRes = await fetch(`${GT}/ytmp3?apikey=gifted&url=${enc}`)
+      const gtData = await gtRes.json()
+
+      if (gtData.success && gtData.result?.download_url) {
+        const d = gtData.result
+        setResult({
+          download_url: d.download_url,
+          title:     d.title,
+          thumbnail: d.thumbnail,
+          quality:   d.quality || '128kbps',
+        })
+        clearInterval(timer); setLoading(false)
+        return
+      }
+
+      // 3. Everything failed
+      const msg = gtData.message || 'Could not extract audio. The conversion service is busy — please try again in a few minutes.'
+      setError(msg.includes('Limit') ? 'Download service is temporarily overloaded. Please try again in a few minutes.' : msg)
+
+    } catch (e) {
+      setError('Network error — please check your connection and try again.')
     } finally {
       clearInterval(timer)
       setLoading(false)
@@ -42,7 +73,7 @@ export default function AudioDownloader() {
         <div className="page-wrapper">
           <div className="badge" style={{ marginBottom: '1.5rem' }}><span>🎧</span> MP3 Downloader</div>
           <h1 className="section-title">Download Audio in High Quality</h1>
-          <p className="section-sub">Extract MP3 audio from any YouTube video. Fast, free, no sign-up required.</p>
+          <p className="section-sub">Extract MP3 audio from any YouTube video. Free, no sign-up required.</p>
         </div>
       </section>
 
@@ -76,9 +107,7 @@ export default function AudioDownloader() {
 
             {result && (
               <div className="result-panel">
-                {result.thumbnail && (
-                  <img src={result.thumbnail} alt="Thumbnail" className="thumb" />
-                )}
+                {result.thumbnail && <img src={result.thumbnail} alt="Thumbnail" className="thumb" />}
                 <div className="result-info">
                   {result.title && <h3 className="result-title">{result.title}</h3>}
                   <div className="result-meta">
@@ -102,9 +131,9 @@ export default function AudioDownloader() {
 
           <div className="tips-grid">
             {[
-              { icon: '⚡', title: 'No API Key', desc: 'Uses free YouTube conversion — no limits.' },
-              { icon: '🎵', title: '128kbps MP3', desc: 'High quality audio, clear and clean.' },
-              { icon: '🔒', title: 'No Sign-up', desc: 'No account, no login, no tracking.' },
+              { icon: '⚡', title: 'Fast Conversion', desc: 'Your video converts to MP3 in seconds.' },
+              { icon: '🎵', title: '128kbps MP3',    desc: 'High quality audio, clear and clean.' },
+              { icon: '🔒', title: 'No Sign-up',     desc: 'No account, no login, no tracking.' },
               { icon: '📱', title: 'Mobile Friendly', desc: 'Works perfectly on your phone.' },
             ].map(t => (
               <div key={t.title} className="tip-card glass-card">
