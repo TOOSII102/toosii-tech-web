@@ -3,15 +3,21 @@ import Layout from '../../../components/Layout'
 import { useState } from 'react'
 import './audio.css'
 
+const STEPS = ['Fetching video info…', 'Extracting audio stream…', 'Almost done…']
+
 export default function AudioDownloader() {
   const [url, setUrl] = useState('')
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [step, setStep] = useState(0)
   const [error, setError] = useState('')
 
   const download = async () => {
     if (!url.trim()) return setError('Paste a YouTube URL first')
-    setLoading(true); setError(''); setResult(null)
+    setLoading(true); setError(''); setResult(null); setStep(0)
+
+    const stepTimer = setInterval(() => setStep(s => Math.min(s + 1, STEPS.length - 1)), 4000)
+
     try {
       const res = await fetch('/api/download/audio', {
         method: 'POST',
@@ -22,11 +28,12 @@ export default function AudioDownloader() {
       if (data.download_url) {
         setResult(data)
       } else {
-        setError(data.error || 'Could not fetch audio. Try a different URL.')
+        setError(data.error || 'Could not extract audio. Try a different YouTube URL.')
       }
     } catch {
       setError('Network error. Please try again.')
     } finally {
+      clearInterval(stepTimer)
       setLoading(false)
     }
   }
@@ -49,14 +56,22 @@ export default function AudioDownloader() {
                 type="url"
                 placeholder="Paste YouTube URL here…"
                 value={url}
-                onChange={e => setUrl(e.target.value)}
+                onChange={e => { setUrl(e.target.value); setError('') }}
                 className="text-input"
-                onKeyDown={e => e.key === 'Enter' && download()}
+                onKeyDown={e => e.key === 'Enter' && !loading && download()}
+                disabled={loading}
               />
               <button onClick={download} disabled={loading} className="btn-primary">
                 {loading ? 'Processing…' : 'Get MP3'}
               </button>
             </div>
+
+            {loading && (
+              <div className="progress-box">
+                <div className="spinner" />
+                <span>{STEPS[step]}</span>
+              </div>
+            )}
 
             {error && <div className="error-box" style={{ marginTop: '1rem' }}>{error}</div>}
 
@@ -67,11 +82,19 @@ export default function AudioDownloader() {
                 )}
                 <div className="result-info">
                   {result.title && <h3 className="result-title">{result.title}</h3>}
+                  {result.author && <p className="result-author">by {result.author}</p>}
                   <div className="result-meta">
                     <span className="badge">🎵 MP3</span>
                     {result.duration && <span className="badge">⏱ {result.duration}</span>}
                   </div>
-                  <a href={result.download_url} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ width: 'fit-content', marginTop: '1rem' }}>
+                  <p className="expire-note">⚡ Download now — this link expires in a few minutes</p>
+                  <a
+                    href={result.download_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-primary"
+                    style={{ width: 'fit-content', marginTop: '0.75rem' }}
+                  >
                     ⬇ Download MP3
                   </a>
                 </div>
@@ -82,7 +105,7 @@ export default function AudioDownloader() {
           <div className="tips-grid">
             {[
               { icon: '⚡', title: 'Fast Processing', desc: 'Most downloads ready in under 10 seconds.' },
-              { icon: '🎵', title: 'High Quality', desc: '128kbps MP3 audio, clear and clean.' },
+              { icon: '🎵', title: 'High Quality', desc: 'Best available audio bitrate, clear and clean.' },
               { icon: '🔒', title: 'No Sign-up', desc: 'No account, no login, no tracking.' },
               { icon: '📱', title: 'Mobile Friendly', desc: 'Works perfectly on your phone.' },
             ].map(t => (
