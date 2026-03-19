@@ -3,7 +3,7 @@ import Layout from '../../../components/Layout'
 import { useState } from 'react'
 import './video.css'
 
-const STEPS = ['Detecting platform…', 'Fetching video info…', 'Preparing download…']
+const GT = 'https://api.giftedtech.co.ke/api/download'
 
 const PLATFORM_LABELS = {
   youtube:   '▶ YouTube',
@@ -12,6 +12,24 @@ const PLATFORM_LABELS = {
   facebook:  '👤 Facebook',
   twitter:   '✕ Twitter / X',
 }
+
+function detect(url) {
+  if (/youtube\.com|youtu\.be/i.test(url))      return 'youtube'
+  if (/tiktok\.com|vm\.tiktok\.com/i.test(url)) return 'tiktok'
+  if (/instagram\.com/i.test(url))               return 'instagram'
+  if (/facebook\.com|fb\.watch/i.test(url))      return 'facebook'
+  if (/twitter\.com|x\.com/i.test(url))          return 'twitter'
+  return null
+}
+
+const GT_MAP = {
+  youtube:   'ytv',
+  instagram: 'instadl',
+  facebook:  'facebook',
+  twitter:   'twitter',
+}
+
+const STEPS = ['Detecting platform…', 'Fetching video info…', 'Preparing download link…']
 
 export default function VideoDownloader() {
   const [url, setUrl]         = useState('')
@@ -24,20 +42,94 @@ export default function VideoDownloader() {
     const trimmed = url.trim()
     if (!trimmed) return setError('Paste a video URL first')
 
+    const platform = detect(trimmed)
+    if (!platform) return setError('Unsupported URL. Paste a YouTube, TikTok, Instagram, Facebook or Twitter link.')
+
     setLoading(true); setError(''); setResult(null); setStep(0)
     const timer = setInterval(() => setStep(s => Math.min(s + 1, STEPS.length - 1)), 6000)
 
     try {
-      const res = await fetch('/api/download/video', {
+      const enc = encodeURIComponent(trimmed)
+
+      // ── TikTok: always use server-side tikwm (keyless, reliable) ─────────
+      if (platform === 'tiktok') {
+        const res = await fetch('/api/download/video', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: trimmed })
+        })
+        const data = await res.json()
+        if (data.download_url) { setResult(data); return }
+        setError(data.error || 'Could not download TikTok video.')
+        return
+      }
+
+      // ── YouTube / Instagram / Facebook / Twitter ──────────────────────────
+      // Step 1: try our server API (works from Vercel, may fail on Replit dev)
+      setStep(1)
+      const serverRes = await fetch('/api/download/video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: trimmed })
       })
-      const data = await res.json()
-      if (data.download_url) setResult(data)
-      else setError(data.error || 'Could not fetch video. Try a different URL.')
-    } catch {
-      setError('Network error — please try again.')
+      const serverData = await serverRes.json()
+      if (serverData.download_url) { setResult(serverData); return }
+
+      // Step 2: browser-direct GiftedTech (CORS open, user's own IP)
+      setStep(2)
+      const endpoint = GT_MAP[platform]
+      if (!endpoint) {
+        setError(`Platform ${platform} is temporarily unavailable. Try again later.`)
+        return
+      }
+
+      const gtRes = await fetch(`${GT}/${endpoint}?apikey=gifted&url=${enc}`)
+      const d = await gtRes.json()
+
+      if (platform === 'youtube' && d.success && d.result?.download_url) {
+        setResult({
+          platform, download_url: d.result.download_url,
+          title: d.result.title, thumbnail: d.result.thumbnail,
+          quality: d.result.quality, duration: d.result.duration,
+        })
+        return
+      }
+      if (platform === 'instagram' && d.success && d.result?.download_url) {
+        setResult({
+          platform, download_url: d.result.download_url,
+          thumbnail: d.result.thumbnail, title: 'Instagram Reel',
+        })
+        return
+      }
+      if (platform === 'facebook' && d.success && (d.result?.hd_video || d.result?.sd_video)) {
+        setResult({
+          platform,
+          download_url:    d.result.hd_video || d.result.sd_video,
+          download_url_sd: d.result.sd_video || null,
+          title: d.result.title, thumbnail: d.result.thumbnail,
+          duration: d.result.duration, quality: d.result.hd_video ? 'HD' : 'SD',
+        })
+        return
+      }
+      if (platform === 'twitter' && d.success && d.result?.videoUrls?.length) {
+        const sorted = [...d.result.videoUrls].sort((a, b) => (parseInt(b.quality) || 0) - (parseInt(a.quality) || 0))
+        setResult({
+          platform, download_url: sorted[0].url,
+          thumbnail: d.result.thumbnail, quality: sorted[0].quality,
+          title: 'Twitter / X Video', all_qualities: sorted,
+        })
+        return
+      }
+
+      // All failed
+      const msg = d.message || ''
+      setError(
+        msg.includes('Limit')
+          ? 'Download service is temporarily overloaded. Please try again in a few minutes.'
+          : `Could not download from ${PLATFORM_LABELS[platform] || platform}. Try again shortly.`
+      )
+    } catch (e) {
+      setError('Network error — please check your connection and try again.')
     } finally {
       clearInterval(timer)
       setLoading(false)
@@ -50,7 +142,7 @@ export default function VideoDownloader() {
         <div className="page-wrapper">
           <div className="badge" style={{ marginBottom: '1.5rem' }}><span>🎬</span> Video Downloader</div>
           <h1 className="section-title">Download Videos in HD</h1>
-          <p className="section-sub">YouTube, TikTok, Instagram, Facebook, Twitter and more. Paste any link and download instantly.</p>
+          <p className="section-sub">YouTube, TikTok, Instagram, Facebook, Twitter — paste any link and download instantly.</p>
         </div>
       </section>
 
@@ -83,24 +175,21 @@ export default function VideoDownloader() {
 
             {result && (
               <div className="result-panel">
-                {result.thumbnail && (
-                  <img src={result.thumbnail} alt="Thumbnail" className="thumb" />
-                )}
+                {result.thumbnail && <img src={result.thumbnail} alt="Thumbnail" className="thumb" />}
                 <div className="result-info">
                   {result.platform && (
                     <span className="platform-tag">{PLATFORM_LABELS[result.platform] || result.platform}</span>
                   )}
-                  {result.title && <h3 className="result-title">{result.title}</h3>}
-                  {result.author && <p className="result-author">by {result.author}</p>}
+                  {result.title    && <h3 className="result-title">{result.title}</h3>}
+                  {result.author   && <p className="result-author">by {result.author}</p>}
                   <div className="result-meta">
                     {result.quality  && <span className="badge">📺 {result.quality}</span>}
                     {result.duration && <span className="badge">⏱ {result.duration}</span>}
-                    {result.size     && <span className="badge">💾 {result.size}</span>}
                   </div>
                   <p className="expire-note">⚡ Download now — this link expires soon</p>
                   <div className="dl-buttons">
                     <a href={result.download_url} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ width: 'fit-content' }}>
-                      ⬇ Download {result.quality || 'HD'}
+                      ⬇ Download {result.quality || 'Video'}
                     </a>
                     {result.download_url_sd && (
                       <a href={result.download_url_sd} target="_blank" rel="noopener noreferrer" className="btn-secondary" style={{ width: 'fit-content' }}>
