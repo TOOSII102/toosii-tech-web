@@ -1,22 +1,30 @@
 import { NextResponse } from 'next/server'
-import ytdl from '@distube/ytdl-core'
 
-const GT  = 'https://api.giftedtech.co.ke/api/download'
-const KEY = 'gifted'
-const TO  = 25000
+const TIMEOUT = 30000
 
-function fmt(sec) {
-  if (!sec || isNaN(sec)) return null
-  const m = Math.floor(sec / 60), s = sec % 60
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
+// loader.to — no API key, just polls until done
+async function loaderTo(url) {
+  const initRes = await fetch(
+    `https://loader.to/ajax/download.php?format=mp3&url=${encodeURIComponent(url)}`,
+    { signal: AbortSignal.timeout(12000) }
+  )
+  const init = await initRes.json()
+  if (!init.success || !init.id) return null
 
-async function gt(path) {
-  const res = await fetch(`${GT}/${path}`, {
-    headers: { 'User-Agent': 'Mozilla/5.0' },
-    signal: AbortSignal.timeout(TO),
-  })
-  return res.json()
+  // Poll up to 15 times (45 seconds max)
+  for (let i = 0; i < 15; i++) {
+    await new Promise(r => setTimeout(r, 3000))
+    try {
+      const prog = await fetch(
+        `https://loader.to/api/progress?id=${init.id}`,
+        { signal: AbortSignal.timeout(8000) }
+      ).then(r => r.json())
+      if (prog.download_url) {
+        return { download_url: prog.download_url }
+      }
+    } catch {}
+  }
+  return null
 }
 
 export async function POST(request) {
@@ -24,7 +32,6 @@ export async function POST(request) {
   if (!url?.trim()) return NextResponse.json({ error: 'URL is required' }, { status: 400 })
 
   const trimmed = url.trim()
-  const enc = encodeURIComponent(trimmed)
 
   if (!/youtube\.com|youtu\.be/i.test(trimmed)) {
     return NextResponse.json(
@@ -33,40 +40,29 @@ export async function POST(request) {
     )
   }
 
-  // Primary: GiftedTech ytmp3
   try {
-    const d = await gt(`ytmp3?apikey=${KEY}&url=${enc}&quality=128kbps`)
-    if (d.success && d.result?.download_url) {
+    // Get YouTube metadata from oEmbed (free, no key)
+    let title = null, thumbnail = null
+    try {
+      const meta = await fetch(
+        `https://www.youtube.com/oembed?url=${encodeURIComponent(trimmed)}&format=json`,
+        { signal: AbortSignal.timeout(6000) }
+      ).then(r => r.json())
+      title = meta.title || null
+      thumbnail = meta.thumbnail_url || null
+    } catch {}
+
+    const result = await loaderTo(trimmed)
+    if (result?.download_url) {
       return NextResponse.json({
-        download_url: d.result.download_url,
-        title: d.result.title || null,
-        thumbnail: d.result.thumbnail || null,
-        duration: d.result.duration || null,
-        quality: d.result.quality || '128kbps',
+        download_url: result.download_url,
+        title,
+        thumbnail,
+        quality: '128kbps',
       })
     }
-  } catch (e) { console.error('[gt-ytmp3]', e.message) }
-
-  // Fallback: ytdl-core audio stream
-  if (ytdl.validateURL(trimmed)) {
-    try {
-      const info = await ytdl.getInfo(trimmed)
-      const audio = ytdl
-        .filterFormats(info.formats, 'audioonly')
-        .filter(f => f.url)
-        .sort((a, b) => (b.audioBitrate || 0) - (a.audioBitrate || 0))[0]
-
-      if (audio?.url) {
-        const vd = info.videoDetails
-        return NextResponse.json({
-          download_url: audio.url,
-          title: vd.title,
-          thumbnail: vd.thumbnails?.at(-1)?.url || null,
-          duration: fmt(parseInt(vd.lengthSeconds)),
-          author: vd.author?.name || null,
-        })
-      }
-    } catch (e) { console.error('[ytdl-core audio]', e.message) }
+  } catch (e) {
+    console.error('[audio]', e.message)
   }
 
   return NextResponse.json(
