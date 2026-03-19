@@ -3,40 +3,31 @@ import Layout from '../../../components/Layout'
 import { useState } from 'react'
 import './audio.css'
 
-const GT  = 'https://api.giftedtech.co.ke/api/download'
-const KEY = 'gifted'
-
-const STEPS = ['Fetching video info…', 'Extracting audio…', 'Almost done…']
-
-function isYouTube(url) {
-  return /youtube\.com|youtu\.be/i.test(url)
-}
+const STEPS = ['Fetching video info…', 'Converting to MP3…', 'Almost done…']
 
 export default function AudioDownloader() {
-  const [url, setUrl]       = useState('')
-  const [result, setResult] = useState(null)
+  const [url, setUrl]         = useState('')
+  const [result, setResult]   = useState(null)
   const [loading, setLoading] = useState(false)
-  const [step, setStep]     = useState(0)
-  const [error, setError]   = useState('')
+  const [step, setStep]       = useState(0)
+  const [error, setError]     = useState('')
 
   const download = async () => {
     const trimmed = url.trim()
     if (!trimmed) return setError('Paste a YouTube URL first')
-    if (!isYouTube(trimmed)) return setError('MP3 download supports YouTube links only. For other platforms use the Video Downloader.')
 
     setLoading(true); setError(''); setResult(null); setStep(0)
-    const timer = setInterval(() => setStep(s => Math.min(s + 1, STEPS.length - 1)), 4000)
+    const timer = setInterval(() => setStep(s => Math.min(s + 1, STEPS.length - 1)), 8000)
 
     try {
-      const enc = encodeURIComponent(trimmed)
-      const res = await fetch(`${GT}/ytmp3?apikey=${KEY}&url=${enc}&quality=128kbps`)
+      const res = await fetch('/api/download/audio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: trimmed })
+      })
       const data = await res.json()
-
-      if (data.success && data.result?.download_url) {
-        setResult(data.result)
-      } else {
-        setError(data.message || 'Could not extract audio. Make sure it is a valid YouTube URL.')
-      }
+      if (data.download_url) setResult(data)
+      else setError(data.error || 'Could not extract audio. Try a different YouTube URL.')
     } catch {
       setError('Network error — please try again.')
     } finally {
@@ -69,7 +60,7 @@ export default function AudioDownloader() {
                 disabled={loading}
               />
               <button onClick={download} disabled={loading} className="btn-primary">
-                {loading ? 'Processing…' : 'Get MP3'}
+                {loading ? 'Converting…' : 'Get MP3'}
               </button>
             </div>
 
@@ -77,6 +68,7 @@ export default function AudioDownloader() {
               <div className="progress-box">
                 <div className="spinner" />
                 <span>{STEPS[step]}</span>
+                <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: '#64748b' }}>may take 20–40s</span>
               </div>
             )}
 
@@ -92,9 +84,8 @@ export default function AudioDownloader() {
                   <div className="result-meta">
                     <span className="badge">🎵 MP3</span>
                     {result.quality && <span className="badge">🎚 {result.quality}</span>}
-                    {result.duration && <span className="badge">⏱ {result.duration}</span>}
                   </div>
-                  {result.message && <p className="expire-note">⚡ {result.message}</p>}
+                  <p className="expire-note">⚡ Download now — link expires soon</p>
                   <a
                     href={result.download_url}
                     target="_blank"
@@ -111,8 +102,8 @@ export default function AudioDownloader() {
 
           <div className="tips-grid">
             {[
-              { icon: '⚡', title: 'Fast Processing', desc: 'Most downloads ready in seconds.' },
-              { icon: '🎵', title: 'High Quality', desc: '128kbps MP3 audio, clear and clean.' },
+              { icon: '⚡', title: 'No API Key', desc: 'Uses free YouTube conversion — no limits.' },
+              { icon: '🎵', title: '128kbps MP3', desc: 'High quality audio, clear and clean.' },
               { icon: '🔒', title: 'No Sign-up', desc: 'No account, no login, no tracking.' },
               { icon: '📱', title: 'Mobile Friendly', desc: 'Works perfectly on your phone.' },
             ].map(t => (
