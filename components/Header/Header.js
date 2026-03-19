@@ -14,6 +14,11 @@ const navigationItems = [
   { href: '/session', label: 'Session' },
   { href: '/downloader/video', label: 'Video DL' },
   { href: '/downloader/audio', label: 'MP3 DL' },
+  { href: '/downloader/spotify', label: 'Spotify DL' },
+  { href: '/tools/vocal-remover', label: 'Vocal Remover' },
+  { href: '/tools/apk', label: 'APK Search' },
+  { href: '/tools/story', label: 'Story AI' },
+  { href: '/tools/ai', label: 'AI Chat' },
   { href: '/contact', label: 'Contact' },
 ]
 
