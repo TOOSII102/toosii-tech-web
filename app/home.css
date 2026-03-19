@@ -1,0 +1,203 @@
+.hero {
+  padding: 7rem 0 5rem;
+  text-align: center;
+}
+
+.hero-badge {
+  margin-bottom: 2rem;
+}
+
+.hero-title {
+  font-size: clamp(2.8rem, 6vw, 5rem);
+  font-weight: 900;
+  color: white;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+  letter-spacing: -0.03em;
+}
+
+.hero-sub {
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  color: #94a3b8;
+  max-width: 680px;
+  margin: 0 auto 2.5rem;
+  line-height: 1.7;
+}
+
+.hero-cta {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 4rem;
+}
+
+.hero-stats {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.stat-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 1.25rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 120px;
+}
+
+.stat-num {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #25d366;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.section-header {
+  max-width: 640px;
+  margin-bottom: 3.5rem;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.feature-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.feature-icon {
+  font-size: 2rem;
+}
+
+.feature-card h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: white;
+}
+
+.feature-card p {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  line-height: 1.6;
+}
+
+.tools-section {
+  background: rgba(37, 211, 102, 0.02);
+  border-top: 1px solid rgba(37, 211, 102, 0.08);
+  border-bottom: 1px solid rgba(37, 211, 102, 0.08);
+}
+
+.tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.tool-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tool-icon {
+  font-size: 2.5rem;
+}
+
+.tool-card h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: white;
+}
+
+.tool-card p {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  line-height: 1.6;
+  flex: 1;
+}
+
+.cta-box {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 4rem;
+  align-items: center;
+}
+
+.cta-content h2 {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: white;
+  margin-bottom: 1rem;
+}
+
+.cta-content p {
+  font-size: 1rem;
+  color: #94a3b8;
+  line-height: 1.7;
+}
+
+.dev-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(37, 211, 102, 0.06);
+  border: 1px solid rgba(37, 211, 102, 0.15);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.dev-avatar {
+  width: 52px;
+  height: 52px;
+  background: linear-gradient(135deg, #25d366, #128c7e);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: white;
+  flex-shrink: 0;
+}
+
+.dev-name { font-size: 1rem; font-weight: 700; color: white; }
+.dev-title { font-size: 0.82rem; color: #25d366; margin: 0.15rem 0; }
+.dev-location { font-size: 0.82rem; color: #94a3b8; }
+
+.skills-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.skill-tag {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #cbd5e1;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+}
+
+@media (max-width: 768px) {
+  .cta-box { grid-template-columns: 1fr; gap: 2rem; }
+  .hero { padding: 5rem 0 3.5rem; }
+}
