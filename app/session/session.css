@@ -1,20 +1,18 @@
-.session-hero {
-  padding: 5rem 0 3rem;
-}
+.session-hero { padding: 5rem 0 2.5rem; }
 
 .session-card {
   max-width: 680px;
-  margin: 0 auto 3rem;
-  padding: 2.5rem;
+  margin: 0 auto 2.5rem;
+  padding: 2rem;
 }
 
 .session-tabs {
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 2rem;
+  gap: 0.4rem;
+  margin-bottom: 1.75rem;
   background: rgba(255,255,255,0.04);
   border-radius: 10px;
-  padding: 0.35rem;
+  padding: 0.3rem;
 }
 
 .tab-btn {
@@ -28,6 +26,8 @@
   border-radius: 7px;
   cursor: pointer;
   transition: all 0.2s;
+  min-height: 44px;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .tab-btn.active {
@@ -42,9 +42,9 @@
 }
 
 .tab-desc {
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   color: #94a3b8;
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
 .input-row {
@@ -59,15 +59,13 @@
   border-radius: 10px;
   padding: 0.85rem 1rem;
   color: white;
-  font-size: 0.95rem;
+  font-size: 1rem;
   outline: none;
   transition: border-color 0.2s;
+  min-height: 44px;
 }
 
-.text-input:focus {
-  border-color: #25d366;
-}
-
+.text-input:focus { border-color: #25d366; }
 .text-input::placeholder { color: #4a5568; }
 
 .error-box {
@@ -77,6 +75,7 @@
   padding: 0.85rem 1.1rem;
   border-radius: 8px;
   font-size: 0.875rem;
+  line-height: 1.5;
 }
 
 .result-box {
@@ -94,6 +93,7 @@
   font-size: 0.875rem;
   color: #25d366;
   font-weight: 600;
+  gap: 0.5rem;
 }
 
 .copy-btn {
@@ -102,10 +102,12 @@
   color: #25d366;
   font-size: 0.8rem;
   font-weight: 600;
-  padding: 0.3rem 0.75rem;
+  padding: 0.35rem 0.8rem;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
+  flex-shrink: 0;
+  min-height: 36px;
 }
 
 .copy-btn:hover { background: rgba(37, 211, 102, 0.25); }
@@ -113,9 +115,10 @@
 .session-code {
   display: block;
   font-family: 'Courier New', monospace;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: #e2e8f0;
   word-break: break-all;
+  overflow-wrap: break-word;
   line-height: 1.6;
   padding: 0.75rem;
   background: rgba(0,0,0,0.3);
@@ -123,10 +126,7 @@
   margin-bottom: 0.75rem;
 }
 
-.result-note {
-  font-size: 0.8rem;
-  color: #64748b;
-}
+.result-note { font-size: 0.8rem; color: #64748b; }
 
 .qr-box {
   display: flex;
@@ -136,47 +136,39 @@
 }
 
 .qr-img {
-  width: 220px;
-  height: 220px;
+  width: 200px;
+  height: 200px;
   border-radius: 12px;
   border: 4px solid rgba(37, 211, 102, 0.3);
 }
 
 .steps-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1.1rem;
   max-width: 900px;
   margin: 0 auto;
 }
 
-.step-card {
-  text-align: center;
-  padding: 1.75rem 1.25rem;
-}
+.step-card { text-align: center; padding: 1.5rem 1rem; }
 
 .step-number {
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 900;
   color: #25d366;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.65rem;
   opacity: 0.7;
 }
 
-.step-card h3 {
-  font-size: 1rem;
-  font-weight: 700;
-  color: white;
-  margin-bottom: 0.4rem;
-}
+.step-card h3 { font-size: 0.95rem; font-weight: 700; color: white; margin-bottom: 0.35rem; }
+.step-card p { font-size: 0.82rem; color: #94a3b8; line-height: 1.5; }
 
-.step-card p {
-  font-size: 0.85rem;
-  color: #94a3b8;
-  line-height: 1.5;
-}
-
-@media (max-width: 540px) {
+@media (max-width: 600px) {
   .input-row { flex-direction: column; }
-  .session-card { padding: 1.5rem; }
+  .session-card { padding: 1.25rem; }
+  .steps-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 400px) {
+  .steps-grid { grid-template-columns: 1fr; }
 }
