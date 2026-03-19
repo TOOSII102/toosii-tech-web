@@ -1,6 +1,4 @@
-.about-hero {
-  padding: 6rem 0 4rem;
-}
+.about-hero { padding: 5rem 0 3.5rem; }
 
 .story-grid {
   display: grid;
@@ -23,25 +21,25 @@
 
 .profile-card {
   text-align: center;
-  padding: 2.5rem;
+  padding: 2rem;
 }
 
 .profile-avatar {
-  width: 80px;
-  height: 80px;
+  width: 72px;
+  height: 72px;
   background: linear-gradient(135deg, #25d366, #128c7e);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2.2rem;
+  font-size: 2rem;
   font-weight: 900;
   color: white;
   margin: 0 auto 1.25rem;
 }
 
 .profile-card h3 {
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   font-weight: 800;
   color: white;
   margin-bottom: 0.35rem;
@@ -49,7 +47,7 @@
 
 .profile-card > p {
   color: #25d366;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   font-weight: 500;
   margin-bottom: 1.5rem;
 }
@@ -61,6 +59,8 @@
   text-align: left;
   border-top: 1px solid rgba(255,255,255,0.08);
   padding-top: 1.25rem;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .profile-meta span {
@@ -81,19 +81,17 @@
   max-width: 720px;
 }
 
-.skill-row {}
-
 .skill-meta {
   display: flex;
   justify-content: space-between;
   margin-bottom: 0.5rem;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   color: #e2e8f0;
   font-weight: 500;
 }
 
 .skill-bar {
-  height: 8px;
+  height: 7px;
   background: rgba(255,255,255,0.08);
   border-radius: 999px;
   overflow: hidden;
@@ -103,21 +101,21 @@
   height: 100%;
   background: linear-gradient(90deg, #25d366, #3b82f6);
   border-radius: 999px;
-  transition: width 0.6s ease;
 }
 
+/* Timeline */
 .timeline {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  max-width: 800px;
+  max-width: 760px;
   position: relative;
 }
 
 .timeline::before {
   content: '';
   position: absolute;
-  left: 80px;
+  left: 72px;
   top: 0;
   bottom: 0;
   width: 2px;
@@ -131,22 +129,22 @@
 }
 
 .timeline-year {
-  width: 60px;
+  width: 56px;
   flex-shrink: 0;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 800;
   color: #25d366;
   text-align: right;
-  padding-top: 0.4rem;
+  padding-top: 0.5rem;
 }
 
 .timeline-content {
   flex: 1;
-  padding: 1.25rem 1.5rem;
+  padding: 1.1rem 1.25rem;
 }
 
 .timeline-content h3 {
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 700;
   color: white;
   margin-bottom: 0.4rem;
@@ -160,6 +158,23 @@
 
 @media (max-width: 768px) {
   .story-grid { grid-template-columns: 1fr; gap: 2.5rem; }
-  .timeline::before { left: 50px; }
-  .timeline-year { width: 40px; font-size: 0.75rem; }
+  .timeline::before { left: 48px; }
+  .timeline-year { width: 36px; font-size: 0.72rem; }
+  .timeline-item { gap: 1.25rem; }
+}
+
+@media (max-width: 480px) {
+  .timeline::before { display: none; }
+  .timeline-year {
+    width: auto;
+    text-align: left;
+    background: rgba(37,211,102,0.1);
+    border: 1px solid rgba(37,211,102,0.2);
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    align-self: center;
+  }
+  .timeline-item { gap: 0.75rem; align-items: center; }
+  .profile-card { padding: 1.5rem; }
 }
