@@ -16,6 +16,7 @@ export default function Home() {
     { icon: '🔑', title: 'Session Generator', desc: 'Get your WhatsApp session ID instantly via pair code or QR scan.', href: '/session', label: 'Generate Now' },
     { icon: '🎬', title: 'Video Downloader', desc: 'Download YouTube, TikTok & Instagram videos in 720p HD, no ads.', href: '/downloader/video', label: 'Download Video' },
     { icon: '🎧', title: 'MP3 Downloader', desc: 'Extract high-quality audio from any YouTube video — free, fast.', href: '/downloader/audio', label: 'Download MP3' },
+    { icon: '🤖', title: 'Toosii AI', desc: 'Chat with AI — ask anything, get instant answers. Powered by Toosii Tech, always free.', href: '/tools/ai', label: 'Chat Now' },
   ]
 
   const stats = [
