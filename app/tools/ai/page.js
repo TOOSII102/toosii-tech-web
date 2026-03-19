@@ -46,6 +46,7 @@ export default function ToosiiAI() {
   const [showHistory, setShowHistory] = useState(false)
   const [sessions, setSessions]     = useState([])
   const [attachedFile, setAttachedFile] = useState(null)
+  const [fileError, setFileError]       = useState('')
   const bottomRef  = useRef()
   const inputRef   = useRef()
   const fileRef    = useRef()
@@ -149,13 +150,38 @@ export default function ToosiiAI() {
 
   const handleFile = (file) => {
     if (!file) return
-    const isText = /^text\/|\.txt$|\.md$|\.js$|\.ts$|\.py$|\.json$|\.csv$|\.html$|\.css$/i.test(file.type + file.name)
-    if (isText) {
+    // Reset input so same file can be re-selected
+    if (fileRef.current) fileRef.current.value = ''
+    setFileError('')
+    setAttachedFile(null)
+
+    const isImage = /^image\//i.test(file.type) || /\.(jpg|jpeg|png|gif|webp|svg|bmp|ico|heic)$/i.test(file.name)
+    const isBinary = /^(video|audio|application)\//i.test(file.type) && !/json|xml|javascript|typescript/i.test(file.type)
+
+    if (isImage) {
+      setFileError('📎 Toosii AI can read text files only — images are not supported. Try a .txt, .js, .py, .json or .csv file.')
+      return
+    }
+    if (isBinary) {
+      setFileError(`📎 "${file.name}" is a binary file and cannot be read. Upload a plain text file instead.`)
+      return
+    }
+
+    const isText = /^text\/|\.txt$|\.md$|\.js$|\.ts$|\.py$|\.json$|\.csv$|\.html$|\.css$|\.java$|\.c$|\.cpp$|\.go$|\.rb$|\.php$/i.test(file.type + file.name)
+    if (isText || file.size < 500000) {
       const reader = new FileReader()
-      reader.onload = (e) => setAttachedFile({ name: file.name, content: e.target.result.slice(0, 8000) })
+      reader.onload = (e) => {
+        const content = e.target.result
+        if (typeof content !== 'string') {
+          setFileError(`📎 "${file.name}" could not be read as text. Try a different file.`)
+          return
+        }
+        setAttachedFile({ name: file.name, content: content.slice(0, 12000) })
+      }
+      reader.onerror = () => setFileError(`📎 Failed to read "${file.name}". Try again.`)
       reader.readAsText(file)
     } else {
-      setAttachedFile({ name: file.name, content: null })
+      setFileError(`📎 "${file.name}" is too large or unsupported. Upload a plain text file under 500KB.`)
     }
   }
 
@@ -257,15 +283,27 @@ export default function ToosiiAI() {
 
         {/* Input */}
         <div className="tai-input-area">
-          {attachedFile && (
+          {fileError && (
+            <div className="tai-file-error">
+              {fileError}
+              <button onClick={() => setFileError('')} className="tai-file-remove">✕</button>
+            </div>
+          )}
+          {attachedFile && !fileError && (
             <div className="tai-file-preview">
               <span>📎 {attachedFile.name}</span>
               {attachedFile.content && <span className="tai-file-size">{attachedFile.content.length} chars</span>}
-              <button onClick={() => setAttachedFile(null)} className="tai-file-remove">✕</button>
+              <button onClick={() => { setAttachedFile(null); setFileError('') }} className="tai-file-remove">✕</button>
             </div>
           )}
           <div className="tai-input-box">
-            <input ref={fileRef} type="file" style={{ display: 'none' }} onChange={e => handleFile(e.target.files[0])} />
+            <input
+              ref={fileRef}
+              type="file"
+              style={{ display: 'none' }}
+              accept=".txt,.md,.js,.ts,.jsx,.tsx,.py,.json,.csv,.html,.css,.java,.c,.cpp,.go,.rb,.php,.xml,.yaml,.yml,.sh,.sql"
+              onChange={e => handleFile(e.target.files[0])}
+            />
             <button
               className="tai-attach-btn"
               onClick={() => fileRef.current?.click()}
