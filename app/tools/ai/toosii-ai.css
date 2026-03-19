@@ -1,10 +1,12 @@
 .tai-page {
   display: flex;
   flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; right: 0;
   height: 100dvh;
-  max-height: 100dvh;
   overflow: hidden;
-  position: relative;
+  background: #07070e;
+  z-index: 50;
 }
 
 /* Header */
