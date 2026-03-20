@@ -83,22 +83,39 @@ export default function VocalRemover() {
             </div>
 
             {mode === 'file' ? (
-              <div
-                className={`file-upload-area ${drag ? 'drag' : ''}`}
-                onClick={() => fileRef.current?.click()}
-                onDragOver={e => { e.preventDefault(); setDrag(true) }}
-                onDragLeave={() => setDrag(false)}
-                onDrop={e => { e.preventDefault(); setDrag(false); handleFile(e.dataTransfer.files[0]) }}
-              >
-                <input
-                  ref={fileRef} type="file" accept="audio/*" style={{ display: 'none' }}
-                  onChange={e => handleFile(e.target.files[0])}
-                />
-                <span style={{ fontSize: '2.5rem' }}>🎵</span>
-                {file
-                  ? <p style={{ color: '#25d366', fontWeight: 600 }}>✓ {file.name}</p>
-                  : <p>Drag & drop an audio file here, or click to browse<br /><span style={{ fontSize: '0.75rem' }}>MP3, WAV, M4A, OGG — max 50MB</span></p>
-                }
+              <div>
+                <div
+                  className={`file-upload-area ${drag ? 'drag' : ''}`}
+                  onClick={() => fileRef.current?.click()}
+                  onDragOver={e => { e.preventDefault(); setDrag(true) }}
+                  onDragLeave={() => setDrag(false)}
+                  onDrop={e => { e.preventDefault(); setDrag(false); handleFile(e.dataTransfer.files[0]) }}
+                >
+                  <input
+                    ref={fileRef} type="file" accept="audio/*" style={{ display: 'none' }}
+                    onChange={e => handleFile(e.target.files[0])}
+                  />
+                  <span style={{ fontSize: '2.5rem' }}>🎵</span>
+                  {file
+                    ? <p style={{ color: '#25d366', fontWeight: 600 }}>✓ {file.name}</p>
+                    : <p>Drag & drop an audio file here<br /><span style={{ fontSize: '0.75rem' }}>MP3, WAV, M4A, OGG — max 50MB</span></p>
+                  }
+                </div>
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={loading}
+                  className="btn-secondary"
+                  style={{ width: '100%', marginTop: '0.75rem' }}
+                >
+                  📂 Browse Files from Device
+                </button>
+                {file && (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.5rem', padding: '0.6rem 0.9rem', background: 'rgba(37,211,102,0.07)', borderRadius: 8, border: '1px solid rgba(37,211,102,0.2)' }}>
+                    <span style={{ color: '#25d366', fontSize: '0.875rem', fontWeight: 600 }}>✓ {file.name}</span>
+                    <button onClick={() => { setFile(null); setResult(null) }} style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: '1.1rem' }}>✕</button>
+                  </div>
+                )}
               </div>
             ) : (
               <input
