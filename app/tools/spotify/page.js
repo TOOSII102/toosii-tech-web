@@ -84,10 +84,13 @@ export default function SpotifyDownloader() {
                 </div>
               </div>
               <a
-                href={result.download}
+                href={`/api/download/proxy?url=${encodeURIComponent(result.download)}&name=${encodeURIComponent(
+                  `${result.artist ? result.artist + ' - ' : ''}${result.title || 'track'}.mp3`
+                    .replace(/[^a-z0-9 _\-().]/gi, '')
+                    .trim()
+                    .slice(0, 80)
+                )}`}
                 download
-                target="_blank"
-                rel="noopener noreferrer"
                 className="btn-primary"
                 style={{ display: 'inline-block', marginTop: '1.2rem', textDecoration: 'none' }}
               >
