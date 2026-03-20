@@ -1,13 +1,31 @@
 'use client'
 import Layout from '../../../components/Layout'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import '../tools.css'
 
 export default function FireLogo() {
-  const [text, setText]       = useState('')
-  const [result, setResult]   = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError]     = useState('')
+  const [text, setText]         = useState('')
+  const [result, setResult]     = useState(null)
+  const [loading, setLoading]   = useState(false)
+  const [dlLoading, setDlLoad]  = useState(false)
+  const [error, setError]       = useState('')
+
+  const downloadImage = async (url, filename) => {
+    setDlLoad(true)
+    try {
+      const res  = await fetch(`/api/download/proxy?url=${encodeURIComponent(url)}&name=${encodeURIComponent(filename)}`)
+      const blob = await res.blob()
+      const a    = document.createElement('a')
+      a.href     = URL.createObjectURL(blob)
+      a.download = filename
+      a.click()
+      URL.revokeObjectURL(a.href)
+    } catch {
+      alert('Download failed — try right-clicking the image and saving it.')
+    } finally {
+      setDlLoad(false)
+    }
+  }
 
   const generate = async () => {
     const t = text.trim()
@@ -78,16 +96,13 @@ export default function FireLogo() {
                 style={{ maxWidth: '100%', borderRadius: 12, border: '1px solid #333' }}
               />
               <div style={{ marginTop: '1.2rem' }}>
-                <a
-                  href={result.image}
-                  download={`firelogo-${result.text}.png`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  onClick={() => downloadImage(result.image, `firelogo-${result.text}.png`)}
+                  disabled={dlLoading}
                   className="btn-primary"
-                  style={{ textDecoration: 'none', display: 'inline-block' }}
                 >
-                  ⬇️ Download Logo
-                </a>
+                  {dlLoading ? '⏳ Downloading…' : '⬇️ Download Logo'}
+                </button>
               </div>
             </div>
           )}
