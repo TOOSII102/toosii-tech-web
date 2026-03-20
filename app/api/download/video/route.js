@@ -216,45 +216,40 @@ export async function POST(request) {
 
     // ── Facebook — EP/facebook → EP/facebook1 → GiftedTech → yt-dlp ─────────
     if (platform === 'facebook') {
-      // Source 1: EliteProTech /facebook
+      // Source 1: EliteProTech /facebook — returns {success, video:"url"}
       try {
         const ep = await fetch(
           `${EP}/facebook?url=${enc}`,
           { signal: AbortSignal.timeout(20000) }
         ).then(r => r.json())
-        if (ep.success && ep.result) {
-          const vidUrl = ep.result.hd || ep.result.sd || ep.result.video || ep.result.download_url || ep.result.url
-          if (vidUrl) {
-            return NextResponse.json({
-              platform,
-              download_url:    vidUrl,
-              download_url_sd: ep.result.sd || null,
-              title:     ep.result.title    || null,
-              thumbnail: ep.result.thumbnail || null,
-              duration:  ep.result.duration  || null,
-              quality:   ep.result.hd ? 'HD' : 'SD',
-            })
-          }
+        const vidUrl = ep.video || ep.result?.hd || ep.result?.sd || ep.result?.url
+        if (ep.success && vidUrl) {
+          return NextResponse.json({
+            platform,
+            download_url: vidUrl,
+            title:     ep.title     || ep.result?.title    || null,
+            thumbnail: ep.thumbnail || ep.result?.thumbnail || null,
+            quality: 'HD',
+          })
         }
       } catch (e) { console.error('[video:facebook:ep1]', e.message) }
 
-      // Source 2: EliteProTech /facebook1
+      // Source 2: EliteProTech /facebook1 — returns {success, results:[{quality,url}]}
       try {
         const ep2 = await fetch(
           `${EP}/facebook1?url=${enc}`,
           { signal: AbortSignal.timeout(20000) }
         ).then(r => r.json())
-        if (ep2.success && ep2.result) {
-          const vidUrl2 = ep2.result.hd || ep2.result.sd || ep2.result.video || ep2.result.download_url || ep2.result.url
-          if (vidUrl2) {
+        if (ep2.success && ep2.results?.length) {
+          const hd = ep2.results.find(r => /hd|720|1080/i.test(r.quality)) || ep2.results[0]
+          const sd = ep2.results.find(r => /sd|360|480/i.test(r.quality))
+          if (hd?.url) {
             return NextResponse.json({
               platform,
-              download_url:    vidUrl2,
-              download_url_sd: ep2.result.sd || null,
-              title:     ep2.result.title    || null,
-              thumbnail: ep2.result.thumbnail || null,
-              duration:  ep2.result.duration  || null,
-              quality:   ep2.result.hd ? 'HD' : 'SD',
+              download_url:    hd.url,
+              download_url_sd: sd?.url || null,
+              title:    ep2.title    || null,
+              quality:  hd.quality   || 'HD',
             })
           }
         }
