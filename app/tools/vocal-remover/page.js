@@ -22,12 +22,12 @@ export default function VocalRemover() {
 
   const handleFile = (f) => {
     if (!f) return
-    if (!/^audio\//i.test(f.type)) {
-      setError('Please upload an audio file — MP3, WAV, M4A, OGG, FLAC, etc.')
+    if (!/^audio\//i.test(f.type) && !/\.(mp3|wav|m4a|ogg|flac|aac)$/i.test(f.name)) {
+      setError('Please upload an audio file — MP3, WAV, M4A, OGG, FLAC, or AAC.')
       return
     }
-    if (f.size > 50 * 1024 * 1024) {
-      setError('File is too large. Maximum size is 50 MB.')
+    if (f.size > 4 * 1024 * 1024) {
+      setError(`File is too large (${(f.size/1024/1024).toFixed(1)} MB). Maximum is 4 MB. For larger files, use the 🔗 URL mode — upload your audio to Dropbox, Google Drive, or any file host and paste the direct link.`)
       return
     }
     setFile(f); setError(''); setResult(null)
@@ -160,7 +160,7 @@ export default function VocalRemover() {
             ) : (
               <div>
                 <p style={{ margin: '0 0 0.6rem', color: '#94a3b8', fontSize: '0.85rem' }}>
-                  Paste a <strong>direct link</strong> to an audio file (must end in .mp3, .wav, .m4a, etc.)
+                  Paste a <strong>direct audio file link</strong> — must end in <code style={{ color: '#25d366', background: 'rgba(37,211,102,0.08)', padding: '0 4px', borderRadius: 4 }}>.mp3</code>, <code style={{ color: '#25d366', background: 'rgba(37,211,102,0.08)', padding: '0 4px', borderRadius: 4 }}>.wav</code>, <code style={{ color: '#25d366', background: 'rgba(37,211,102,0.08)', padding: '0 4px', borderRadius: 4 }}>.m4a</code> etc. YouTube/SoundCloud links won't work.
                 </p>
                 <input
                   type="url"
@@ -172,6 +172,9 @@ export default function VocalRemover() {
                   onKeyDown={e => e.key === 'Enter' && !loading && process()}
                   disabled={loading}
                 />
+                <p style={{ margin: '0', color: '#555', fontSize: '0.78rem' }}>
+                  💡 Tip: upload your file to <a href="https://catbox.moe" target="_blank" rel="noopener noreferrer" style={{ color: '#25d366' }}>catbox.moe</a> or <a href="https://tmpfiles.org" target="_blank" rel="noopener noreferrer" style={{ color: '#25d366' }}>tmpfiles.org</a> and paste the link here.
+                </p>
               </div>
             )}
 
