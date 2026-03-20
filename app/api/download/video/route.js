@@ -187,7 +187,7 @@ export async function POST(request) {
           `${EP}/instagram?url=${enc}`,
           { signal: AbortSignal.timeout(20000) }
         ).then(r => r.json())
-        const igUrl = ep?.result?.url || ep?.url || ep?.data?.[0]?.url
+        const igUrl = ep?.video || ep?.result?.url || ep?.url || ep?.data?.[0]?.url
         if ((ep?.status || ep?.success) && igUrl) {
           return NextResponse.json({
             platform,
