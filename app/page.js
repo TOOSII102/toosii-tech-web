@@ -16,6 +16,9 @@ export default function Home() {
     { icon: '🔑', title: 'Session Generator', desc: 'Get your WhatsApp session ID instantly via pair code or QR scan.', href: '/session', label: 'Generate Now' },
     { icon: '🎬', title: 'Video Downloader', desc: 'Download YouTube, TikTok & Instagram videos in 720p HD, no ads.', href: '/downloader/video', label: 'Download Video' },
     { icon: '🎧', title: 'MP3 Downloader', desc: 'Extract high-quality audio from any YouTube video — free, fast.', href: '/downloader/audio', label: 'Download MP3' },
+    { icon: '🎵', title: 'Spotify Downloader', desc: 'Paste any Spotify track link and download the MP3 — no account needed.', href: '/tools/spotify', label: 'Download Track' },
+    { icon: '🔥', title: 'Fire Logo Maker', desc: 'Turn your name or brand into a stunning fire-style logo in seconds.', href: '/tools/firelogo', label: 'Make Logo' },
+    { icon: '📧', title: 'Temp Email', desc: 'Generate a disposable email address instantly — no sign-up, no spam.', href: '/tools/tempemail', label: 'Get Email' },
   ]
 
   const stats = [
