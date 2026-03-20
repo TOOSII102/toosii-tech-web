@@ -285,9 +285,27 @@ export async function POST(request) {
       } catch (e) { console.error('[video:facebook:ytdlp]', e.message) }
     }
 
-    // ── Twitter / X — GiftedTech → yt-dlp ────────────────────────────────────
+    // ── Twitter / X — EP/x → GiftedTech → yt-dlp ────────────────────────────
     if (platform === 'twitter') {
-      // Source 1: GiftedTech
+      // Source 1: EliteProTech /x — returns {status:"success", videos:[{url}], thumbnail}
+      try {
+        const ep = await fetch(
+          `${EP}/x?url=${enc}`,
+          { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(20000) }
+        ).then(r => r.json())
+        if (ep.status === 'success' && ep.videos?.length) {
+          const best = ep.videos[0]
+          return NextResponse.json({
+            platform,
+            download_url: best.url,
+            thumbnail: ep.thumbnail || null,
+            quality: best.label || 'HD',
+            title: 'Twitter / X Video',
+          })
+        }
+      } catch (e) { console.error('[video:twitter:eliteprotech]', e.message) }
+
+      // Source 2: GiftedTech
       try {
         const d = await giftedFetch('twitter', trimmed)
         if (d.success && d.result?.videoUrls?.length) {
@@ -305,7 +323,7 @@ export async function POST(request) {
         }
       } catch {}
 
-      // Source 2: yt-dlp
+      // Source 3: yt-dlp
       try {
         const info = await ytdlpJson(trimmed)
         const fmt = info?.formats?.find(f => f.vcodec !== 'none' && f.acodec !== 'none') || info?.formats?.[0]
