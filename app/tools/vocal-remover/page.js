@@ -9,10 +9,25 @@ const STEPS = {
   url_send:   'Sending audio URL for processing…',
 }
 
+function baseName(str) {
+  // Extract filename without extension from a path or URL
+  try {
+    const p = new URL(str).pathname
+    return decodeURIComponent(p.split('/').pop()).replace(/\.[^.]+$/, '') || 'audio'
+  } catch {
+    return str.split('/').pop().replace(/\.[^.]+$/, '') || 'audio'
+  }
+}
+
+function sanitize(str) {
+  return str.replace(/[^a-z0-9_\- .]/gi, '').trim().slice(0, 60) || 'audio'
+}
+
 export default function VocalRemover() {
   const [mode, setMode]       = useState('file')
   const [audioUrl, setAudioUrl] = useState('')
   const [file, setFile]       = useState(null)
+  const [origName, setOrigName] = useState('audio')
   const [drag, setDrag]       = useState(false)
   const [result, setResult]   = useState(null)
   const [loading, setLoading] = useState(false)
@@ -30,7 +45,7 @@ export default function VocalRemover() {
       setError(`File is too large (${(f.size/1024/1024).toFixed(1)} MB). Maximum is 4 MB. For larger files, use the 🔗 URL mode — upload your audio to Dropbox, Google Drive, or any file host and paste the direct link.`)
       return
     }
-    setFile(f); setError(''); setResult(null)
+    setFile(f); setOrigName(sanitize(f.name.replace(/\.[^.]+$/, ''))); setError(''); setResult(null)
   }
 
   const process = async () => {
@@ -44,6 +59,7 @@ export default function VocalRemover() {
           setError('Please enter a valid audio URL starting with https://')
           setLoading(false); return
         }
+        setOrigName(sanitize(baseName(trimmed)))
         setStep(STEPS.url_send)
         res = await fetch('/api/tools/vocal-remover', {
           method: 'POST',
@@ -207,7 +223,7 @@ export default function VocalRemover() {
                 </p>
                 <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                   <a
-                    href={`/api/download/proxy?url=${encodeURIComponent(result.instrumental)}&name=instrumental.mp3`}
+                    href={`/api/download/proxy?url=${encodeURIComponent(result.instrumental)}&name=${encodeURIComponent(origName + '_instrumental.mp3')}`}
                     download
                     className="btn-primary"
                     style={{ textDecoration: 'none' }}
@@ -216,7 +232,7 @@ export default function VocalRemover() {
                   </a>
                   {result.vocal && (
                     <a
-                      href={`/api/download/proxy?url=${encodeURIComponent(result.vocal)}&name=vocals.mp3`}
+                      href={`/api/download/proxy?url=${encodeURIComponent(result.vocal)}&name=${encodeURIComponent(origName + '_vocals.mp3')}`}
                       download
                       className="btn-secondary"
                       style={{ textDecoration: 'none' }}
