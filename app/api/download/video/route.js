@@ -166,7 +166,7 @@ export async function POST(request) {
       } catch {}
     }
 
-    // ── Instagram — GiftedTech → yt-dlp ──────────────────────────────────────
+    // ── Instagram — GiftedTech → EliteProTech → yt-dlp ──────────────────────
     if (platform === 'instagram') {
       // Source 1: GiftedTech
       try {
@@ -181,7 +181,24 @@ export async function POST(request) {
         }
       } catch {}
 
-      // Source 2: yt-dlp
+      // Source 2: EliteProTech /instagram
+      try {
+        const ep = await fetch(
+          `${EP}/instagram?url=${enc}`,
+          { signal: AbortSignal.timeout(20000) }
+        ).then(r => r.json())
+        const igUrl = ep?.result?.url || ep?.url || ep?.data?.[0]?.url
+        if ((ep?.status || ep?.success) && igUrl) {
+          return NextResponse.json({
+            platform,
+            download_url: igUrl,
+            title: ep.result?.title || 'Instagram Video',
+            thumbnail: ep.result?.thumbnail || null,
+          })
+        }
+      } catch (e) { console.error('[video:instagram:eliteprotech]', e.message) }
+
+      // Source 3: yt-dlp
       try {
         const info = await ytdlpJson(trimmed)
         const fmt = info?.formats?.find(f => f.vcodec !== 'none' && f.acodec !== 'none') || info?.formats?.[0]
@@ -197,12 +214,12 @@ export async function POST(request) {
       } catch (e) { console.error('[video:instagram:ytdlp]', e.message) }
     }
 
-    // ── Facebook — EliteProTech → GiftedTech → yt-dlp ────────────────────────
+    // ── Facebook — EP/facebook → EP/facebook1 → GiftedTech → yt-dlp ─────────
     if (platform === 'facebook') {
-      // Source 1: EliteProTech
+      // Source 1: EliteProTech /facebook
       try {
         const ep = await fetch(
-          `https://eliteprotech-apis.zone.id/facebook?url=${enc}`,
+          `${EP}/facebook?url=${enc}`,
           { signal: AbortSignal.timeout(20000) }
         ).then(r => r.json())
         if (ep.success && ep.result) {
@@ -219,9 +236,31 @@ export async function POST(request) {
             })
           }
         }
-      } catch (e) { console.error('[video:facebook:eliteprotech]', e.message) }
+      } catch (e) { console.error('[video:facebook:ep1]', e.message) }
 
-      // Source 2: GiftedTech
+      // Source 2: EliteProTech /facebook1
+      try {
+        const ep2 = await fetch(
+          `${EP}/facebook1?url=${enc}`,
+          { signal: AbortSignal.timeout(20000) }
+        ).then(r => r.json())
+        if (ep2.success && ep2.result) {
+          const vidUrl2 = ep2.result.hd || ep2.result.sd || ep2.result.video || ep2.result.download_url || ep2.result.url
+          if (vidUrl2) {
+            return NextResponse.json({
+              platform,
+              download_url:    vidUrl2,
+              download_url_sd: ep2.result.sd || null,
+              title:     ep2.result.title    || null,
+              thumbnail: ep2.result.thumbnail || null,
+              duration:  ep2.result.duration  || null,
+              quality:   ep2.result.hd ? 'HD' : 'SD',
+            })
+          }
+        }
+      } catch (e) { console.error('[video:facebook:ep2]', e.message) }
+
+      // Source 3: GiftedTech
       try {
         const d = await giftedFetch('facebook', trimmed)
         if (d.success && (d.result?.hd_video || d.result?.sd_video)) {
