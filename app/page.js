@@ -48,6 +48,13 @@ export default function Home() {
           <div className="hero-cta">
             <Link href="/bot" className="btn-primary">Explore Features →</Link>
             <Link href="/tools/ai" className="btn-primary">Toosii AI 🤖</Link>
+            <a
+              href="https://github.com/TOOSII102/TOOSII-XD-ULTRA/archive/refs/heads/main.zip"
+              className="btn-primary"
+              style={{ background: 'linear-gradient(135deg,#128c7e,#25d366)', textDecoration: 'none' }}
+            >
+              ⬇️ Download Bot
+            </a>
             <Link href="/session" className="btn-outline">Generate Session Key</Link>
           </div>
           <p style={{ fontSize: '0.78rem', color: '#475569', marginTop: '-1.5rem', marginBottom: '2rem' }}>
@@ -60,6 +67,62 @@ export default function Home() {
                 <span className="stat-label">{s.label}</span>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Download Bot */}
+      <section className="section" style={{ paddingTop: '0.5rem' }}>
+        <div className="page-wrapper">
+          <div className="glass-card" style={{ padding: '2rem', display: 'flex', gap: '2.5rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: 260 }}>
+              <p style={{ margin: '0 0 0.4rem', color: '#25d366', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>📦 Free & Open Source</p>
+              <h2 style={{ margin: '0 0 0.75rem', fontSize: '1.5rem', color: '#fff', fontWeight: 800 }}>Download TOOSII XD ULTRA</h2>
+              <p style={{ margin: '0 0 1.5rem', color: '#94a3b8', lineHeight: 1.65, fontSize: '0.95rem' }}>
+                Get the full bot source code as a ZIP file — all files included, ready to deploy on any host in minutes. No account needed to download.
+              </p>
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <a
+                  href="https://github.com/TOOSII102/TOOSII-XD-ULTRA/archive/refs/heads/main.zip"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+                    background: 'linear-gradient(135deg,#128c7e,#25d366)',
+                    color: '#000', padding: '0.85rem 1.75rem', borderRadius: 10,
+                    fontWeight: 700, textDecoration: 'none', fontSize: '0.95rem',
+                  }}
+                >
+                  ⬇️ Download ZIP
+                </a>
+                <a
+                  href="https://github.com/TOOSII102/TOOSII-XD-ULTRA"
+                  target="_blank" rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+                    background: 'rgba(255,255,255,0.07)', color: '#ccc',
+                    padding: '0.85rem 1.75rem', borderRadius: 10, fontWeight: 600,
+                    textDecoration: 'none', fontSize: '0.95rem',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                  }}
+                >
+                  ⭐ View on GitHub
+                </a>
+              </div>
+            </div>
+            <div style={{ flex: 1, minWidth: 220 }}>
+              <p style={{ margin: '0 0 1rem', color: '#64748b', fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Quick Setup</p>
+              {[
+                { n: '1', text: 'Click Download ZIP above — file saves instantly' },
+                { n: '2', text: 'Extract the folder and open it in your terminal' },
+                { n: '3', text: <>Run <code style={{ color: '#25d366', background: 'rgba(37,211,102,0.08)', padding: '0 5px', borderRadius: 4 }}>npm install</code> to set up dependencies</> },
+                { n: '4', text: <>Visit <Link href="/session" style={{ color: '#25d366' }}>Session Generator</Link> to connect your WhatsApp</> },
+                { n: '5', text: <>Run <code style={{ color: '#25d366', background: 'rgba(37,211,102,0.08)', padding: '0 5px', borderRadius: 4 }}>node index.js</code> — bot goes live</> },
+              ].map(s => (
+                <div key={s.n} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start', marginBottom: '0.7rem' }}>
+                  <span style={{ width: 24, height: 24, borderRadius: '50%', background: '#25d366', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.75rem', flexShrink: 0, marginTop: 1 }}>{s.n}</span>
+                  <span style={{ color: '#94a3b8', fontSize: '0.875rem', lineHeight: 1.6 }}>{s.text}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
