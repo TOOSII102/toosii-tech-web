@@ -121,6 +121,7 @@ function DetailModal({ drama, onClose, onSelect }) {
   const [episodes,      setEps]      = useState([])
   const [loading,       setLoading]  = useState(true)
   const [activeEp,      setActiveEp] = useState(null)
+  const [lockedEp,      setLockedEp] = useState(null)
   const [dlLoading,     setDlLoading] = useState(false)
   const [sidebarDramas, setSidebar]  = useState([])
   const playerRef = useRef(null)
@@ -158,6 +159,11 @@ function DetailModal({ drama, onClose, onSelect }) {
 
   const selectEpisode = (idx) => {
     if (idx < 0 || idx >= episodes.length) return
+    if (episodes[idx]?.free === false) {
+      setLockedEp(idx)
+      return
+    }
+    setLockedEp(null)
     setActiveEp(idx)
     setTimeout(() => playerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80)
   }
@@ -297,10 +303,11 @@ function DetailModal({ drama, onClose, onSelect }) {
                     {episodes.map((ep, idx) => (
                       <button
                         key={idx}
-                        className={`episode-btn ${activeEp === idx ? 'active' : ''}`}
+                        className={`episode-btn ${activeEp === idx ? 'active' : ''} ${ep.free === false ? 'ep-locked' : ''} ${lockedEp === idx ? 'ep-locked-active' : ''}`}
                         onClick={() => selectEpisode(idx)}
+                        title={ep.free === false ? `Episode ${idx + 1} — DramaBox Premium` : `Episode ${idx + 1}`}
                       >
-                        {idx + 1}
+                        {ep.free === false ? '🔒' : idx + 1}
                       </button>
                     ))}
                   </div>
@@ -313,6 +320,23 @@ function DetailModal({ drama, onClose, onSelect }) {
                 </div>
               </div>
             ) : null}
+
+            {/* Locked episode notice */}
+            {lockedEp !== null && (
+              <div className="locked-notice">
+                <span className="locked-notice-icon">🔒</span>
+                <div className="locked-notice-text">
+                  <strong>Episode {lockedEp + 1} requires DramaBox Premium</strong>
+                  <span>Only the first few episodes are available for free. To watch more, open DramaBox directly.</span>
+                </div>
+                <a
+                  href={`https://www.dramabox.com`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="locked-notice-btn"
+                >Open DramaBox ↗</a>
+              </div>
+            )}
 
           </div>
 
