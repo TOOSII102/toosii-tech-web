@@ -16,15 +16,14 @@ export async function GET(req) {
       if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
       const epIdx = parseInt(episode, 10) || 0
 
-      const epRes  = await fetch(`${BASE}?action=episodes&id=${encodeURIComponent(id)}`, {
+      const streamRes  = await fetch(`${BASE}?action=streams&id=${encodeURIComponent(id)}&episode=${epIdx}`, {
         headers: { 'User-Agent': 'Mozilla/5.0' },
         signal: AbortSignal.timeout(15000),
       })
-      const epData = await epRes.json()
-      const ep     = epData.episodes?.[epIdx]
-      const title  = epData.title || 'Episode ' + (epIdx + 1)
-
-      const src = ep?.stream_url || ''
+      const streamData = await streamRes.json()
+      const title      = streamData.drama_title || `Episode ${epIdx + 1}`
+      const qualities  = streamData.qualities || []
+      const src        = qualities.find(q => q.is_default)?.url || qualities[0]?.url || streamData.default_url || ''
       const html = `<!DOCTYPE html>
 <html>
 <head>
