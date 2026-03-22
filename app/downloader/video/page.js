@@ -34,6 +34,25 @@ function proxyUrl(url, title, ext = 'mp4') {
   return `/api/download/proxy?url=${encodeURIComponent(url)}&name=${encodeURIComponent(name)}`
 }
 
+  function fmtDuration(raw) {
+    if (!raw) return null
+    const s = String(raw).trim()
+    if (/^\d+:\d+/.test(s)) return s
+    const secs = Math.floor(Number(s))
+    if (isNaN(secs) || secs < 0) return null
+    const h = Math.floor(secs / 3600)
+    const m = Math.floor((secs % 3600) / 60)
+    const sec = secs % 60
+    if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`
+    return `${m}:${String(sec).padStart(2,'0')}`
+  }
+
+  function ytThumb(url) {
+    const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
+    return m ? `https://img.youtube.com/vi/${m[1]}/hqdefault.jpg` : null
+  }
+  
+
 const STEPS = ['Detecting platform…', 'Fetching video info…', 'Preparing download link…']
 
 export default function VideoDownloader() {
@@ -75,7 +94,7 @@ export default function VideoDownloader() {
             setResult({
               platform, download_url: gt.result.download_url,
               title: gt.result.title, thumbnail: gt.result.thumbnail,
-              duration: gt.result.duration, author: gt.result.author,
+              duration: fmtDuration(gt.result.duration), author: gt.result.author,
             })
             return
           }
@@ -114,8 +133,8 @@ export default function VideoDownloader() {
       if (platform === 'youtube' && d.success && d.result?.download_url) {
         setResult({
           platform, download_url: d.result.download_url,
-          title: d.result.title, thumbnail: d.result.thumbnail,
-          quality: d.result.quality, duration: d.result.duration,
+          title: d.result.title, thumbnail: d.result.thumbnail || ytThumb(trimmed),
+          quality: d.result.quality, duration: fmtDuration(d.result.duration),
         })
         return
       }
@@ -132,7 +151,7 @@ export default function VideoDownloader() {
           download_url:    d.result.hd_video || d.result.sd_video,
           download_url_sd: d.result.sd_video || null,
           title: d.result.title, thumbnail: d.result.thumbnail,
-          duration: d.result.duration, quality: d.result.hd_video ? 'HD' : 'SD',
+          duration: fmtDuration(d.result.duration), quality: d.result.hd_video ? 'HD' : 'SD',
         })
         return
       }
