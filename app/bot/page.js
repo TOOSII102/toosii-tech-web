@@ -3,8 +3,8 @@ import Link from 'next/link'
 import './bot.css'
 
 export const metadata = {
-  title: 'TOOSII XD ULTRA Bot — Features & Commands',
-  description: 'Explore 150+ commands across AI, media, sports, group management and more.',
+  title: 'TOOSII XD ULTRA — Full Command Suite',
+  description: 'Explore 150+ commands spanning AI, media downloads, sports scores, group management, and developer tools — all in one WhatsApp bot.',
 }
 
 const categories = [
