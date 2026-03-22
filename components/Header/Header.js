@@ -19,6 +19,7 @@ const navigationItems = [
   { href: '/tools/apk', label: 'APK Search' },
   { href: '/tools/story', label: 'Story AI' },
   { href: '/tools/ai', label: 'Toosii AI' },
+  { href: '/tools/dramabox', label: 'DramaBox' },
   { href: '/contact', label: 'Contact' },
 ]
 
