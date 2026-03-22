@@ -143,3 +143,21 @@
   .dl-search-btn:hover:not(:disabled) { background: #1ebe5a; }
   .dl-search-btn:disabled { opacity: 0.55; cursor: not-allowed; }
   
+  .platform-tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #3b82f6;
+    background: rgba(59,130,246,0.1);
+    border: 1px solid rgba(59,130,246,0.25);
+    border-radius: 6px;
+    padding: 0.2rem 0.55rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .result-info { flex: 1; }
+
+  .dl-buttons { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.75rem; }
+  
