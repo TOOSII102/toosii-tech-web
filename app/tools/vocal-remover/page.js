@@ -109,9 +109,9 @@ export default function VocalRemover() {
       <section className="tool-hero">
         <div className="page-wrapper">
           <div className="badge" style={{ marginBottom: '1.5rem' }}><span>🎙️</span> Vocal Remover</div>
-          <h1 className="section-title">Remove Vocals from Any Song</h1>
+          <h1 className="section-title">Studio-Quality <span className="gradient-text">Vocal Removal.</span> Free.</h1>
           <p className="section-sub">
-            Upload an audio file from your device or paste a direct audio URL — get back the clean instrumental track and isolated vocals, ready to download.
+            Upload any audio file or paste a direct URL — get back a clean instrumental track and isolated vocals in moments. No DAW, no subscription, no compromise.
           </p>
         </div>
       </section>
