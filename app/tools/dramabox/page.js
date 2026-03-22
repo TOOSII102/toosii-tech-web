@@ -33,6 +33,14 @@ const PARTICLES = [
   { left: '90%', delay: '2s',    dur: '6.5s',w: 3, h: 3 },
 ]
 
+function safeEpCount(drama) {
+  if (!drama) return null
+  if (typeof drama.total_episodes === 'number') return drama.total_episodes
+  if (Array.isArray(drama.episodes)) return drama.episodes.length
+  if (typeof drama.episodes === 'number') return drama.episodes
+  return null
+}
+
 function SkeletonCard() {
   return (
     <div className="drama-card skeleton-card">
@@ -46,6 +54,7 @@ function SkeletonCard() {
 }
 
 function DramaCard({ drama, onClick, featured }) {
+  const epCount = safeEpCount(drama)
   return (
     <div
       className={`drama-card ${featured ? 'drama-card--featured' : ''}`}
@@ -65,7 +74,7 @@ function DramaCard({ drama, onClick, featured }) {
             <p className="drama-overlay-text">{drama.introduction.slice(0, 80)}…</p>
           )}
         </div>
-        {drama.episodes && <span className="drama-badge">📺 {drama.episodes} eps</span>}
+        {epCount && <span className="drama-badge">📺 {epCount} eps</span>}
         {featured && <span className="drama-hot-badge">🔥 HOT</span>}
       </div>
       <div className="drama-info">
@@ -85,6 +94,7 @@ function DramaCard({ drama, onClick, featured }) {
 
 function Spotlight({ drama, onClick }) {
   if (!drama) return null
+  const epCount = safeEpCount(drama)
   return (
     <div className="spotlight" onClick={() => onClick(drama)}>
       <div className="spotlight-bg" style={{ backgroundImage: `url(${drama.cover})` }} />
@@ -96,7 +106,7 @@ function Spotlight({ drama, onClick }) {
           <p className="spotlight-intro">{drama.introduction.slice(0, 160)}…</p>
         )}
         <div className="spotlight-meta">
-          {drama.episodes && <span>📺 {drama.episodes} Episodes</span>}
+          {epCount && <span>📺 {epCount} Episodes</span>}
           {drama.views > 0 && <span>👁 {Number(drama.views).toLocaleString()} Views</span>}
           {drama.tags?.slice(0, 2).map(t => <span key={t} className="spotlight-tag">{t}</span>)}
         </div>
@@ -107,13 +117,10 @@ function Spotlight({ drama, onClick }) {
 }
 
 function DetailModal({ drama, onClose }) {
-  const [detail, setDetail]   = useState(null)
-  const [episodes, setEps]    = useState([])
-  const [loading, setLoading] = useState(true)
-  const [streams, setStreams] = useState(null)
+  const [detail,   setDetail]  = useState(null)
+  const [episodes, setEps]     = useState([])
+  const [loading,  setLoading] = useState(true)
   const [activeEp, setActiveEp] = useState(null)
-  const [streamLoading, setStreamLoading] = useState(false)
-  const [epObjects, setEpObjects] = useState([])
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -128,29 +135,27 @@ function DetailModal({ drama, onClose }) {
           fetch(`/api/tools/dramabox?action=episodes&id=${drama.id}`)
         ])
         const [dData, eData] = await Promise.all([dRes.json(), eRes.json()])
-        setDetail(dData.drama || dData)
-        const eps = eData.episodes?.slice(0, 30) || []
-        setEps(eps)
-        setEpObjects(eps)
+        setDetail(dData.drama || null)
+        setEps(eData.episodes?.slice(0, 50) || [])
       } catch {}
       setLoading(false)
     }
     load()
   }, [drama.id])
 
-  const loadStreams = (idx) => {
+  const watchEpisode = (idx) => {
     setActiveEp(idx)
-    setStreams(null)
-    const ep = epObjects[idx]
+    const ep = episodes[idx]
     if (!ep) return
-    const links = []
-    if (ep.stream_url)   links.push({ quality: '720p (Stream)',    url: ep.stream_url })
-    if (ep.download_url) links.push({ quality: '720p (Download)',  url: ep.download_url })
-    setStreams(links.length > 0 ? links : null)
+    if (ep.free === false || (!ep.stream_url && !ep.download_url)) {
+      window.open(`/api/tools/dramabox?action=watch&id=${drama.id}&episode=${idx}`, '_blank', 'noopener')
+      return
+    }
+    window.open(`/api/tools/dramabox?action=watch&id=${drama.id}&episode=${idx}`, '_blank', 'noopener')
   }
 
-  const info = detail || drama
-  const epCount = info.total_episodes ?? (Array.isArray(info.episodes) ? info.episodes.length : info.episodes) ?? null
+  const info     = detail || drama
+  const epCount  = safeEpCount(info)
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -162,8 +167,10 @@ function DetailModal({ drama, onClose }) {
           <div className="modal-hero-content">
             <h2 className="modal-title">{info.title}</h2>
             <div className="modal-stats">
-              {epCount && <span className="modal-stat-pill">📺 {epCount} eps</span>}
-              {info.views > 0 && <span className="modal-stat-pill">👁 {Number(info.views).toLocaleString()}</span>}
+              {epCount != null && <span className="modal-stat-pill">📺 {epCount} eps</span>}
+              {Number(info.views) > 0 && (
+                <span className="modal-stat-pill">👁 {Number(info.views).toLocaleString()}</span>
+              )}
             </div>
             {info.tags?.length > 0 && (
               <div className="modal-tags">
@@ -184,31 +191,23 @@ function DetailModal({ drama, onClose }) {
           </div>
         ) : episodes.length > 0 ? (
           <div className="modal-episodes">
-            <h3 className="modal-section-title">🎬 Episodes</h3>
+            <h3 className="modal-section-title">🎬 Select Episode to Watch</h3>
             <div className="episode-grid">
               {episodes.map((ep, idx) => (
                 <button
                   key={idx}
-                  className={`episode-btn ${activeEp === idx ? 'active' : ''}`}
-                  onClick={() => loadStreams(idx)}
+                  className={`episode-btn ${activeEp === idx ? 'active' : ''} ${ep.free === false ? 'locked' : ''}`}
+                  onClick={() => watchEpisode(idx)}
+                  title={ep.free === false ? 'VIP episode' : `Watch episode ${idx + 1}`}
                 >
-                  {idx + 1}
+                  {ep.free === false ? '🔒' : idx + 1}
                 </button>
               ))}
             </div>
-
-            {streams && (
-              <div className="stream-panel">
-                <p className="stream-label">▶ Episode {activeEp + 1} — Choose Quality</p>
-                <div className="stream-btns">
-                  {streams.map((s, i) => s.url && (
-                    <a key={i} href={s.url} target="_blank" rel="noopener noreferrer" className="stream-btn">
-                      <span className="stream-quality">{s.quality}</span>
-                      <span className="stream-arrow">↗</span>
-                    </a>
-                  ))}
-                </div>
-              </div>
+            {activeEp !== null && (
+              <p className="stream-hint">
+                ▶ Episode {activeEp + 1} opened in a new tab
+              </p>
             )}
           </div>
         ) : null}
@@ -288,14 +287,13 @@ export default function DramaBoxPage() {
     window.scrollTo({ top: 400, behavior: 'smooth' })
   }
 
-  const spotlight = tab === 'Trending' && dramas.length > 0 ? dramas[0] : null
+  const spotlight  = tab === 'Trending' && dramas.length > 0 ? dramas[0] : null
   const gridDramas = tab === 'Trending' && dramas.length > 0 ? dramas.slice(1) : dramas
 
   return (
     <Layout>
       <div className="db-page">
 
-        {/* ── Hero ── */}
         <div className="db-hero">
           <div className="db-hero-particles">
             {PARTICLES.map((p, i) => (
@@ -328,7 +326,6 @@ export default function DramaBoxPage() {
 
         <div className="db-body page-wrapper" style={{ maxWidth: '1140px' }}>
 
-          {/* ── Search Bar ── */}
           {tab === 'Search' && (
             <div className="db-search-box">
               <div className="db-search-inner">
@@ -354,7 +351,6 @@ export default function DramaBoxPage() {
             </div>
           )}
 
-          {/* ── Genre Pills ── */}
           {tab === 'Browse' && genres.length > 0 && (
             <div className="db-genres">
               <button className={`db-genre-pill ${genre === '0' ? 'active' : ''}`} onClick={() => handleGenre('0')}>
@@ -372,22 +368,18 @@ export default function DramaBoxPage() {
             </div>
           )}
 
-          {/* ── Error ── */}
           {error && <div className="db-error">⚠️ {error}</div>}
 
-          {/* ── Skeleton ── */}
           {loading && (
             <div className="drama-grid">
               {[...Array(12)].map((_, i) => <SkeletonCard key={i} />)}
             </div>
           )}
 
-          {/* ── Spotlight (Trending only) ── */}
           {!loading && spotlight && (
             <Spotlight drama={spotlight} onClick={setSelected} />
           )}
 
-          {/* ── Section label ── */}
           {!loading && gridDramas.length > 0 && (
             <div className="db-section-header">
               <span className="db-section-line" />
@@ -398,7 +390,6 @@ export default function DramaBoxPage() {
             </div>
           )}
 
-          {/* ── Grid ── */}
           {!loading && gridDramas.length > 0 && (
             <div className="drama-grid">
               {gridDramas.map((d, i) => (
@@ -407,7 +398,6 @@ export default function DramaBoxPage() {
             </div>
           )}
 
-          {/* ── Empty state ── */}
           {!loading && !error && dramas.length === 0 && tab === 'Search' && query && (
             <div className="db-empty">
               <p className="db-empty-icon">🎬</p>
@@ -416,7 +406,6 @@ export default function DramaBoxPage() {
             </div>
           )}
 
-          {/* ── Pagination ── */}
           {!loading && totalPages > 1 && (
             <div className="db-pagination">
               <button disabled={page <= 1} onClick={() => changePage(page - 1)} className="db-page-btn">← Prev</button>
@@ -435,13 +424,12 @@ export default function DramaBoxPage() {
             </div>
           )}
 
-          {/* ── Feature cards ── */}
           {!loading && (
             <div className="db-features">
               {[
                 { icon: '🔥', title: 'Live Trending', text: 'Updated daily with the most-watched short dramas from DramaBox.' },
                 { icon: '🎭', title: '50+ Genres', text: 'Romance, revenge, paranormal, werewolves, and much more.' },
-                { icon: '📺', title: 'HD Streams', text: 'Watch episodes in 540p, 720p, or 1080p — free, no account needed.' },
+                { icon: '📺', title: 'HD Streams', text: 'Watch episodes in 720p — free, no account needed.' },
                 { icon: '⚡', title: 'Instant Results', text: 'Search thousands of titles and get results in seconds.' },
               ].map(f => (
                 <div key={f.title} className="db-feature-card">
