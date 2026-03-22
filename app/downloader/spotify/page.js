@@ -80,10 +80,12 @@ export default function SpotifyDownloader() {
               <div className="result-panel">
                 {result.thumbnail && <img src={result.thumbnail} alt="Cover" className="thumb" />}
                 <div className="result-info">
+                  <span className="platform-tag">🎵 Spotify</span>
                   <h3 className="result-title">{result.title}</h3>
                   {result.artist && <p className="result-artist">by {result.artist}</p>}
                   <div className="result-meta">
                     <span className="badge">🎵 MP3</span>
+                    {result.quality && <span className="badge">🎚 {result.quality}</span>}
                     {result.duration && <span className="badge">⏱ {fmt(result.duration)}</span>}
                   </div>
                   <p className="expire-note">⚡ Download now — this link expires soon</p>
