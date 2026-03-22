@@ -185,8 +185,8 @@ export default function VideoDownloader() {
       <section className="dl-hero">
         <div className="page-wrapper">
           <div className="badge" style={{ marginBottom: '1.5rem' }}><span>🎬</span> Video Downloader</div>
-          <h1 className="section-title">Download Videos in HD</h1>
-          <p className="section-sub">YouTube, TikTok, Instagram, Facebook, Twitter — paste any link and download instantly.</p>
+          <h1 className="section-title">Download Any Video. <span className="gradient-text">Instantly.</span></h1>
+          <p className="section-sub">YouTube, TikTok, Instagram, Facebook, Twitter / X — paste any link and get your video in HD within seconds. No account, no ads, no limits.</p>
         </div>
       </section>
 
