@@ -113,6 +113,7 @@ function DetailModal({ drama, onClose }) {
   const [streams, setStreams] = useState(null)
   const [activeEp, setActiveEp] = useState(null)
   const [streamLoading, setStreamLoading] = useState(false)
+  const [epObjects, setEpObjects] = useState([])
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -128,27 +129,24 @@ function DetailModal({ drama, onClose }) {
         ])
         const [dData, eData] = await Promise.all([dRes.json(), eRes.json()])
         setDetail(dData.drama || dData)
-        setEps(eData.episodes?.slice(0, 30) || [])
+        const eps = eData.episodes?.slice(0, 30) || []
+        setEps(eps)
+        setEpObjects(eps)
       } catch {}
       setLoading(false)
     }
     load()
   }, [drama.id])
 
-  const loadStreams = async (idx) => {
+  const loadStreams = (idx) => {
     setActiveEp(idx)
-    setStreamLoading(true)
     setStreams(null)
-    try {
-      const res = await fetch(`/api/tools/dramabox?action=streams&id=${drama.id}&episode=${idx}`)
-      const data = await res.json()
-      const qualities = data.qualities || []
-      if (data.default_url && qualities.length === 0) {
-        qualities.push({ quality: 'Default', url: data.default_url })
-      }
-      setStreams(qualities.length > 0 ? qualities : null)
-    } catch {}
-    setStreamLoading(false)
+    const ep = epObjects[idx]
+    if (!ep) return
+    const links = []
+    if (ep.stream_url)   links.push({ quality: '720p (Stream)',    url: ep.stream_url })
+    if (ep.download_url) links.push({ quality: '720p (Download)',  url: ep.download_url })
+    setStreams(links.length > 0 ? links : null)
   }
 
   const info = detail || drama
@@ -197,13 +195,6 @@ function DetailModal({ drama, onClose }) {
                 </button>
               ))}
             </div>
-
-            {streamLoading && (
-              <div className="stream-loading">
-                <div className="db-spinner" style={{ width: 20, height: 20 }} />
-                <span>Fetching stream links…</span>
-              </div>
-            )}
 
             {streams && (
               <div className="stream-panel">
