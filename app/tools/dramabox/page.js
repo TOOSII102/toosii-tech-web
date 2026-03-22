@@ -116,14 +116,15 @@ function Spotlight({ drama, onClick }) {
   )
 }
 
-function DetailModal({ drama, onClose }) {
-  const [detail,   setDetail]  = useState(null)
-  const [episodes, setEps]     = useState([])
-  const [loading,  setLoading] = useState(true)
-  const [activeEp, setActiveEp] = useState(null)
-  const [dlLoading, setDlLoading] = useState(false)
-  const playerRef  = useRef(null)
-  const epListRef  = useRef(null)
+function DetailModal({ drama, onClose, onSelect }) {
+  const [detail,        setDetail]   = useState(null)
+  const [episodes,      setEps]      = useState([])
+  const [loading,       setLoading]  = useState(true)
+  const [activeEp,      setActiveEp] = useState(null)
+  const [dlLoading,     setDlLoading] = useState(false)
+  const [sidebarDramas, setSidebar]  = useState([])
+  const playerRef = useRef(null)
+  const epListRef = useRef(null)
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -131,15 +132,24 @@ function DetailModal({ drama, onClose }) {
   }, [])
 
   useEffect(() => {
+    setActiveEp(null)
+    setDetail(null)
+    setEps([])
+    setSidebar([])
+    setLoading(true)
+
     async function load() {
       try {
-        const [dRes, eRes] = await Promise.all([
+        const [dRes, eRes, tRes] = await Promise.all([
           fetch(`/api/tools/dramabox?action=detail&id=${drama.id}`),
-          fetch(`/api/tools/dramabox?action=episodes&id=${drama.id}`)
+          fetch(`/api/tools/dramabox?action=episodes&id=${drama.id}`),
+          fetch(`/api/tools/dramabox?action=trending`)
         ])
-        const [dData, eData] = await Promise.all([dRes.json(), eRes.json()])
+        const [dData, eData, tData] = await Promise.all([dRes.json(), eRes.json(), tRes.json()])
         setDetail(dData.drama || null)
         setEps(eData.episodes?.slice(0, 60) || [])
+        const all = tData.featured || tData.dramas || []
+        setSidebar(all.filter(d => String(d.id) !== String(drama.id)).slice(0, 10))
       } catch {}
       setLoading(false)
     }
@@ -175,11 +185,13 @@ function DetailModal({ drama, onClose }) {
   const info     = detail || drama
   const epCount  = safeEpCount(info)
 
+  const hasSidebar = activeEp !== null && sidebarDramas.length > 0
+
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal-box">
+      <div className={`modal-box ${hasSidebar ? 'modal-box--wide' : ''}`}>
 
-        {/* ── Compact info header ── */}
+        {/* ── Compact info header (always full width) ── */}
         <div className="modal-info-bar">
           <img
             src={info.cover}
@@ -205,74 +217,117 @@ function DetailModal({ drama, onClose }) {
           <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
         </div>
 
-        {/* ── Inline player ── */}
-        {activeEp !== null && (
-          <div className="player-section" ref={playerRef}>
-            <div className="player-header">
-              <span className="player-ep-label">EP {activeEp + 1}</span>
-              <span className="player-title">{info.title}</span>
-              <a
-                href={watchUrl(activeEp)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="player-fullscreen-btn"
-                title="Open fullscreen"
-              >⛶</a>
-            </div>
-            <div className="player-frame-wrap">
-              <iframe
-                key={activeEp}
-                src={watchUrl(activeEp)}
-                className="player-frame"
-                allow="autoplay; fullscreen"
-                allowFullScreen
-                title={`Episode ${activeEp + 1}`}
-              />
-            </div>
-            <div className="player-actions">
-              <button
-                onClick={handleDownload}
-                className={`player-btn player-btn--download ${dlLoading ? 'loading' : ''}`}
-                disabled={dlLoading}
-              >
-                {dlLoading ? (
-                  <><span className="dl-spinner" /> Preparing…</>
-                ) : (
-                  <><span>⬇</span> Download Episode {activeEp + 1}</>
-                )}
-              </button>
-            </div>
-          </div>
-        )}
+        {/* ── Body: main + sidebar grid ── */}
+        <div className={`modal-body-layout ${hasSidebar ? 'has-sidebar' : ''}`}>
 
-        {/* ── Episodes list ── */}
-        {loading ? (
-          <div className="modal-loading">
-            <div className="db-spinner" />
-            <span>Loading episodes…</span>
-          </div>
-        ) : episodes.length > 0 ? (
-          <div className="modal-episodes">
-            <div className="modal-ep-header">
-              <span className="modal-ep-title">Episodes</span>
-              {activeEp !== null && (
-                <span className="now-playing-badge">▶ Ep {activeEp + 1}</span>
-              )}
-            </div>
-            <div className="episode-grid" ref={epListRef}>
-              {episodes.map((ep, idx) => (
-                <button
-                  key={idx}
-                  className={`episode-btn ${activeEp === idx ? 'active' : ''}`}
-                  onClick={() => selectEpisode(idx)}
-                >
-                  {idx + 1}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : null}
+          {/* ── Main column ── */}
+          <div className="modal-main">
 
+            {/* Player */}
+            {activeEp !== null && (
+              <div className="player-section" ref={playerRef}>
+                <div className="player-header">
+                  <span className="player-ep-label">EP {activeEp + 1}</span>
+                  <span className="player-title">{info.title}</span>
+                  <a
+                    href={watchUrl(activeEp)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="player-fullscreen-btn"
+                    title="Open fullscreen"
+                  >⛶</a>
+                </div>
+                <div className="player-frame-wrap">
+                  <iframe
+                    key={activeEp}
+                    src={watchUrl(activeEp)}
+                    className="player-frame"
+                    allow="autoplay; fullscreen"
+                    allowFullScreen
+                    title={`Episode ${activeEp + 1}`}
+                  />
+                </div>
+                <div className="player-actions">
+                  <button
+                    onClick={handleDownload}
+                    className={`player-btn player-btn--download ${dlLoading ? 'loading' : ''}`}
+                    disabled={dlLoading}
+                  >
+                    {dlLoading ? (
+                      <><span className="dl-spinner" /> Preparing…</>
+                    ) : (
+                      <><span>⬇</span> Download Episode {activeEp + 1}</>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Episodes */}
+            {loading ? (
+              <div className="modal-loading">
+                <div className="db-spinner" />
+                <span>Loading episodes…</span>
+              </div>
+            ) : episodes.length > 0 ? (
+              <div className="modal-episodes">
+                <div className="modal-ep-header">
+                  <span className="modal-ep-title">Episodes</span>
+                  {activeEp !== null && (
+                    <span className="now-playing-badge">▶ Ep {activeEp + 1}</span>
+                  )}
+                </div>
+                <div className="episode-grid" ref={epListRef}>
+                  {episodes.map((ep, idx) => (
+                    <button
+                      key={idx}
+                      className={`episode-btn ${activeEp === idx ? 'active' : ''}`}
+                      onClick={() => selectEpisode(idx)}
+                    >
+                      {idx + 1}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+          </div>
+
+          {/* ── Sidebar ── */}
+          {hasSidebar && (
+            <aside className="modal-sidebar">
+              <p className="sidebar-heading">More Like This</p>
+              <div className="sidebar-list">
+                {sidebarDramas.map(d => (
+                  <button
+                    key={d.id}
+                    className="sidebar-card"
+                    onClick={() => onSelect && onSelect(d)}
+                  >
+                    <img
+                      src={d.cover}
+                      alt={d.title}
+                      className="sidebar-card-img"
+                      onError={e => { e.target.src = 'https://placehold.co/52x74/0a0a0a/25d366?text=🎬' }}
+                    />
+                    <div className="sidebar-card-info">
+                      <p className="sidebar-card-title">{d.title}</p>
+                      <div className="sidebar-card-meta">
+                        {safeEpCount(d) != null && (
+                          <span className="sidebar-card-chip">📺 {safeEpCount(d)} eps</span>
+                        )}
+                        {d.tags?.slice(0, 1).map(t => (
+                          <span key={t} className="sidebar-card-chip sidebar-card-tag">{t}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </aside>
+          )}
+
+        </div>
       </div>
     </div>
   )
@@ -506,7 +561,7 @@ export default function DramaBoxPage() {
         </div>
       </div>
 
-      {selected && <DetailModal drama={selected} onClose={() => setSelected(null)} />}
+      {selected && <DetailModal drama={selected} onClose={() => setSelected(null)} onSelect={setSelected} />}
     </Layout>
   )
 }
