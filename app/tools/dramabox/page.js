@@ -346,6 +346,23 @@ export default function DramaBoxPage() {
   const [selected, setSelected] = useState(null)
   const searchRef = useRef(null)
 
+  /* ── History-aware drama open / close ── */
+  const openDrama = useCallback((drama) => {
+    window.history.pushState({ dramaModal: drama.id }, '')
+    setSelected(drama)
+  }, [])
+
+  const closeDrama = useCallback(() => {
+    setSelected(null)
+    if (window.history.state?.dramaModal) window.history.back()
+  }, [])
+
+  useEffect(() => {
+    const onPop = () => setSelected(null)
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
+
   const fetchDramas = useCallback(async (opts = {}) => {
     const t = opts.tab   ?? tab
     const g = opts.genre ?? genre
@@ -494,7 +511,7 @@ export default function DramaBoxPage() {
           )}
 
           {!loading && spotlight && (
-            <Spotlight drama={spotlight} onClick={setSelected} />
+            <Spotlight drama={spotlight} onClick={openDrama} />
           )}
 
           {!loading && gridDramas.length > 0 && (
@@ -510,7 +527,7 @@ export default function DramaBoxPage() {
           {!loading && gridDramas.length > 0 && (
             <div className="drama-grid">
               {gridDramas.map((d, i) => (
-                <DramaCard key={d.id || i} drama={d} onClick={setSelected} featured={i === 0 && tab !== 'Trending'} />
+                <DramaCard key={d.id || i} drama={d} onClick={openDrama} featured={i === 0 && tab !== 'Trending'} />
               ))}
             </div>
           )}
@@ -561,7 +578,7 @@ export default function DramaBoxPage() {
         </div>
       </div>
 
-      {selected && <DetailModal drama={selected} onClose={() => setSelected(null)} onSelect={setSelected} />}
+      {selected && <DetailModal drama={selected} onClose={closeDrama} onSelect={openDrama} />}
     </Layout>
   )
 }
