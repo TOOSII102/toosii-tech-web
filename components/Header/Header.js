@@ -104,6 +104,11 @@ export default function Header() {
                     </Link>
                   ))}
                 </div>
+                <div className="dropdown-footer">
+                  <Link href="/tools" className="dropdown-all-link">
+                    Browse all tools →
+                  </Link>
+                </div>
               </div>
             )}
           </div>
