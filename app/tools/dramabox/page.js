@@ -150,6 +150,7 @@ function DetailModal({ drama, onClose }) {
   }
 
   const info = detail || drama
+  const epCount = info.total_episodes ?? (Array.isArray(info.episodes) ? info.episodes.length : info.episodes) ?? null
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -161,7 +162,7 @@ function DetailModal({ drama, onClose }) {
           <div className="modal-hero-content">
             <h2 className="modal-title">{info.title}</h2>
             <div className="modal-stats">
-              {info.episodes && <span className="modal-stat-pill">📺 {info.episodes} eps</span>}
+              {epCount && <span className="modal-stat-pill">📺 {epCount} eps</span>}
               {info.views > 0 && <span className="modal-stat-pill">👁 {Number(info.views).toLocaleString()}</span>}
             </div>
             {info.tags?.length > 0 && (
