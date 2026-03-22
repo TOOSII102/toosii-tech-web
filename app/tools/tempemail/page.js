@@ -123,9 +123,9 @@ export default function TempEmail() {
       <section className="tool-hero">
         <div className="page-wrapper">
           <div className="badge" style={{ marginBottom: '1.5rem' }}><span>📧</span> Temp Email</div>
-          <h1 className="section-title">Temporary Email Generator</h1>
+          <h1 className="section-title">Disposable Email. <span className="gradient-text">Zero Trace.</span></h1>
           <p className="section-sub">
-            Get 3 disposable email addresses instantly. Use one to sign up — then open its inbox to receive the confirmation email. No account required.
+            Get instant throwaway email addresses — sign up for anything without exposing your real inbox. No account, no setup, no spam that follows you home.
           </p>
         </div>
       </section>
