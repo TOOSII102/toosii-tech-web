@@ -141,6 +141,35 @@ const blogPosts = [
     `
   },
   {
+    id: 6,
+    title: "How I Built a Free Streaming Platform with No CDN Budget",
+    category: "Web Development",
+    author: "Toosii Tech",
+    date: "March 18, 2026",
+    readTime: "7 min read",
+    excerpt: "DramaBox streams hundreds of short dramas for free — but the CDN blocked every browser request. Here's how I solved referrer blocking, handled locked episodes, and made it feel like Netflix on zero budget.",
+    featured: false,
+    content: `
+      <h2>The Problem: CDN Blocking</h2>
+      <p>The DramaBox API is straightforward — you fetch a list of dramas, get episodes, get a stream URL. But there's a catch: the CDN that hosts the actual video files checks the HTTP Referer header and blocks any requests that don't come from an approved origin. Load the URL in a standard <code>&lt;video&gt;</code> tag and you get a 403 immediately.</p>
+
+      <h3>The Referrer Fix</h3>
+      <p>The solution has two layers. First, a <code>&lt;meta name="referrer" content="no-referrer"&gt;</code> tag tells the browser not to send any Referer header at all when loading sub-resources. Second, I render two <code>&lt;video&gt;</code> elements with <code>referrerPolicy="no-referrer"</code> and <code>crossOrigin="anonymous"</code> — primary and fallback — and swap to the fallback automatically if the primary fails. This combination passes all major browsers including mobile Chrome on Android, which is by far the dominant browser for this content.</p>
+
+      <h3>Locked Episodes and the Wrong Endpoint</h3>
+      <p>Every DramaBox API has an "episodes" endpoint and a "streams" endpoint. The episodes endpoint only returns free episodes. The streams endpoint returns everything — free and locked. I switched to <code>?action=streams</code> and then added a <code>locked</code> flag in my UI so users can see all episodes but understand which ones require the app. This is much better UX than silently hiding half the content.</p>
+
+      <h3>State, History, and Deep Linking</h3>
+      <p>Clicking a drama card calls <code>history.pushState</code> with the drama ID in the URL. Closing it calls <code>history.back()</code>. A <code>popstate</code> listener on the window resets selected state when the user presses the browser back button. This means the back button works exactly as expected — no jarring full-page reload, no broken navigation.</p>
+
+      <h3>Download Proxying</h3>
+      <p>Video downloads face the same referrer problem as streaming, but worse — the download attribute on an anchor tag has no referrerPolicy support in most browsers. The fix is a server-side proxy route: the user clicks download, the browser hits my Next.js API route, the API route fetches the CDN URL server-side (no Referer), and streams it back to the user as a content-disposition attachment. The user gets the file. The CDN never sees a blocked request.</p>
+
+      <h3>What I'd Do Differently</h3>
+      <p>The biggest remaining challenge is search. Fuzzy matching against the full drama catalogue requires either a local index or a search API — I'm currently using the API's own search endpoint, which is slow on cold requests. A cached lightweight index built at build time would make search feel instant. That's on the roadmap.</p>
+    `
+  },
+  {
     id: 5,
     title: "Cybersecurity for Kenyan Businesses: The Basics That Matter Most",
     category: "Cybersecurity",
