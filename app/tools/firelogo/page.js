@@ -80,9 +80,9 @@ export default function FireLogo() {
       <section className="tool-hero">
         <div className="page-wrapper">
           <div className="badge" style={{ marginBottom: '1.5rem' }}><span>🔥</span> Fire Logo</div>
-          <h1 className="section-title">Fire Logo Generator</h1>
+          <h1 className="section-title">Make Your Name <span className="gradient-text">Burn.</span></h1>
           <p className="section-sub">
-            Turn any text into a stunning fire-style logo. Download in multiple sizes — perfect for icons, profiles, and social banners.
+            Type any name, brand, or tag — get a bold fire-style logo in seconds. Download in multiple sizes, perfect for profiles, banners, and gaming tags. Free, always.
           </p>
         </div>
       </section>
