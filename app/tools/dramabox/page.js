@@ -1,0 +1,443 @@
+'use client'
+import Layout from '../../../components/Layout'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import '../tools.css'
+import './dramabox.css'
+
+const TABS = [
+  { id: 'Trending', icon: '🔥', label: 'Trending' },
+  { id: 'Browse',   icon: '🎭', label: 'Browse' },
+  { id: 'Search',   icon: '🔍', label: 'Search' },
+]
+
+function SkeletonCard() {
+  return (
+    <div className="drama-card skeleton-card">
+      <div className="drama-cover-wrap skeleton-img" />
+      <div className="drama-info">
+        <div className="skeleton-line" style={{ width: '85%', height: 12, marginBottom: 8 }} />
+        <div className="skeleton-line" style={{ width: '55%', height: 10 }} />
+      </div>
+    </div>
+  )
+}
+
+function DramaCard({ drama, onClick, featured }) {
+  return (
+    <div
+      className={`drama-card ${featured ? 'drama-card--featured' : ''}`}
+      onClick={() => onClick(drama)}
+    >
+      <div className="drama-cover-wrap">
+        <img
+          src={drama.cover}
+          alt={drama.title}
+          className="drama-cover"
+          loading="lazy"
+          onError={e => { e.target.src = 'https://placehold.co/240x400/0a0a0a/25d366?text=🎬' }}
+        />
+        <div className="drama-overlay">
+          <div className="drama-play-btn">▶</div>
+          {drama.introduction && (
+            <p className="drama-overlay-text">{drama.introduction.slice(0, 80)}…</p>
+          )}
+        </div>
+        {drama.episodes && <span className="drama-badge">📺 {drama.episodes} eps</span>}
+        {featured && <span className="drama-hot-badge">🔥 HOT</span>}
+      </div>
+      <div className="drama-info">
+        <p className="drama-title">{drama.title}</p>
+        <div className="drama-footer">
+          {drama.views > 0 && (
+            <span className="drama-views">👁 {(drama.views / 1000).toFixed(1)}k</span>
+          )}
+          {drama.tags?.length > 0 && (
+            <span className="drama-tag">{drama.tags[0]}</span>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function Spotlight({ drama, onClick }) {
+  if (!drama) return null
+  return (
+    <div className="spotlight" onClick={() => onClick(drama)}>
+      <div className="spotlight-bg" style={{ backgroundImage: `url(${drama.cover})` }} />
+      <div className="spotlight-gradient" />
+      <div className="spotlight-content">
+        <span className="spotlight-label">✨ Featured Pick</span>
+        <h2 className="spotlight-title">{drama.title}</h2>
+        {drama.introduction && (
+          <p className="spotlight-intro">{drama.introduction.slice(0, 160)}…</p>
+        )}
+        <div className="spotlight-meta">
+          {drama.episodes && <span>📺 {drama.episodes} Episodes</span>}
+          {drama.views > 0 && <span>👁 {Number(drama.views).toLocaleString()} Views</span>}
+          {drama.tags?.slice(0, 2).map(t => <span key={t} className="spotlight-tag">{t}</span>)}
+        </div>
+        <button className="spotlight-btn">▶ Watch Now</button>
+      </div>
+    </div>
+  )
+}
+
+function DetailModal({ drama, onClose }) {
+  const [detail, setDetail]   = useState(null)
+  const [episodes, setEps]    = useState([])
+  const [loading, setLoading] = useState(true)
+  const [streams, setStreams] = useState(null)
+  const [activeEp, setActiveEp] = useState(null)
+  const [streamLoading, setStreamLoading] = useState(false)
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [])
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const [dRes, eRes] = await Promise.all([
+          fetch(`/api/tools/dramabox?action=detail&id=${drama.id}`),
+          fetch(`/api/tools/dramabox?action=episodes&id=${drama.id}`)
+        ])
+        const [dData, eData] = await Promise.all([dRes.json(), eRes.json()])
+        setDetail(dData.drama || dData)
+        setEps(eData.episodes?.slice(0, 30) || [])
+      } catch {}
+      setLoading(false)
+    }
+    load()
+  }, [drama.id])
+
+  const loadStreams = async (idx) => {
+    setActiveEp(idx)
+    setStreamLoading(true)
+    setStreams(null)
+    try {
+      const res = await fetch(`/api/tools/dramabox?action=streams&id=${drama.id}&episode=${idx}`)
+      const data = await res.json()
+      setStreams(data.streams || data.data || null)
+    } catch {}
+    setStreamLoading(false)
+  }
+
+  const info = detail || drama
+
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-box">
+        <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
+
+        <div className="modal-hero" style={{ backgroundImage: `url(${info.cover})` }}>
+          <div className="modal-hero-grad" />
+          <div className="modal-hero-content">
+            <h2 className="modal-title">{info.title}</h2>
+            <div className="modal-stats">
+              {info.episodes && <span className="modal-stat-pill">📺 {info.episodes} eps</span>}
+              {info.views > 0 && <span className="modal-stat-pill">👁 {Number(info.views).toLocaleString()}</span>}
+            </div>
+            {info.tags?.length > 0 && (
+              <div className="modal-tags">
+                {info.tags.map(t => <span key={t} className="drama-tag">{t}</span>)}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {info.introduction && (
+          <p className="modal-intro">{info.introduction}</p>
+        )}
+
+        {loading ? (
+          <div className="modal-loading">
+            <div className="db-spinner" />
+            <span>Loading episodes…</span>
+          </div>
+        ) : episodes.length > 0 ? (
+          <div className="modal-episodes">
+            <h3 className="modal-section-title">🎬 Episodes</h3>
+            <div className="episode-grid">
+              {episodes.map((ep, idx) => (
+                <button
+                  key={idx}
+                  className={`episode-btn ${activeEp === idx ? 'active' : ''}`}
+                  onClick={() => loadStreams(idx)}
+                >
+                  {idx + 1}
+                </button>
+              ))}
+            </div>
+
+            {streamLoading && (
+              <div className="stream-loading">
+                <div className="db-spinner" style={{ width: 20, height: 20 }} />
+                <span>Fetching stream links…</span>
+              </div>
+            )}
+
+            {streams && (
+              <div className="stream-panel">
+                <p className="stream-label">▶ Episode {activeEp + 1} — Choose Quality</p>
+                <div className="stream-btns">
+                  {Object.entries(streams).map(([q, url]) => url && (
+                    <a key={q} href={url} target="_blank" rel="noopener noreferrer" className="stream-btn">
+                      <span className="stream-quality">{q}</span>
+                      <span className="stream-arrow">↗</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
+export default function DramaBoxPage() {
+  const [tab, setTab]           = useState('Trending')
+  const [dramas, setDramas]     = useState([])
+  const [genres, setGenres]     = useState([])
+  const [loading, setLoading]   = useState(false)
+  const [error, setError]       = useState('')
+  const [query, setQuery]       = useState('')
+  const [genre, setGenre]       = useState('0')
+  const [page, setPage]         = useState(1)
+  const [totalPages, setTotal]  = useState(1)
+  const [selected, setSelected] = useState(null)
+  const searchRef = useRef(null)
+
+  const fetchDramas = useCallback(async (opts = {}) => {
+    const t = opts.tab   ?? tab
+    const g = opts.genre ?? genre
+    const p = opts.page  ?? page
+    const q = opts.query ?? query
+
+    setLoading(true); setError(''); setDramas([])
+    try {
+      let url = '/api/tools/dramabox?'
+      if (t === 'Trending') url += 'action=trending'
+      else if (t === 'Browse') url += `action=browse&genre=${g}&page=${p}`
+      else url += `action=search&q=${encodeURIComponent(q)}&page=${p}`
+
+      const res  = await fetch(url)
+      const data = await res.json()
+      if (data.error) { setError(data.error); return }
+
+      const items = data.featured || data.results || data.dramas || []
+      setDramas(items)
+      setTotal(data.total_pages || 1)
+    } catch {
+      setError('Failed to load dramas. Check your connection and try again.')
+    } finally {
+      setLoading(false)
+    }
+  }, [tab, genre, page, query])
+
+  useEffect(() => {
+    fetch('/api/tools/dramabox?action=genres')
+      .then(r => r.json())
+      .then(d => { if (d.genres) setGenres(d.genres) })
+      .catch(() => {})
+    fetchDramas({ tab: 'Trending' })
+  }, [])
+
+  const switchTab = (t) => {
+    setTab(t); setPage(1); setDramas([]); setError('')
+    if (t !== 'Search') fetchDramas({ tab: t, page: 1 })
+    else setTimeout(() => searchRef.current?.focus(), 100)
+  }
+
+  const handleSearch = () => {
+    if (!query.trim()) return
+    setPage(1)
+    fetchDramas({ tab: 'Search', page: 1 })
+  }
+
+  const handleGenre = (g) => {
+    setGenre(g); setPage(1)
+    fetchDramas({ tab: 'Browse', genre: g, page: 1 })
+  }
+
+  const changePage = (p) => {
+    setPage(p)
+    fetchDramas({ page: p })
+    window.scrollTo({ top: 400, behavior: 'smooth' })
+  }
+
+  const spotlight = tab === 'Trending' && dramas.length > 0 ? dramas[0] : null
+  const gridDramas = tab === 'Trending' && dramas.length > 0 ? dramas.slice(1) : dramas
+
+  return (
+    <Layout>
+      <div className="db-page">
+
+        {/* ── Hero ── */}
+        <div className="db-hero">
+          <div className="db-hero-particles">
+            {[...Array(20)].map((_, i) => (
+              <span key={i} className="particle" style={{
+                left: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 6}s`,
+                animationDuration: `${4 + Math.random() * 6}s`,
+                width: `${3 + Math.random() * 5}px`,
+                height: `${3 + Math.random() * 5}px`,
+              }} />
+            ))}
+          </div>
+          <div className="db-hero-inner page-wrapper">
+            <div className="db-badge">🎬 DramaBox</div>
+            <h1 className="db-title">Short Dramas, <span className="db-title-accent">Endless Stories</span></h1>
+            <p className="db-sub">Browse thousands of free short dramas — trending picks, genres, and HD stream links all in one place.</p>
+            <div className="db-hero-tabs">
+              {TABS.map(t => (
+                <button
+                  key={t.id}
+                  className={`db-hero-tab ${tab === t.id ? 'active' : ''}`}
+                  onClick={() => switchTab(t.id)}
+                >
+                  {t.icon} {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="db-body page-wrapper" style={{ maxWidth: '1140px' }}>
+
+          {/* ── Search Bar ── */}
+          {tab === 'Search' && (
+            <div className="db-search-box">
+              <div className="db-search-inner">
+                <span className="db-search-icon">🔍</span>
+                <input
+                  ref={searchRef}
+                  type="text"
+                  placeholder="Search dramas by title or theme…"
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                  className="db-search-input"
+                  disabled={loading}
+                />
+                <button
+                  onClick={handleSearch}
+                  disabled={loading || !query.trim()}
+                  className="db-search-btn"
+                >
+                  {loading ? '…' : 'Search'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Genre Pills ── */}
+          {tab === 'Browse' && genres.length > 0 && (
+            <div className="db-genres">
+              <button className={`db-genre-pill ${genre === '0' ? 'active' : ''}`} onClick={() => handleGenre('0')}>
+                🎭 All
+              </button>
+              {genres.map(g => (
+                <button
+                  key={g.id}
+                  className={`db-genre-pill ${genre === String(g.id) ? 'active' : ''}`}
+                  onClick={() => handleGenre(String(g.id))}
+                >
+                  {g.name}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* ── Error ── */}
+          {error && <div className="db-error">⚠️ {error}</div>}
+
+          {/* ── Skeleton ── */}
+          {loading && (
+            <div className="drama-grid">
+              {[...Array(12)].map((_, i) => <SkeletonCard key={i} />)}
+            </div>
+          )}
+
+          {/* ── Spotlight (Trending only) ── */}
+          {!loading && spotlight && (
+            <Spotlight drama={spotlight} onClick={setSelected} />
+          )}
+
+          {/* ── Section label ── */}
+          {!loading && gridDramas.length > 0 && (
+            <div className="db-section-header">
+              <span className="db-section-line" />
+              <span className="db-section-label">
+                {tab === 'Trending' ? '🔥 More Trending' : tab === 'Browse' ? '🎭 All Dramas' : `🔍 Results for "${query}"`}
+              </span>
+              <span className="db-section-line" />
+            </div>
+          )}
+
+          {/* ── Grid ── */}
+          {!loading && gridDramas.length > 0 && (
+            <div className="drama-grid">
+              {gridDramas.map((d, i) => (
+                <DramaCard key={d.id || i} drama={d} onClick={setSelected} featured={i === 0 && tab !== 'Trending'} />
+              ))}
+            </div>
+          )}
+
+          {/* ── Empty state ── */}
+          {!loading && !error && dramas.length === 0 && tab === 'Search' && query && (
+            <div className="db-empty">
+              <p className="db-empty-icon">🎬</p>
+              <p className="db-empty-title">No dramas found</p>
+              <p className="db-empty-sub">Try a different keyword or browse by genre.</p>
+            </div>
+          )}
+
+          {/* ── Pagination ── */}
+          {!loading && totalPages > 1 && (
+            <div className="db-pagination">
+              <button disabled={page <= 1} onClick={() => changePage(page - 1)} className="db-page-btn">← Prev</button>
+              <div className="db-page-dots">
+                {[...Array(Math.min(totalPages, 7))].map((_, i) => {
+                  const p = i + 1
+                  return (
+                    <button key={p} onClick={() => changePage(p)} className={`db-page-dot ${page === p ? 'active' : ''}`}>
+                      {p}
+                    </button>
+                  )
+                })}
+                {totalPages > 7 && <span style={{ color: '#475569' }}>…{totalPages}</span>}
+              </div>
+              <button disabled={page >= totalPages} onClick={() => changePage(page + 1)} className="db-page-btn">Next →</button>
+            </div>
+          )}
+
+          {/* ── Feature cards ── */}
+          {!loading && (
+            <div className="db-features">
+              {[
+                { icon: '🔥', title: 'Live Trending', text: 'Updated daily with the most-watched short dramas from DramaBox.' },
+                { icon: '🎭', title: '50+ Genres', text: 'Romance, revenge, paranormal, werewolves, and much more.' },
+                { icon: '📺', title: 'HD Streams', text: 'Watch episodes in 540p, 720p, or 1080p — free, no account needed.' },
+                { icon: '⚡', title: 'Instant Results', text: 'Search thousands of titles and get results in seconds.' },
+              ].map(f => (
+                <div key={f.title} className="db-feature-card">
+                  <span className="db-feature-icon">{f.icon}</span>
+                  <h3 className="db-feature-title">{f.title}</h3>
+                  <p className="db-feature-text">{f.text}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+        </div>
+      </div>
+
+      {selected && <DetailModal drama={selected} onClose={() => setSelected(null)} />}
+    </Layout>
+  )
+}
