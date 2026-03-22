@@ -4,7 +4,7 @@ import './about.css'
 
 export const metadata = {
   title: 'About — Toosii Tech',
-  description: 'Self-taught developer from Nairobi, Kenya. The story behind Toosii Tech and TOOSII XD ULTRA.',
+  description: 'The story behind Toosii Tech — a self-taught developer from Nairobi, Kenya building tools, bots, and digital experiences.',
 }
 
 const skills = [
