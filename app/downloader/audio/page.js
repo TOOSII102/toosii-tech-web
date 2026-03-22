@@ -96,8 +96,8 @@ export default function AudioDownloader() {
       <section className="dl-hero">
         <div className="page-wrapper">
           <div className="badge" style={{ marginBottom: '1.5rem' }}><span>🎧</span> MP3 Downloader</div>
-          <h1 className="section-title">Download Audio in High Quality</h1>
-          <p className="section-sub">Extract MP3 audio from any YouTube video. Free, no sign-up required.</p>
+          <h1 className="section-title">YouTube to MP3. <span className="gradient-text">In Seconds.</span></h1>
+          <p className="section-sub">Paste any YouTube link and get a high-quality 192kbps MP3 file — no account, no ads, no software to install. Just music, instantly.</p>
         </div>
       </section>
 
