@@ -648,7 +648,39 @@
   letter-spacing: .08em;
   text-transform: uppercase;
 }
+/* ── Prev / Grid / Next row ── */
+.ep-nav-row {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+.ep-nav-btn {
+  flex-shrink: 0;
+  width: 34px;
+  height: 42px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #94a3b8;
+  border-radius: 10px;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.ep-nav-btn:hover:not(:disabled) {
+  background: rgba(37,211,102,0.12);
+  border-color: rgba(37,211,102,0.3);
+  color: #25d366;
+}
+.ep-nav-btn:disabled {
+  opacity: .25;
+  cursor: not-allowed;
+}
 .episode-grid {
+  flex: 1;
   display: flex;
   flex-wrap: nowrap;
   overflow-x: auto;
