@@ -3,51 +3,86 @@ import Link from 'next/link'
 import './home.css'
 
 export default function Home() {
-  const features = [
-    { icon: '🤖', title: 'AI Commands', desc: 'GPT-4o, Gemini, DALL·E image gen, and more built directly into WhatsApp.' },
-    { icon: '🎵', title: 'Music & Media', desc: 'Download songs, videos, Spotify tracks, and audio — all from one chat.' },
-    { icon: '🔒', title: 'Anti-Delete', desc: 'Recover deleted messages and media automatically — never miss a thing.' },
-    { icon: '⚽', title: 'Sports Updates', desc: 'Live football scores, standings, match stats delivered to your group.' },
-    { icon: '🛡️', title: 'Group Tools', desc: 'Anti-link, anti-spam, welcome messages, poll creation and group management.' },
-    { icon: '📥', title: 'Downloaders', desc: 'YouTube, TikTok, Instagram, SoundCloud — download from 20+ platforms.' },
-  ]
-
-  const tools = [
-    { icon: '🔑', title: 'Session Generator', desc: 'Get your WhatsApp session ID instantly via pair code or QR scan.', href: '/session', label: 'Generate Now' },
-    { icon: '🎬', title: 'Video Downloader', desc: 'Download YouTube, TikTok & Instagram videos in 720p HD, no ads.', href: '/downloader/video', label: 'Download Video' },
-    { icon: '🎧', title: 'MP3 Downloader', desc: 'Extract high-quality audio from any YouTube video — free, fast.', href: '/downloader/audio', label: 'Download MP3' },
-    { icon: '🎵', title: 'Spotify Downloader', desc: 'Paste any Spotify track link and download the MP3 — no account needed.', href: '/tools/spotify', label: 'Download Track' },
-    { icon: '🔥', title: 'Fire Logo Maker', desc: 'Turn your name or brand into a stunning fire-style logo in seconds.', href: '/tools/firelogo', label: 'Make Logo' },
-    { icon: '📧', title: 'Temp Email', desc: 'Generate a disposable email address instantly — no sign-up, no spam.', href: '/tools/tempemail', label: 'Get Email' },
-  ]
 
   const stats = [
     { num: '150+', label: 'Bot Commands' },
+    { num: '10+', label: 'Free Web Tools' },
     { num: '6+', label: 'AI Models' },
-    { num: '20+', label: 'Platforms Supported' },
     { num: '5K+', label: 'Users Served' },
+  ]
+
+  const pillars = [
+    {
+      icon: '🤖',
+      title: 'WhatsApp Bot Suite',
+      desc: 'TOOSII XD ULTRA — 150+ commands covering AI, media downloads, sports scores, anti-delete, and full group management. Self-hosted and always-on.',
+      cta: 'Explore Bot →',
+      href: '/bot',
+      color: '#25d366',
+    },
+    {
+      icon: '🛠️',
+      title: 'Free Web Tools',
+      desc: 'Video & MP3 downloaders, session generator, fire logo maker, vocal remover, temp email, AI story generator — all free, no account needed.',
+      cta: 'Browse Tools →',
+      href: '/tools/dramabox',
+      color: '#3b82f6',
+    },
+    {
+      icon: '✨',
+      title: 'AI Features',
+      desc: 'Toosii AI powered by GPT-4o and Gemini. Ask anything, generate images, remove vocals from songs, write stories — AI built into every corner of the platform.',
+      cta: 'Try Toosii AI →',
+      href: '/tools/ai',
+      color: '#8b5cf6',
+    },
+  ]
+
+  const tools = [
+    { icon: '🤖', title: 'Toosii AI', desc: 'GPT-4o & Gemini powered chat. Ask anything, get instant answers.', href: '/tools/ai', label: 'Chat Now', color: '#8b5cf6' },
+    { icon: '🎬', title: 'Video Downloader', desc: 'YouTube, TikTok, Instagram — download in HD, no ads, no sign-up.', href: '/downloader/video', label: 'Download Video', color: '#ef4444' },
+    { icon: '🎧', title: 'MP3 Downloader', desc: 'Extract high-quality audio from any YouTube video, free and fast.', href: '/downloader/audio', label: 'Download MP3', color: '#f59e0b' },
+    { icon: '🎵', title: 'Spotify Downloader', desc: 'Paste a Spotify link and get the MP3 — no premium needed.', href: '/downloader/spotify', label: 'Download Track', color: '#25d366' },
+    { icon: '🎭', title: 'DramaBox', desc: 'Stream trending short dramas free — all episodes, no subscription.', href: '/tools/dramabox', label: 'Watch Now', color: '#ec4899' },
+    { icon: '🎤', title: 'Vocal Remover', desc: 'Separate vocals from any song and get the instrumental instantly.', href: '/tools/vocal-remover', label: 'Remove Vocals', color: '#06b6d4' },
+    { icon: '🔑', title: 'Session Generator', desc: 'Get your WhatsApp session ID in seconds — pair code or QR scan.', href: '/session', label: 'Generate Now', color: '#25d366' },
+    { icon: '🔥', title: 'Fire Logo Maker', desc: 'Turn any name or brand into a striking fire-style logo instantly.', href: '/tools/firelogo', label: 'Make Logo', color: '#f97316' },
+    { icon: '📖', title: 'AI Story Generator', desc: 'Describe an idea, get a full creative story in under 20 seconds.', href: '/tools/story', label: 'Write Story', color: '#a855f7' },
+    { icon: '📧', title: 'Temp Email', desc: 'Instant disposable email address — no sign-up, no spam, no trace.', href: '/tools/tempemail', label: 'Get Email', color: '#64748b' },
+    { icon: '📱', title: 'APK Search', desc: 'Find and download APKs for any Android app — safe and fast.', href: '/tools/apk', label: 'Search APK', color: '#10b981' },
+  ]
+
+  const botFeatures = [
+    { icon: '🤖', title: 'AI Commands', desc: 'GPT-4o, Gemini, DALL·E image gen, and more — directly in WhatsApp.' },
+    { icon: '🎵', title: 'Music & Media', desc: 'Songs, videos, Spotify tracks — download from one chat message.' },
+    { icon: '🔒', title: 'Anti-Delete', desc: 'Automatically recover deleted messages and media — never miss a thing.' },
+    { icon: '⚽', title: 'Sports Updates', desc: 'Live scores, standings, and match stats delivered to your group.' },
+    { icon: '🛡️', title: 'Group Management', desc: 'Anti-link, anti-spam, welcome messages, polls, and full admin tools.' },
+    { icon: '📥', title: '20+ Platforms', desc: 'YouTube, TikTok, Instagram, SoundCloud and many more supported.' },
   ]
 
   return (
     <Layout>
-      {/* Hero */}
+
+      {/* ── Hero ── */}
       <section className="hero">
         <div className="page-wrapper">
           <div className="hero-badge badge">
-            <span>🟢</span> TOOSII XD ULTRA — Active & Updated
+            <span>🟢</span> Platform Active — Tools, Bots & AI
           </div>
           <h1 className="hero-title">
-            The Most Powerful<br />
-            <span className="gradient-text">WhatsApp Bot</span><br />
-            You'll Ever Run
+            One Platform.<br />
+            <span className="gradient-text">Infinite Possibilities.</span>
           </h1>
           <p className="hero-sub">
-            Engineered by a self-taught developer from Nairobi, Kenya. 150+ commands spanning AI,
-            media, sports, group management, and developer tools — battle-tested and always running.
+            Toosii Tech is a growing developer platform from Nairobi, Kenya — featuring powerful web tools,
+            AI features, a full WhatsApp bot suite, streaming, and more. All free. No sign-up.
           </p>
           <div className="hero-cta">
-            <Link href="/bot" className="btn-primary">Explore Features →</Link>
-            <Link href="/tools/ai" className="btn-primary">Toosii AI 🤖</Link>
+            <Link href="/tools/ai" className="btn-primary">Try Toosii AI ✨</Link>
+            <Link href="/tools/dramabox" className="btn-primary" style={{ background: 'linear-gradient(135deg,#ec4899,#8b5cf6)' }}>
+              🎭 Watch DramaBox
+            </Link>
             <a
               href="https://github.com/TOOSII102/TOOSII-XD-ULTRA/archive/refs/heads/main.zip"
               className="btn-primary"
@@ -55,11 +90,8 @@ export default function Home() {
             >
               ⬇️ Download Bot
             </a>
-            <Link href="/session" className="btn-outline">Generate Session Key</Link>
+            <Link href="/downloader/video" className="btn-outline">Video Downloader</Link>
           </div>
-          <p style={{ fontSize: '0.78rem', color: '#475569', marginTop: '-1.5rem', marginBottom: '2rem' }}>
-            ✦ Toosii AI — Powered by Toosii Tech · Instant, accurate answers — always free
-          </p>
           <div className="hero-stats">
             {stats.map(s => (
               <div key={s.label} className="stat-card">
@@ -71,15 +103,63 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Download Bot */}
+      {/* ── What We Offer (3 Pillars) ── */}
       <section className="section" style={{ paddingTop: '0.5rem' }}>
         <div className="page-wrapper">
-          <div className="glass-card" style={{ padding: '2rem', display: 'flex', gap: '2.5rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-            <div style={{ flex: 1, minWidth: 260 }}>
-              <p style={{ margin: '0 0 0.4rem', color: '#25d366', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>📦 Free & Open Source</p>
-              <h2 style={{ margin: '0 0 0.75rem', fontSize: '1.5rem', color: '#fff', fontWeight: 800 }}>Download TOOSII XD ULTRA</h2>
+          <div className="section-header">
+            <p className="section-label">What Toosii Tech Offers</p>
+            <h2 className="section-title">Everything in one place</h2>
+            <p className="section-sub">Three core areas — one platform. Pick what you need, use it right now.</p>
+          </div>
+          <div className="features-grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))' }}>
+            {pillars.map(p => (
+              <div key={p.title} className="feature-card glass-card" style={{ borderTop: `3px solid ${p.color}` }}>
+                <div className="feature-icon" style={{ fontSize: '2.2rem' }}>{p.icon}</div>
+                <h3 style={{ color: '#fff', fontSize: '1.15rem', fontWeight: 700, marginBottom: '0.6rem' }}>{p.title}</h3>
+                <p style={{ color: '#94a3b8', lineHeight: 1.65, marginBottom: '1.25rem', fontSize: '0.9rem' }}>{p.desc}</p>
+                <Link href={p.href} className="btn-primary" style={{ background: p.color, color: p.color === '#25d366' ? '#000' : '#fff', fontSize: '0.85rem', padding: '0.6rem 1.2rem' }}>
+                  {p.cta}
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── All Tools ── */}
+      <section className="section tools-section">
+        <div className="page-wrapper">
+          <div className="section-header">
+            <p className="section-label">Web Tools</p>
+            <h2 className="section-title">Professional tools. Always free.</h2>
+            <p className="section-sub">Every tool is live and working right now — no demos, no sign-up, no paywalls.</p>
+          </div>
+          <div className="tools-grid" style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(230px,1fr))' }}>
+            {tools.map(t => (
+              <div key={t.title} className="tool-card glass-card" style={{ borderLeft: `3px solid ${t.color}` }}>
+                <div className="tool-icon">{t.icon}</div>
+                <h3>{t.title}</h3>
+                <p>{t.desc}</p>
+                <Link href={t.href} className="btn-primary" style={{ fontSize: '0.82rem', padding: '0.55rem 1rem' }}>{t.label}</Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Bot Spotlight ── */}
+      <section className="section">
+        <div className="page-wrapper">
+          <div className="glass-card" style={{ padding: '2.5rem', display: 'flex', gap: '2.5rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: 280 }}>
+              <p style={{ margin: '0 0 0.4rem', color: '#25d366', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>🤖 WhatsApp Bot Suite</p>
+              <h2 style={{ margin: '0 0 0.6rem', fontSize: '1.7rem', color: '#fff', fontWeight: 800 }}>TOOSII XD ULTRA</h2>
+              <p style={{ margin: '0 0 0.5rem', color: '#94a3b8', lineHeight: 1.65, fontSize: '0.95rem' }}>
+                150+ commands. 6+ AI models. 20+ download platforms. Anti-delete, group tools, live sports — all in one
+                always-on, self-hosted, open-source WhatsApp bot.
+              </p>
               <p style={{ margin: '0 0 1.5rem', color: '#94a3b8', lineHeight: 1.65, fontSize: '0.95rem' }}>
-                Get the complete bot source code as a ZIP — every file included, ready to deploy on any host in minutes. No account, no paywall, no limits.
+                Free to download. No subscription. No cloud fees. Deploy it on any host in minutes.
               </p>
               <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                 <a
@@ -93,92 +173,49 @@ export default function Home() {
                 >
                   ⬇️ Download ZIP
                 </a>
+                <Link href="/bot" className="btn-outline">View All Commands</Link>
                 <a
                   href="https://github.com/TOOSII102/TOOSII-XD-ULTRA"
                   target="_blank" rel="noopener noreferrer"
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-                    background: 'rgba(255,255,255,0.07)', color: '#ccc',
-                    padding: '0.85rem 1.75rem', borderRadius: 10, fontWeight: 600,
+                    background: 'rgba(255,255,255,0.06)', color: '#ccc',
+                    padding: '0.85rem 1.25rem', borderRadius: 10, fontWeight: 600,
                     textDecoration: 'none', fontSize: '0.95rem',
                     border: '1px solid rgba(255,255,255,0.1)',
                   }}
                 >
-                  ⭐ View on GitHub
+                  ⭐ GitHub
                 </a>
               </div>
             </div>
             <div style={{ flex: 1, minWidth: 220 }}>
-              <p style={{ margin: '0 0 1rem', color: '#64748b', fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Quick Setup</p>
-              {[
-                { n: '1', text: 'Click Download ZIP above — file saves instantly' },
-                { n: '2', text: 'Extract the folder and open it in your terminal' },
-                { n: '3', text: <>Run <code style={{ color: '#25d366', background: 'rgba(37,211,102,0.08)', padding: '0 5px', borderRadius: 4 }}>npm install</code> to set up dependencies</> },
-                { n: '4', text: <>Visit <Link href="/session" style={{ color: '#25d366' }}>Session Generator</Link> to connect your WhatsApp</> },
-                { n: '5', text: <>Run <code style={{ color: '#25d366', background: 'rgba(37,211,102,0.08)', padding: '0 5px', borderRadius: 4 }}>node index.js</code> — bot goes live</> },
-              ].map(s => (
-                <div key={s.n} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start', marginBottom: '0.7rem' }}>
-                  <span style={{ width: 24, height: 24, borderRadius: '50%', background: '#25d366', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.75rem', flexShrink: 0, marginTop: 1 }}>{s.n}</span>
-                  <span style={{ color: '#94a3b8', fontSize: '0.875rem', lineHeight: 1.6 }}>{s.text}</span>
-                </div>
-              ))}
+              <p style={{ margin: '0 0 1rem', color: '#64748b', fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Bot Highlights</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                {botFeatures.map(f => (
+                  <div key={f.title} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, padding: '0.85rem' }}>
+                    <div style={{ fontSize: '1.3rem', marginBottom: '0.3rem' }}>{f.icon}</div>
+                    <div style={{ color: '#fff', fontWeight: 700, fontSize: '0.82rem', marginBottom: '0.25rem' }}>{f.title}</div>
+                    <div style={{ color: '#64748b', fontSize: '0.75rem', lineHeight: 1.5 }}>{f.desc}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Features */}
-      <section className="section">
-        <div className="page-wrapper">
-          <div className="section-header">
-            <p className="section-label">Bot Features</p>
-            <h2 className="section-title">One bot. Every tool you need.</h2>
-            <p className="section-sub">No fragmentation, no juggling multiple bots. TOOSII XD ULTRA covers AI, media, sports, and group management — all in one always-on instance.</p>
-          </div>
-          <div className="features-grid">
-            {features.map(f => (
-              <div key={f.title} className="feature-card glass-card">
-                <div className="feature-icon">{f.icon}</div>
-                <h3>{f.title}</h3>
-                <p>{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Tools */}
-      <section className="section tools-section">
-        <div className="page-wrapper">
-          <div className="section-header">
-            <p className="section-label">Web Tools</p>
-            <h2 className="section-title">Professional tools. Always free.</h2>
-            <p className="section-sub">Built for real people — no accounts, no paywalls, no ads. Just tools that work.</p>
-          </div>
-          <div className="tools-grid">
-            {tools.map(t => (
-              <div key={t.title} className="tool-card glass-card">
-                <div className="tool-icon">{t.icon}</div>
-                <h3>{t.title}</h3>
-                <p>{t.desc}</p>
-                <Link href={t.href} className="btn-primary">{t.label}</Link>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* About CTA */}
+      {/* ── About CTA ── */}
       <section className="section about-cta">
         <div className="page-wrapper">
           <div className="cta-box glass-card">
             <div className="cta-content">
-              <p className="section-label">About Me</p>
+              <p className="section-label">The Developer</p>
               <h2>Built by Toosii Tech</h2>
               <p>Software developer & tool builder from Nairobi, Kenya. Started with zero experience in 2021 — now shipping a full multi-device bot, a growing web platform, and AI tools used by thousands. Built from passion, not a classroom.</p>
               <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '1.5rem' }}>
                 <Link href="/about" className="btn-primary">My Story →</Link>
-                <Link href="/contact" className="btn-outline">Get in Touch</Link>
+                <Link href="/contact" className="btn-outline">Work With Me</Link>
               </div>
             </div>
             <div className="cta-visual">
@@ -191,7 +228,7 @@ export default function Home() {
                 </div>
               </div>
               <div className="skills-list">
-                {['JavaScript', 'Node.js', 'Next.js', 'WhatsApp API', 'gifted-baileys'].map(s => (
+                {['JavaScript', 'Node.js', 'Next.js', 'AI Integration', 'WhatsApp API'].map(s => (
                   <span key={s} className="skill-tag">{s}</span>
                 ))}
               </div>
@@ -199,6 +236,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+
     </Layout>
   )
 }
