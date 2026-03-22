@@ -1,16 +1,21 @@
 import { NextResponse } from 'next/server'
 
+export const runtime = 'edge'
+
 const BASE = 'https://apis.xcasper.space/api/dramabox'
+const CDN_HEADERS = {
+  'Referer': 'https://www.dramabox.com/',
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36',
+}
 
 async function getStreamSrc(id, epIdx) {
   const res  = await fetch(`${BASE}?action=streams&id=${encodeURIComponent(id)}&episode=${epIdx}`, {
     headers: { 'User-Agent': 'Mozilla/5.0' },
-    signal: AbortSignal.timeout(15000),
   })
   const data = await res.json()
   const qualities = data.qualities || []
   const src = qualities.find(q => q.is_default)?.url || qualities[0]?.url || data.default_url || ''
-  return { src, epNum: data.episode_number || epIdx + 1 }
+  return { src, epNum: data.episode_number || epIdx + 1, title: data.drama_title || '' }
 }
 
 export async function GET(req) {
@@ -39,14 +44,14 @@ export async function GET(req) {
     *{margin:0;padding:0;box-sizing:border-box}
     html,body{width:100%;height:100%;background:#000;overflow:hidden}
     video{width:100%;height:100%;object-fit:contain;display:block;background:#000}
-    .err{color:#f87171;font-family:sans-serif;font-size:13px;text-align:center;
-         padding:24px;height:100%;display:flex;align-items:center;justify-content:center}
+    .err{color:#f87171;font-family:sans-serif;font-size:13px;
+         height:100%;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px}
   </style>
 </head>
 <body>
   ${src
     ? `<video src="${src}" controls autoplay playsinline preload="metadata"></video>`
-    : `<div class="err">⚠️ Stream unavailable for Episode ${epNum}</div>`
+    : `<div class="err">Stream unavailable for Episode ${epNum}</div>`
   }
 </body>
 </html>`
@@ -54,51 +59,24 @@ export async function GET(req) {
       return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } })
     }
 
-    /* ── Download trigger page ── */
+    /* ── Instant download — proxied through server with Content-Disposition ── */
     if (action === 'download') {
       if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
       const epIdx = parseInt(episode, 10) || 0
       const { src, epNum } = await getStreamSrc(id, epIdx)
 
-      const html = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="referrer" content="no-referrer">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{background:#0a0a0a;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-         min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:24px}
-    h2{font-size:18px;font-weight:700;color:#25d366}
-    p{font-size:13px;color:#94a3b8;text-align:center;max-width:360px;line-height:1.6}
-    .btn{display:inline-flex;align-items:center;gap:8px;background:#25d366;color:#000;
-         font-weight:700;font-size:14px;padding:12px 28px;border-radius:12px;text-decoration:none;
-         border:none;cursor:pointer;transition:opacity .2s}
-    .btn:hover{opacity:.85}
-    .alt{font-size:12px;color:#475569;margin-top:8px}
-  </style>
-</head>
-<body>
-  ${src ? `
-  <h2>⬇ Episode ${epNum}</h2>
-  <p>Your download will start automatically. If it doesn't, tap the button below.</p>
-  <a class="btn" href="${src}" download="Episode_${epNum}.mp4">⬇ Download Episode ${epNum}</a>
-  <p class="alt">Tip: If download doesn't start, right-click the button → Save link as</p>
-  <script>
-    try {
-      const a = document.createElement('a');
-      a.href = '${src}';
-      a.download = 'Episode_${epNum}.mp4';
-      document.body.appendChild(a);
-      a.click();
-    } catch(e){}
-  </script>
-  ` : `<p style="color:#f87171">⚠️ Download unavailable for this episode.</p>`}
-</body>
-</html>`
+      if (!src) return NextResponse.json({ error: 'No download available' }, { status: 404 })
 
-      return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } })
+      const videoRes = await fetch(src, { headers: CDN_HEADERS })
+      if (!videoRes.ok) return NextResponse.json({ error: 'Source unavailable' }, { status: 502 })
+
+      const headers = new Headers()
+      headers.set('Content-Type', videoRes.headers.get('content-type') || 'video/mp4')
+      headers.set('Content-Disposition', `attachment; filename="Episode_${epNum}.mp4"`)
+      const cl = videoRes.headers.get('content-length')
+      if (cl) headers.set('Content-Length', cl)
+
+      return new Response(videoRes.body, { status: 200, headers })
     }
 
     /* ── Standard API proxy ── */
@@ -109,11 +87,7 @@ export async function GET(req) {
     if (page)    url += `&page=${encodeURIComponent(page)}`
     if (episode) url += `&episode=${encodeURIComponent(episode)}`
 
-    const res  = await fetch(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-      signal: AbortSignal.timeout(20000),
-    })
-
+    const res  = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } })
     if (!res.ok) throw new Error(`Upstream ${res.status}`)
     const data = await res.json()
 
