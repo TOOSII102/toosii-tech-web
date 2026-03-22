@@ -151,20 +151,24 @@ function DetailModal({ drama, onClose }) {
     setTimeout(() => playerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80)
   }
 
-  const handleDownload = async () => {
+  const handleDownload = () => {
     if (activeEp === null || dlLoading) return
     setDlLoading(true)
-    try {
-      const url = `/api/tools/dramabox?action=download&id=${drama.id}&episode=${activeEp}`
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `Episode_${activeEp + 1}.mp4`
-      a.style.display = 'none'
-      document.body.appendChild(a)
-      a.click()
-      setTimeout(() => document.body.removeChild(a), 2000)
-    } catch {}
-    setTimeout(() => setDlLoading(false), 3000)
+
+    /* Load the download URL inside a hidden iframe.
+       The server responds with Content-Disposition: attachment so the browser
+       shows a save-file dialog while this page stays unchanged. */
+    const url = `/api/tools/dramabox?action=download&id=${drama.id}&episode=${activeEp}`
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;top:-300%;left:-300%;width:1px;height:1px;opacity:0;pointer-events:none'
+    iframe.src = url
+    document.body.appendChild(iframe)
+
+    /* Remove the iframe after enough time for the download dialog to appear */
+    setTimeout(() => {
+      if (document.body.contains(iframe)) document.body.removeChild(iframe)
+      setDlLoading(false)
+    }, 10000)
   }
 
   const watchUrl = (idx) => `/api/tools/dramabox?action=watch&id=${drama.id}&episode=${idx}`
