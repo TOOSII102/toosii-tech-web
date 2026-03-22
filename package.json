@@ -1,7 +1,7 @@
 {
   "name": "toosii-tech-web",
   "version": "1.0.0",
-  "description": "Toosii Tech — WhatsApp Bot, Session Generator & Media Downloader by Toosii Tech",
+  "description": "Toosii Tech — AI Tools, Bots & Digital Experiences by a Nairobi Developer",
   "private": true,
   "scripts": {
     "dev": "next dev",
