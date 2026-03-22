@@ -10,6 +10,29 @@ const TABS = [
   { id: 'Search',   icon: '🔍', label: 'Search' },
 ]
 
+const PARTICLES = [
+  { left: '5%',  delay: '0s',    dur: '6s',  w: 5, h: 5 },
+  { left: '12%', delay: '1.2s',  dur: '8s',  w: 3, h: 3 },
+  { left: '20%', delay: '0.5s',  dur: '7s',  w: 6, h: 6 },
+  { left: '28%', delay: '3s',    dur: '5s',  w: 4, h: 4 },
+  { left: '35%', delay: '1.8s',  dur: '9s',  w: 3, h: 3 },
+  { left: '42%', delay: '0.3s',  dur: '6.5s',w: 7, h: 7 },
+  { left: '50%', delay: '2.5s',  dur: '8s',  w: 4, h: 4 },
+  { left: '57%', delay: '4s',    dur: '7s',  w: 5, h: 5 },
+  { left: '63%', delay: '1s',    dur: '5.5s',w: 3, h: 3 },
+  { left: '70%', delay: '2.2s',  dur: '9s',  w: 6, h: 6 },
+  { left: '76%', delay: '0.8s',  dur: '7.5s',w: 4, h: 4 },
+  { left: '82%', delay: '3.5s',  dur: '6s',  w: 5, h: 5 },
+  { left: '88%', delay: '1.5s',  dur: '8.5s',w: 3, h: 3 },
+  { left: '93%', delay: '0.2s',  dur: '7s',  w: 7, h: 7 },
+  { left: '97%', delay: '2.8s',  dur: '5s',  w: 4, h: 4 },
+  { left: '8%',  delay: '5s',    dur: '6s',  w: 3, h: 3 },
+  { left: '45%', delay: '4.5s',  dur: '9s',  w: 5, h: 5 },
+  { left: '60%', delay: '3.8s',  dur: '7s',  w: 4, h: 4 },
+  { left: '75%', delay: '5.5s',  dur: '8s',  w: 6, h: 6 },
+  { left: '90%', delay: '2s',    dur: '6.5s',w: 3, h: 3 },
+]
+
 function SkeletonCard() {
   return (
     <div className="drama-card skeleton-card">
@@ -279,13 +302,13 @@ export default function DramaBoxPage() {
         {/* ── Hero ── */}
         <div className="db-hero">
           <div className="db-hero-particles">
-            {[...Array(20)].map((_, i) => (
+            {PARTICLES.map((p, i) => (
               <span key={i} className="particle" style={{
-                left: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 6}s`,
-                animationDuration: `${4 + Math.random() * 6}s`,
-                width: `${3 + Math.random() * 5}px`,
-                height: `${3 + Math.random() * 5}px`,
+                left: p.left,
+                animationDelay: p.delay,
+                animationDuration: p.dur,
+                width: p.w + 'px',
+                height: p.h + 'px',
               }} />
             ))}
           </div>
