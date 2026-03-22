@@ -59,24 +59,35 @@ export async function GET(req) {
       return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } })
     }
 
-    /* ── Instant download — proxied through server with Content-Disposition ── */
+    /* ── Download: proxy video with Content-Disposition so browser saves it ── */
     if (action === 'download') {
       if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
       const epIdx = parseInt(episode, 10) || 0
       const { src, epNum } = await getStreamSrc(id, epIdx)
 
-      if (!src) return NextResponse.json({ error: 'No download available' }, { status: 404 })
+      if (!src) {
+        return new Response(
+          `<html><body style="font:14px sans-serif;color:#f87171;padding:20px">
+            ⚠️ Episode ${epNum} stream not found.
+          </body></html>`,
+          { status: 404, headers: { 'Content-Type': 'text/html' } }
+        )
+      }
 
+      /* Stream the video through our server with Content-Disposition: attachment.
+         Because this URL is same-origin, the browser triggers a real download dialog
+         without leaving the page when the link is clicked from an iframe. */
       const videoRes = await fetch(src, { headers: CDN_HEADERS })
-      if (!videoRes.ok) return NextResponse.json({ error: 'Source unavailable' }, { status: 502 })
+      if (!videoRes.ok) return NextResponse.json({ error: 'CDN unavailable' }, { status: 502 })
 
-      const headers = new Headers()
-      headers.set('Content-Type', videoRes.headers.get('content-type') || 'video/mp4')
-      headers.set('Content-Disposition', `attachment; filename="Episode_${epNum}.mp4"`)
+      const resHeaders = new Headers()
+      resHeaders.set('Content-Type', videoRes.headers.get('content-type') || 'video/mp4')
+      resHeaders.set('Content-Disposition', `attachment; filename="Episode_${epNum}.mp4"`)
+      resHeaders.set('Cache-Control', 'no-store')
       const cl = videoRes.headers.get('content-length')
-      if (cl) headers.set('Content-Length', cl)
+      if (cl) resHeaders.set('Content-Length', cl)
 
-      return new Response(videoRes.body, { status: 200, headers })
+      return new Response(videoRes.body, { status: 200, headers: resHeaders })
     }
 
     /* ── Standard API proxy ── */
