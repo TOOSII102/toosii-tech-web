@@ -327,3 +327,179 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+
+/* ── Improved dl-search-btn ── */
+.dl-search-btn {
+  flex-shrink: 0;
+  height: 58px;
+  padding: 0 1.75rem;
+  background: linear-gradient(135deg, #25d366 0%, #16a34a 100%);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.95rem;
+  border: none;
+  cursor: pointer;
+  transition: filter 0.2s, box-shadow 0.2s;
+  white-space: nowrap;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.15);
+  letter-spacing: 0.01em;
+}
+.dl-search-btn:hover:not(:disabled) {
+  filter: brightness(1.1);
+  box-shadow: 0 4px 16px rgba(37,211,102,0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+}
+.dl-search-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── Play overlay on result cards ── */
+.rc-play-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+.result-card:hover .rc-play-overlay { background: rgba(0,0,0,0.45); }
+.rc-play-icon {
+  font-size: 2rem;
+  color: white;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.6));
+  transform: scale(0.8);
+}
+.result-card:hover .rc-play-icon { opacity: 1; transform: scale(1); }
+
+/* ── Action row on result cards ── */
+.rc-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.rc-play-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #25d366;
+  cursor: pointer;
+}
+.rc-dl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: linear-gradient(135deg, #25d366, #16a34a);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.35rem 0.75rem;
+  border-radius: 7px;
+  border: none;
+  cursor: pointer;
+  transition: filter 0.2s, box-shadow 0.2s;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(37,211,102,0.25);
+}
+.rc-dl-btn:hover:not(:disabled) {
+  filter: brightness(1.1);
+  box-shadow: 0 4px 12px rgba(37,211,102,0.4);
+}
+.rc-dl-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.rc-spinner {
+  display: inline-block;
+  width: 10px; height: 10px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+/* ── Inline player ── */
+.inline-player {
+  margin-top: 1.5rem;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(37,211,102,0.25);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.player-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.1rem;
+  background: rgba(37,211,102,0.06);
+  border-bottom: 1px solid rgba(37,211,102,0.12);
+  gap: 1rem;
+}
+.player-now {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  flex: 1;
+}
+.player-live-dot {
+  width: 8px; height: 8px;
+  background: #25d366;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.75); }
+}
+.player-now-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #25d366;
+  flex-shrink: 0;
+}
+.player-title-text {
+  font-size: 0.82rem;
+  color: #cbd5e1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.player-close-btn {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: #94a3b8;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.35rem 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  flex-shrink: 0;
+}
+.player-close-btn:hover { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.3); color: #f87171; }
+.player-frame-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+}
+.player-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+.player-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 1rem 1.1rem;
+  background: rgba(0,0,0,0.3);
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
