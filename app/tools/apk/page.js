@@ -43,18 +43,19 @@ export default function ApkSearch() {
       <section className="section" style={{ paddingTop: '1rem' }}>
         <div className="page-wrapper">
           <div className="tool-card glass-card">
-            <div className="tool-input-row">
+            <div className="dl-search-wrapper">
+              <span className="dl-search-icon">🔍</span>
               <input
                 type="text"
                 placeholder="Search for an app (e.g. WhatsApp, TikTok…)"
                 value={query}
                 onChange={e => { setQuery(e.target.value); setError('') }}
-                className="text-input"
+                className="dl-search-input"
                 onKeyDown={e => e.key === 'Enter' && !loading && search()}
                 disabled={loading}
               />
-              <button onClick={search} disabled={loading} className="btn-primary">
-                {loading ? 'Searching…' : 'Search'}
+              <button onClick={search} disabled={loading} className="dl-search-btn">
+                {loading ? 'Searching…' : '🔍 Search'}
               </button>
             </div>
 
