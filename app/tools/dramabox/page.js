@@ -121,6 +121,7 @@ function DetailModal({ drama, onClose }) {
   const [episodes, setEps]     = useState([])
   const [loading,  setLoading] = useState(true)
   const [activeEp, setActiveEp] = useState(null)
+  const playerRef = useRef(null)
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -136,32 +137,32 @@ function DetailModal({ drama, onClose }) {
         ])
         const [dData, eData] = await Promise.all([dRes.json(), eRes.json()])
         setDetail(dData.drama || null)
-        setEps(eData.episodes?.slice(0, 50) || [])
+        setEps(eData.episodes?.slice(0, 60) || [])
       } catch {}
       setLoading(false)
     }
     load()
   }, [drama.id])
 
-  const watchEpisode = (idx) => {
+  const selectEpisode = (idx) => {
     setActiveEp(idx)
-    const ep = episodes[idx]
-    if (!ep) return
-    if (ep.free === false || (!ep.stream_url && !ep.download_url)) {
-      window.open(`/api/tools/dramabox?action=watch&id=${drama.id}&episode=${idx}`, '_blank', 'noopener')
-      return
-    }
-    window.open(`/api/tools/dramabox?action=watch&id=${drama.id}&episode=${idx}`, '_blank', 'noopener')
+    setTimeout(() => {
+      playerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 100)
   }
 
-  const info     = detail || drama
-  const epCount  = safeEpCount(info)
+  const watchUrl     = (idx) => `/api/tools/dramabox?action=watch&id=${drama.id}&episode=${idx}`
+  const downloadUrl  = (idx) => `/api/tools/dramabox?action=download&id=${drama.id}&episode=${idx}`
+
+  const info    = detail || drama
+  const epCount = safeEpCount(info)
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal-box">
         <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
 
+        {/* ── Hero banner ── */}
         <div className="modal-hero" style={{ backgroundImage: `url(${info.cover})` }}>
           <div className="modal-hero-grad" />
           <div className="modal-hero-content">
@@ -180,10 +181,50 @@ function DetailModal({ drama, onClose }) {
           </div>
         </div>
 
+        {/* ── Synopsis ── */}
         {info.introduction && (
           <p className="modal-intro">{info.introduction}</p>
         )}
 
+        {/* ── Inline player (shown when episode selected) ── */}
+        {activeEp !== null && (
+          <div className="player-section" ref={playerRef}>
+            <div className="player-header">
+              <span className="player-ep-label">▶ Episode {activeEp + 1}</span>
+              <span className="player-title">{info.title}</span>
+            </div>
+            <div className="player-frame-wrap">
+              <iframe
+                key={activeEp}
+                src={watchUrl(activeEp)}
+                className="player-frame"
+                allow="autoplay; fullscreen"
+                allowFullScreen
+                title={`Episode ${activeEp + 1}`}
+              />
+            </div>
+            <div className="player-actions">
+              <a
+                href={watchUrl(activeEp)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="player-btn player-btn--watch"
+              >
+                <span>⛶</span> Full Screen
+              </a>
+              <a
+                href={downloadUrl(activeEp)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="player-btn player-btn--download"
+              >
+                <span>⬇</span> Download
+              </a>
+            </div>
+          </div>
+        )}
+
+        {/* ── Episodes ── */}
         {loading ? (
           <div className="modal-loading">
             <div className="db-spinner" />
@@ -191,24 +232,24 @@ function DetailModal({ drama, onClose }) {
           </div>
         ) : episodes.length > 0 ? (
           <div className="modal-episodes">
-            <h3 className="modal-section-title">🎬 Select Episode to Watch</h3>
+            <h3 className="modal-section-title">
+              🎬 Episodes
+              {activeEp !== null && (
+                <span className="now-playing-badge">Now Playing: Ep {activeEp + 1}</span>
+              )}
+            </h3>
             <div className="episode-grid">
               {episodes.map((ep, idx) => (
                 <button
                   key={idx}
                   className={`episode-btn ${activeEp === idx ? 'active' : ''}`}
-                  onClick={() => watchEpisode(idx)}
-                  title={`Watch episode ${idx + 1}`}
+                  onClick={() => selectEpisode(idx)}
+                  title={`Episode ${idx + 1}`}
                 >
                   {idx + 1}
                 </button>
               ))}
             </div>
-            {activeEp !== null && (
-              <p className="stream-hint">
-                ▶ Episode {activeEp + 1} opened in a new tab
-              </p>
-            )}
           </div>
         ) : null}
       </div>
@@ -309,7 +350,7 @@ export default function DramaBoxPage() {
           <div className="db-hero-inner page-wrapper">
             <div className="db-badge">🎬 DramaBox</div>
             <h1 className="db-title">Short Dramas, <span className="db-title-accent">Endless Stories</span></h1>
-            <p className="db-sub">Browse thousands of free short dramas — trending picks, genres, and HD stream links all in one place.</p>
+            <p className="db-sub">Browse thousands of free short dramas — trending picks, genres, and HD streams all in one place.</p>
             <div className="db-hero-tabs">
               {TABS.map(t => (
                 <button
