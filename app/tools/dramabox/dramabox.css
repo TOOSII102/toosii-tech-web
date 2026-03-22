@@ -687,30 +687,33 @@
 
 /* ── Inline Player ── */
 .player-section {
-  background: #050505;
+  background: #060606;
   border-top: 1px solid rgba(255,255,255,0.06);
   border-bottom: 1px solid rgba(255,255,255,0.06);
 }
+
+/* ── Thin header bar: EP badge + title + fullscreen icon ── */
 .player-header {
   display: flex;
   align-items: center;
-  gap: .65rem;
-  padding: .6rem 1.25rem;
+  gap: .6rem;
+  padding: .55rem 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 .player-ep-label {
-  font-size: .68rem;
-  font-weight: 800;
+  font-size: .65rem;
+  font-weight: 900;
   background: #25d366;
   color: #000;
-  padding: .18rem .55rem;
-  border-radius: 5px;
+  padding: .15rem .5rem;
+  border-radius: 4px;
   white-space: nowrap;
-  letter-spacing: .04em;
+  letter-spacing: .05em;
   flex-shrink: 0;
 }
 .player-title {
-  font-size: .78rem;
-  color: #64748b;
+  font-size: .75rem;
+  color: #475569;
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -719,28 +722,29 @@
 }
 .player-fullscreen-btn {
   flex-shrink: 0;
-  font-size: 1rem;
+  font-size: .9rem;
   color: #475569;
   text-decoration: none;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
   transition: all .15s;
-  line-height: 1;
 }
 .player-fullscreen-btn:hover { background: rgba(37,211,102,0.1); color: #25d366; border-color: rgba(37,211,102,0.2); }
+
+/* ── Video frame: 16:9 landscape container, portrait video centred inside ── */
 .player-frame-wrap {
   position: relative;
   width: 100%;
-  max-width: 320px;
-  aspect-ratio: 9/16;
+  aspect-ratio: 16 / 9;      /* landscape — never overwhelms the screen      */
+  max-height: 260px;          /* hard cap so it stays compact on large screens  */
   background: #000;
-  margin: 0 auto;
+  overflow: hidden;
 }
 .player-frame {
   position: absolute;
@@ -750,20 +754,22 @@
   border: none;
   display: block;
 }
+
+/* ── Download button row ── */
 .player-actions {
-  padding: .75rem 1.25rem .9rem;
+  padding: .65rem 1rem .8rem;
 }
 .player-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: .5rem;
-  font-size: .82rem;
+  gap: .45rem;
+  font-size: .8rem;
   font-weight: 700;
-  padding: .7rem 1rem;
-  border-radius: 12px;
+  padding: .6rem 1rem;
+  border-radius: 10px;
   text-decoration: none;
-  transition: opacity .2s, transform .2s;
+  transition: opacity .2s, transform .15s;
   cursor: pointer;
   width: 100%;
   border: none;
@@ -772,14 +778,14 @@
 .player-btn--download {
   background: linear-gradient(135deg, #1a9e4a 0%, #25d366 100%);
   color: #000;
-  box-shadow: 0 4px 20px rgba(37,211,102,0.25);
+  box-shadow: 0 3px 14px rgba(37,211,102,0.22);
 }
-.player-btn--download:hover:not(:disabled) { opacity: .88; transform: translateY(-1px); box-shadow: 0 6px 24px rgba(37,211,102,0.35); }
-.player-btn--download:disabled { opacity: .65; cursor: not-allowed; transform: none; }
-.player-btn--download.loading { background: rgba(37,211,102,0.2); color: #25d366; box-shadow: none; }
+.player-btn--download:hover:not(:disabled) { opacity: .88; transform: translateY(-1px); }
+.player-btn--download:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+.player-btn--download.loading { background: rgba(37,211,102,0.15); color: #25d366; box-shadow: none; }
 .dl-spinner {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
   border: 2px solid rgba(37,211,102,0.3);
   border-top-color: #25d366;
   border-radius: 50%;
@@ -924,7 +930,7 @@
   .modal-box--wide { max-width: 100%; }
   .modal-info-bar { padding: 1rem; gap: .85rem; }
   .modal-thumb { width: 52px; height: 76px; }
-  .player-frame-wrap { max-width: 100%; }
+  .player-frame-wrap { max-height: 200px; }
   /* Sidebar stacks below on mobile */
   .modal-body-layout.has-sidebar {
     grid-template-columns: 1fr;
