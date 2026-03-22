@@ -157,9 +157,17 @@ function DetailModal({ drama, onClose, onSelect }) {
   }, [drama.id])
 
   const selectEpisode = (idx) => {
+    if (idx < 0 || idx >= episodes.length) return
     setActiveEp(idx)
     setTimeout(() => playerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80)
   }
+
+  /* Auto-scroll the active episode button to centre in the grid */
+  useEffect(() => {
+    if (activeEp === null || !epListRef.current) return
+    const btn = epListRef.current.children[activeEp]
+    if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+  }, [activeEp])
 
   const handleDownload = () => {
     if (activeEp === null || dlLoading) return
@@ -277,16 +285,31 @@ function DetailModal({ drama, onClose, onSelect }) {
                     <span className="now-playing-badge">▶ Ep {activeEp + 1}</span>
                   )}
                 </div>
-                <div className="episode-grid" ref={epListRef}>
-                  {episodes.map((ep, idx) => (
-                    <button
-                      key={idx}
-                      className={`episode-btn ${activeEp === idx ? 'active' : ''}`}
-                      onClick={() => selectEpisode(idx)}
-                    >
-                      {idx + 1}
-                    </button>
-                  ))}
+                {/* Prev / scroll grid / Next — always visible */}
+                <div className="ep-nav-row">
+                  <button
+                    className="ep-nav-btn"
+                    onClick={() => selectEpisode(activeEp - 1)}
+                    disabled={activeEp === null || activeEp === 0}
+                    title="Previous episode"
+                  >‹</button>
+                  <div className="episode-grid" ref={epListRef}>
+                    {episodes.map((ep, idx) => (
+                      <button
+                        key={idx}
+                        className={`episode-btn ${activeEp === idx ? 'active' : ''}`}
+                        onClick={() => selectEpisode(idx)}
+                      >
+                        {idx + 1}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    className="ep-nav-btn"
+                    onClick={() => selectEpisode(activeEp !== null ? activeEp + 1 : 0)}
+                    disabled={activeEp !== null && activeEp >= episodes.length - 1}
+                    title="Next episode"
+                  >›</button>
                 </div>
               </div>
             ) : null}
