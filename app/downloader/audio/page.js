@@ -12,6 +12,24 @@ function proxyUrl(url, title) {
   return `/api/download/proxy?url=${encodeURIComponent(url)}&name=${encodeURIComponent(name)}`
 }
 
+function ytThumb(url) {
+    const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
+    return m ? `https://img.youtube.com/vi/${m[1]}/hqdefault.jpg` : null
+  }
+
+  function fmtDuration(raw) {
+    if (!raw) return null
+    const s = String(raw).trim()
+    if (/^\d+:\d+/.test(s)) return s
+    const secs = Math.floor(Number(s))
+    if (isNaN(secs) || secs < 0) return null
+    const h = Math.floor(secs / 3600)
+    const m = Math.floor((secs % 3600) / 60)
+    const sec = secs % 60
+    if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`
+    return `${m}:${String(sec).padStart(2,'0')}`
+  }
+
 export default function AudioDownloader() {
   const [url, setUrl]         = useState('')
   const [result, setResult]   = useState(null)
@@ -53,7 +71,8 @@ export default function AudioDownloader() {
         setResult({
           download_url: d.download_url,
           title:     d.title,
-          thumbnail: d.thumbnail,
+          thumbnail: d.thumbnail || ytThumb(trimmed),
+          duration:  fmtDuration(d.duration),
           quality:   d.quality || '128kbps',
         })
         clearInterval(timer); setLoading(false)
