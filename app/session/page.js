@@ -1,6 +1,6 @@
 export const metadata = {
-  title: 'Session Generator — Toosii Tech',
-  description: 'Generate your WhatsApp session ID to connect TOOSII XD ULTRA.',
+  title: 'WhatsApp Session Generator — Toosii Tech',
+  description: 'Generate your WhatsApp session ID instantly via pair code — no technical setup, no command line. Free tool by Toosii Tech.',
 }
 
 export default function SessionPage() {
