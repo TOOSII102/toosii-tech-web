@@ -178,16 +178,18 @@ export default function VocalRemover() {
                 <p style={{ margin: '0 0 0.6rem', color: '#94a3b8', fontSize: '0.85rem' }}>
                   Paste a <strong>direct audio file link</strong> — must end in <code style={{ color: '#25d366', background: 'rgba(37,211,102,0.08)', padding: '0 4px', borderRadius: 4 }}>.mp3</code>, <code style={{ color: '#25d366', background: 'rgba(37,211,102,0.08)', padding: '0 4px', borderRadius: 4 }}>.wav</code>, <code style={{ color: '#25d366', background: 'rgba(37,211,102,0.08)', padding: '0 4px', borderRadius: 4 }}>.m4a</code> etc. YouTube/SoundCloud links won't work.
                 </p>
-                <input
-                  type="url"
-                  placeholder="https://example.com/song.mp3"
-                  value={audioUrl}
-                  onChange={e => { setAudioUrl(e.target.value); setError('') }}
-                  className="text-input"
-                  style={{ marginBottom: '0.75rem' }}
-                  onKeyDown={e => e.key === 'Enter' && !loading && process()}
-                  disabled={loading}
-                />
+                <div className="dl-search-wrapper" style={{ marginBottom: '0.75rem' }}>
+                    <span className="dl-search-icon">🔗</span>
+                    <input
+                      type="url"
+                      placeholder="https://example.com/song.mp3"
+                      value={audioUrl}
+                      onChange={e => { setAudioUrl(e.target.value); setError('') }}
+                      className="dl-search-input"
+                      onKeyDown={e => e.key === 'Enter' && !loading && process()}
+                      disabled={loading}
+                    />
+                  </div>
                 <p style={{ margin: '0', color: '#555', fontSize: '0.78rem' }}>
                   💡 Tip: upload your file to <a href="https://catbox.moe" target="_blank" rel="noopener noreferrer" style={{ color: '#25d366' }}>catbox.moe</a> or <a href="https://tmpfiles.org" target="_blank" rel="noopener noreferrer" style={{ color: '#25d366' }}>tmpfiles.org</a> and paste the link here.
                 </p>
