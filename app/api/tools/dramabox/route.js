@@ -8,14 +8,19 @@ const CDN_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36',
 }
 
+/**
+ * Use `detail` — the xcasper.space `streams` action is broken.
+ * `detail` returns stream_url + download_url per episode directly.
+ */
 async function getStreamSrc(id, epIdx) {
-  const res  = await fetch(`${BASE}?action=streams&id=${encodeURIComponent(id)}&episode=${epIdx}`, {
+  const res  = await fetch(`${BASE}?action=detail&id=${encodeURIComponent(id)}`, {
     headers: { 'User-Agent': 'Mozilla/5.0' },
   })
   const data = await res.json()
-  const qualities = data.qualities || []
-  const src = qualities.find(q => q.is_default)?.url || qualities[0]?.url || data.default_url || ''
-  return { src, epNum: data.episode_number || epIdx + 1, title: data.drama_title || '' }
+  const episodes = data.drama?.episodes || []
+  const ep  = episodes[epIdx] || episodes[0]
+  const src = ep?.stream_url || ep?.download_url || ''
+  return { src, epNum: epIdx + 1, title: data.drama?.title || '' }
 }
 
 export async function GET(req) {
