@@ -30,7 +30,7 @@ const projects = [
     status: "Live",
     duration: "2025 – Present",
     results: [
-      { metric: "10+", label: "Tools" },
+      { metric: "11+", label: "Tools" },
       { metric: "15+", label: "Pages" },
       { metric: "100%", label: "Free" },
     ],
