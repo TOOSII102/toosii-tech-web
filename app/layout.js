@@ -2,9 +2,9 @@ import './globals.css'
 import AnimatedBackground from '../components/AnimatedBackground'
 
 export const metadata = {
-  title: 'Toosii Tech — WhatsApp Bot & Developer Tools',
-  description: 'Self-taught developer from Nairobi, Kenya building powerful WhatsApp bots and web tools. Session generator, video & MP3 downloaders.',
-  keywords: 'Toosii Tech, WhatsApp bot, session generator, video downloader, MP3 downloader, Nairobi Kenya developer',
+  title: 'Toosii Tech — AI Tools, Bots & Digital Experiences',
+  description: 'A developer platform from Nairobi, Kenya. Explore AI chat, video & MP3 downloaders, WhatsApp session tools, DramaBox streaming, and more — all free, no sign-up.',
+  keywords: 'Toosii Tech, developer tools, AI tools, WhatsApp bot, session generator, video downloader, MP3 downloader, DramaBox, Nairobi Kenya',
 }
 
 export default function RootLayout({ children }) {
