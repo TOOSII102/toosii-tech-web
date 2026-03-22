@@ -320,6 +320,9 @@ export default function VideoDownloader() {
                       <div className="rc-info">
                         <p className="rc-title">{item.title}</p>
                         {item.channel && <p className="rc-channel">{item.channel}</p>}
+                        {(item.views || item.uploaded) && (
+                          <p className="rc-meta">{[item.views, item.uploaded].filter(Boolean).join(' · ')}</p>
+                        )}
                       </div>
                     </button>
                   ))}
