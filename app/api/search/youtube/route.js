@@ -1,11 +1,11 @@
 export const runtime = 'edge'
 
-function parseInnerTube(data) {
+function parseResults(data) {
   try {
     const sections =
-      data?.contents?.sectionListRenderer?.contents ||
       data?.contents?.twoColumnSearchResultsRenderer?.primaryContents
         ?.sectionListRenderer?.contents ||
+      data?.contents?.sectionListRenderer?.contents ||
       []
 
     const items = []
@@ -19,14 +19,18 @@ function parseInnerTube(data) {
         if (!vr) continue
         const id = vr.videoId
         if (!id) continue
+
         const title =
           vr.title?.runs?.[0]?.text ||
-          vr.title?.accessibility?.accessibilityData?.label ||
+          vr.title?.accessibility?.accessibilityData?.label?.split(' ')[0] ||
           ''
-        const duration = vr.lengthText?.simpleText || vr.lengthText?.runs?.[0]?.text || ''
+        const duration =
+          vr.lengthText?.simpleText ||
+          vr.lengthText?.runs?.map(r => r.text).join('') ||
+          ''
         const channel =
-          vr.ownerText?.runs?.[0]?.text ||
           vr.longBylineText?.runs?.[0]?.text ||
+          vr.ownerText?.runs?.[0]?.text ||
           vr.shortBylineText?.runs?.[0]?.text ||
           ''
         const thumbs = vr.thumbnail?.thumbnails || []
@@ -38,7 +42,16 @@ function parseInnerTube(data) {
           vr.viewCountText?.simpleText ||
           vr.viewCountText?.runs?.[0]?.text ||
           ''
-        items.push({ id, title, url: `https://youtu.be/${id}`, thumbnail, duration, channel, views })
+
+        items.push({
+          id,
+          title,
+          url: `https://youtu.be/${id}`,
+          thumbnail,
+          duration,
+          channel,
+          views,
+        })
       }
     }
     return items
@@ -52,37 +65,37 @@ export async function GET(req) {
   const q = (searchParams.get('q') || '').trim()
   if (!q) return Response.json({ error: 'Missing query' }, { status: 400 })
 
-  const headers = {
-    'Content-Type': 'application/json',
-    'User-Agent': 'com.google.android.youtube/17.31.35 (Linux; U; Android 11) gzip',
-    'X-YouTube-Client-Name': '3',
-    'X-YouTube-Client-Version': '17.31.35',
-  }
-
-  const body = JSON.stringify({
-    query: q,
-    context: {
-      client: {
-        clientName: 'ANDROID',
-        clientVersion: '17.31.35',
-        androidSdkVersion: 30,
-        hl: 'en',
-        gl: 'US',
-      },
-    },
-    params: 'EgIQAQ%3D%3D',
-  })
-
   try {
-    const res = await fetch(
-      'https://www.youtube.com/youtubei/v1/search?key=AIzaSyA8eiZmM1FaDVjRy-df2KTyQ_vz_yYM394',
-      { method: 'POST', headers, body }
-    )
-    if (!res.ok) throw new Error(`InnerTube ${res.status}`)
+    const res = await fetch('https://www.youtube.com/youtubei/v1/search', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'X-YouTube-Client-Name': '1',
+        'X-YouTube-Client-Version': '2.20231219.04.00',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+      body: JSON.stringify({
+        query: q,
+        context: {
+          client: {
+            clientName: 'WEB',
+            clientVersion: '2.20231219.04.00',
+            hl: 'en',
+            gl: 'US',
+          },
+        },
+      }),
+    })
+
+    if (!res.ok) throw new Error(`YouTube ${res.status}`)
+
     const data = await res.json()
-    const results = parseInnerTube(data)
+    const results = parseResults(data)
+
     if (results.length) return Response.json({ results })
-    return Response.json({ results: [], debug: 'no results parsed' })
+
+    return Response.json({ results: [], error: 'No videos found for that search' })
   } catch (e) {
     return Response.json({ error: String(e.message) }, { status: 500 })
   }
