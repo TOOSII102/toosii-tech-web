@@ -156,19 +156,26 @@
 .article-back { padding: 1.25rem 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
 
 .back-btn {
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: #94a3b8;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(37,211,102,0.08);
+  border: 1.5px solid rgba(37,211,102,0.3);
+  color: #25d366;
   font-size: 0.875rem;
-  font-weight: 500;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
+  font-weight: 700;
+  padding: 0.55rem 1.1rem;
+  border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s;
-  min-height: 40px;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
+  min-height: 42px;
 }
-
-.back-btn:hover { color: white; border-color: #25d366; }
+.back-btn:hover {
+  background: #25d366;
+  color: #07070e;
+  box-shadow: 0 4px 14px rgba(37,211,102,0.3);
+  transform: translateY(-1px);
+}
 
 .article-inner { max-width: 760px; padding: 2.5rem 2rem; }
 
