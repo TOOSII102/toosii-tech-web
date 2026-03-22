@@ -85,18 +85,19 @@ export default function AudioDownloader() {
       <section className="section" style={{ paddingTop: '1rem' }}>
         <div className="page-wrapper">
           <div className="dl-card glass-card">
-            <div className="dl-input-row">
+            <div className="dl-search-wrapper">
+              <span className="dl-search-icon">🔗</span>
               <input
                 type="url"
                 placeholder="Paste YouTube URL here…"
                 value={url}
                 onChange={e => { setUrl(e.target.value); setError('') }}
-                className="text-input"
+                className="dl-search-input"
                 onKeyDown={e => e.key === 'Enter' && !loading && download()}
                 disabled={loading}
               />
-              <button onClick={download} disabled={loading} className="btn-primary">
-                {loading ? 'Converting…' : 'Get MP3'}
+              <button onClick={download} disabled={loading} className="dl-search-btn">
+                {loading ? 'Converting…' : '🎵 Get MP3'}
               </button>
             </div>
 
