@@ -196,11 +196,11 @@ function DetailModal({ drama, onClose }) {
               {episodes.map((ep, idx) => (
                 <button
                   key={idx}
-                  className={`episode-btn ${activeEp === idx ? 'active' : ''} ${ep.free === false ? 'locked' : ''}`}
+                  className={`episode-btn ${activeEp === idx ? 'active' : ''}`}
                   onClick={() => watchEpisode(idx)}
-                  title={ep.free === false ? 'VIP episode' : `Watch episode ${idx + 1}`}
+                  title={`Watch episode ${idx + 1}`}
                 >
-                  {ep.free === false ? '🔒' : idx + 1}
+                  {idx + 1}
                 </button>
               ))}
             </div>
