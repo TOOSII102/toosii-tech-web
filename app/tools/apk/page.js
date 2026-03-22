@@ -35,8 +35,8 @@ export default function ApkSearch() {
       <section className="tool-hero">
         <div className="page-wrapper">
           <div className="badge" style={{ marginBottom: '1.5rem' }}><span>📦</span> APK Downloader</div>
-          <h1 className="section-title">Search & Download APK Files</h1>
-          <p className="section-sub">Find any Android app and download the APK directly. No Play Store needed.</p>
+          <h1 className="section-title">Any Android App. <span className="gradient-text">Direct APK Download.</span></h1>
+          <p className="section-sub">Search any app by name and download the APK file directly — no Play Store, no region locks, no account needed. Fast and always free.</p>
         </div>
       </section>
 
