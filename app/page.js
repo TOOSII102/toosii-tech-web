@@ -37,13 +37,13 @@ export default function Home() {
             <span>🟢</span> TOOSII XD ULTRA — Active & Updated
           </div>
           <h1 className="hero-title">
-            The Most Advanced<br />
+            The Most Powerful<br />
             <span className="gradient-text">WhatsApp Bot</span><br />
-            You'll Ever Use
+            You'll Ever Run
           </h1>
           <p className="hero-sub">
-            Built by a self-taught developer from Nairobi, Kenya. 150+ commands spanning AI, media,
-            sports, group management, and developer tools — all in one multi-device bot.
+            Engineered by a self-taught developer from Nairobi, Kenya. 150+ commands spanning AI,
+            media, sports, group management, and developer tools — battle-tested and always running.
           </p>
           <div className="hero-cta">
             <Link href="/bot" className="btn-primary">Explore Features →</Link>
@@ -58,7 +58,7 @@ export default function Home() {
             <Link href="/session" className="btn-outline">Generate Session Key</Link>
           </div>
           <p style={{ fontSize: '0.78rem', color: '#475569', marginTop: '-1.5rem', marginBottom: '2rem' }}>
-            ✦ Toosii AI — Powered by Toosii Tech · Fast & accurate answers, always free
+            ✦ Toosii AI — Powered by Toosii Tech · Instant, accurate answers — always free
           </p>
           <div className="hero-stats">
             {stats.map(s => (
@@ -79,7 +79,7 @@ export default function Home() {
               <p style={{ margin: '0 0 0.4rem', color: '#25d366', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>📦 Free & Open Source</p>
               <h2 style={{ margin: '0 0 0.75rem', fontSize: '1.5rem', color: '#fff', fontWeight: 800 }}>Download TOOSII XD ULTRA</h2>
               <p style={{ margin: '0 0 1.5rem', color: '#94a3b8', lineHeight: 1.65, fontSize: '0.95rem' }}>
-                Get the full bot source code as a ZIP file — all files included, ready to deploy on any host in minutes. No account needed to download.
+                Get the complete bot source code as a ZIP — every file included, ready to deploy on any host in minutes. No account, no paywall, no limits.
               </p>
               <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                 <a
@@ -132,8 +132,8 @@ export default function Home() {
         <div className="page-wrapper">
           <div className="section-header">
             <p className="section-label">Bot Features</p>
-            <h2 className="section-title">Everything in one place</h2>
-            <p className="section-sub">No need for multiple bots. TOOSII XD ULTRA covers AI, media, sports, and group tools seamlessly.</p>
+            <h2 className="section-title">One bot. Every tool you need.</h2>
+            <p className="section-sub">No fragmentation, no juggling multiple bots. TOOSII XD ULTRA covers AI, media, sports, and group management — all in one always-on instance.</p>
           </div>
           <div className="features-grid">
             {features.map(f => (
@@ -152,8 +152,8 @@ export default function Home() {
         <div className="page-wrapper">
           <div className="section-header">
             <p className="section-label">Web Tools</p>
-            <h2 className="section-title">Useful tools, for free</h2>
-            <p className="section-sub">Built for the community. No sign-up, no payment, no nonsense.</p>
+            <h2 className="section-title">Professional tools. Always free.</h2>
+            <p className="section-sub">Built for real people — no accounts, no paywalls, no ads. Just tools that work.</p>
           </div>
           <div className="tools-grid">
             {tools.map(t => (
@@ -175,7 +175,7 @@ export default function Home() {
             <div className="cta-content">
               <p className="section-label">About Me</p>
               <h2>Built by Toosii Tech</h2>
-              <p>Self-taught developer since 2021. Started with basic scripts, now running a full multi-device WhatsApp bot used by thousands. Coding out of passion, not a classroom.</p>
+              <p>Software developer & tool builder from Nairobi, Kenya. Started with zero experience in 2021 — now shipping a full multi-device bot, a growing web platform, and AI tools used by thousands. Built from passion, not a classroom.</p>
               <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '1.5rem' }}>
                 <Link href="/about" className="btn-primary">My Story →</Link>
                 <Link href="/contact" className="btn-outline">Get in Touch</Link>
@@ -186,7 +186,7 @@ export default function Home() {
                 <div className="dev-avatar">T</div>
                 <div>
                   <div className="dev-name">Toosii Tech</div>
-                  <div className="dev-title">Self-Taught Developer</div>
+                  <div className="dev-title">Software Developer & Tool Builder</div>
                   <div className="dev-location">📍 Nairobi, Kenya</div>
                 </div>
               </div>
