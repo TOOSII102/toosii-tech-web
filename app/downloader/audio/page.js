@@ -115,21 +115,26 @@ export default function AudioDownloader() {
               <div className="result-panel">
                 {result.thumbnail && <img src={result.thumbnail} alt="Thumbnail" className="thumb" />}
                 <div className="result-info">
-                  {result.title && <h3 className="result-title">{result.title}</h3>}
-                  <div className="result-meta">
-                    <span className="badge">🎵 MP3</span>
-                    {result.quality && <span className="badge">🎚 {result.quality}</span>}
+                    <span className="platform-tag">▶ YouTube</span>
+                    {result.title  && <h3 className="result-title">{result.title}</h3>}
+                    {result.author && <p className="result-author">by {result.author}</p>}
+                    <div className="result-meta">
+                      <span className="badge">🎵 MP3</span>
+                      {result.quality  && <span className="badge">🎚 {result.quality}</span>}
+                      {result.duration && <span className="badge">⏱ {result.duration}</span>}
+                    </div>
+                    <p className="expire-note">⚡ Download now — this link expires soon</p>
+                    <div className="dl-buttons">
+                      <a
+                        href={proxyUrl(result.download_url, result.title)}
+                        download
+                        className="btn-primary"
+                        style={{ width: 'fit-content' }}
+                      >
+                        ⬇ Download MP3
+                      </a>
+                    </div>
                   </div>
-                  <p className="expire-note">⚡ Download now — link expires soon</p>
-                  <a
-                    href={proxyUrl(result.download_url, result.title)}
-                    download
-                    className="btn-primary"
-                    style={{ width: 'fit-content', marginTop: '0.75rem' }}
-                  >
-                    ⬇ Download MP3
-                  </a>
-                </div>
               </div>
             )}
           </div>
