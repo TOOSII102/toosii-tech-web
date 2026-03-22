@@ -111,7 +111,8 @@
 }
 .thumb {
   width: 140px; height: 140px;
-  object-fit: cover; border-radius: 8px; flex-shrink: 0;
+  object-fit: cover; border-radius: 10px; flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
 }
 .result-title { font-size: 0.95rem; font-weight: 700; color: white; margin-bottom: 0.5rem; line-height: 1.4; }
 .result-artist { font-size: 0.82rem; color: #94a3b8; margin-bottom: 0.6rem; }
