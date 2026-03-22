@@ -42,17 +42,30 @@ export async function GET(req) {
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
-    html,body{width:100%;height:100%;background:#000;overflow:hidden}
-    video{width:100%;height:100%;object-fit:contain;display:block;background:#000}
-    .err{color:#f87171;font-family:sans-serif;font-size:13px;
-         height:100%;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px}
+    html,body{width:100%;height:100%;overflow:hidden;background:#000}
+    .wrap{position:relative;width:100%;height:100%}
+    /* Blurred ambient fill — same src, muted, covers the black bars */
+    video.bg{
+      position:absolute;inset:-8%;width:116%;height:116%;
+      object-fit:cover;
+      filter:blur(18px) brightness(0.35) saturate(1.4);
+      pointer-events:none;
+    }
+    /* Actual player — centred, contained, with controls */
+    video.fg{
+      position:absolute;inset:0;width:100%;height:100%;
+      object-fit:contain;
+    }
+    .err{position:absolute;inset:0;color:#f87171;font-family:sans-serif;font-size:13px;
+         display:flex;align-items:center;justify-content:center;text-align:center;padding:20px}
   </style>
 </head>
 <body>
-  ${src
-    ? `<video src="${src}" controls autoplay playsinline preload="metadata"></video>`
-    : `<div class="err">Stream unavailable for Episode ${epNum}</div>`
-  }
+  ${src ? `
+  <div class="wrap">
+    <video class="bg" src="${src}" autoplay muted loop playsinline preload="metadata"></video>
+    <video class="fg" src="${src}" controls autoplay playsinline preload="metadata"></video>
+  </div>` : `<div class="err">Stream unavailable for Episode ${epNum}</div>`}
 </body>
 </html>`
 
