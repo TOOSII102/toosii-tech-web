@@ -8,7 +8,7 @@ const team = [
     name: "Toosii Tech",
     role: "Founder & Lead Developer",
     dept: "Development",
-    bio: "Self-taught developer from Nairobi, Kenya. Started coding in 2021, now running TOOSII XD ULTRA — a multi-device WhatsApp bot with 150+ commands used by thousands. Handles all bot development, web tools, and project direction.",
+    bio: "Software developer & tool builder from Nairobi, Kenya. Started coding in 2021 out of pure curiosity — now running TOOSII XD ULTRA, a multi-device WhatsApp bot with 150+ commands serving thousands of users, alongside a growing platform of free web tools, AI features, and digital experiences. Leads all development, product direction, and innovation at Toosii Tech.",
     expertise: ["Node.js", "gifted-baileys", "Next.js", "API Integration", "WhatsApp Bot Development"],
     email: "toosiitechcompany@gmail.com",
     featured: true,
