@@ -142,7 +142,11 @@ function DetailModal({ drama, onClose }) {
     try {
       const res = await fetch(`/api/tools/dramabox?action=streams&id=${drama.id}&episode=${idx}`)
       const data = await res.json()
-      setStreams(data.streams || data.data || null)
+      const qualities = data.qualities || []
+      if (data.default_url && qualities.length === 0) {
+        qualities.push({ quality: 'Default', url: data.default_url })
+      }
+      setStreams(qualities.length > 0 ? qualities : null)
     } catch {}
     setStreamLoading(false)
   }
@@ -205,9 +209,9 @@ function DetailModal({ drama, onClose }) {
               <div className="stream-panel">
                 <p className="stream-label">▶ Episode {activeEp + 1} — Choose Quality</p>
                 <div className="stream-btns">
-                  {Object.entries(streams).map(([q, url]) => url && (
-                    <a key={q} href={url} target="_blank" rel="noopener noreferrer" className="stream-btn">
-                      <span className="stream-quality">{q}</span>
+                  {streams.map((s, i) => s.url && (
+                    <a key={i} href={s.url} target="_blank" rel="noopener noreferrer" className="stream-btn">
+                      <span className="stream-quality">{s.quality}</span>
                       <span className="stream-arrow">↗</span>
                     </a>
                   ))}
