@@ -2,7 +2,7 @@ import Layout from '../../components/Layout'
 import Link from 'next/link'
 import './projects.css'
 
-export const metadata = { title: 'Projects — Toosii Tech', description: 'Real projects built by Toosii Tech — WhatsApp bots, web tools, and developer utilities.' }
+export const metadata = { title: 'Projects — Toosii Tech', description: 'Explore the full portfolio of tools, bots, and platforms built by Toosii Tech.' }
 
 const projects = [
   {
