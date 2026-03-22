@@ -121,7 +121,9 @@ function DetailModal({ drama, onClose }) {
   const [episodes, setEps]     = useState([])
   const [loading,  setLoading] = useState(true)
   const [activeEp, setActiveEp] = useState(null)
-  const playerRef = useRef(null)
+  const [dlLoading, setDlLoading] = useState(false)
+  const playerRef  = useRef(null)
+  const epListRef  = useRef(null)
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -146,52 +148,72 @@ function DetailModal({ drama, onClose }) {
 
   const selectEpisode = (idx) => {
     setActiveEp(idx)
-    setTimeout(() => {
-      playerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 100)
+    setTimeout(() => playerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80)
   }
 
-  const watchUrl     = (idx) => `/api/tools/dramabox?action=watch&id=${drama.id}&episode=${idx}`
-  const downloadUrl  = (idx) => `/api/tools/dramabox?action=download&id=${drama.id}&episode=${idx}`
+  const handleDownload = async () => {
+    if (activeEp === null || dlLoading) return
+    setDlLoading(true)
+    try {
+      const url = `/api/tools/dramabox?action=download&id=${drama.id}&episode=${activeEp}`
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `Episode_${activeEp + 1}.mp4`
+      a.style.display = 'none'
+      document.body.appendChild(a)
+      a.click()
+      setTimeout(() => document.body.removeChild(a), 2000)
+    } catch {}
+    setTimeout(() => setDlLoading(false), 3000)
+  }
 
-  const info    = detail || drama
-  const epCount = safeEpCount(info)
+  const watchUrl = (idx) => `/api/tools/dramabox?action=watch&id=${drama.id}&episode=${idx}`
+  const info     = detail || drama
+  const epCount  = safeEpCount(info)
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal-box">
-        <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
 
-        {/* ── Hero banner ── */}
-        <div className="modal-hero" style={{ backgroundImage: `url(${info.cover})` }}>
-          <div className="modal-hero-grad" />
-          <div className="modal-hero-content">
+        {/* ── Compact info header ── */}
+        <div className="modal-info-bar">
+          <img
+            src={info.cover}
+            alt={info.title}
+            className="modal-thumb"
+            onError={e => { e.target.src = 'https://placehold.co/60x90/0a0a0a/25d366?text=🎬' }}
+          />
+          <div className="modal-info-text">
             <h2 className="modal-title">{info.title}</h2>
-            <div className="modal-stats">
-              {epCount != null && <span className="modal-stat-pill">📺 {epCount} eps</span>}
+            <div className="modal-meta-row">
+              {epCount != null && <span className="modal-meta-chip">📺 {epCount} eps</span>}
               {Number(info.views) > 0 && (
-                <span className="modal-stat-pill">👁 {Number(info.views).toLocaleString()}</span>
+                <span className="modal-meta-chip">👁 {Number(info.views).toLocaleString()}</span>
               )}
+              {info.tags?.slice(0, 2).map(t => (
+                <span key={t} className="modal-meta-chip modal-tag-chip">{t}</span>
+              ))}
             </div>
-            {info.tags?.length > 0 && (
-              <div className="modal-tags">
-                {info.tags.map(t => <span key={t} className="drama-tag">{t}</span>)}
-              </div>
+            {info.introduction && (
+              <p className="modal-synopsis">{info.introduction.slice(0, 120)}…</p>
             )}
           </div>
+          <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
         </div>
 
-        {/* ── Synopsis ── */}
-        {info.introduction && (
-          <p className="modal-intro">{info.introduction}</p>
-        )}
-
-        {/* ── Inline player (shown when episode selected) ── */}
+        {/* ── Inline player ── */}
         {activeEp !== null && (
           <div className="player-section" ref={playerRef}>
             <div className="player-header">
-              <span className="player-ep-label">▶ Episode {activeEp + 1}</span>
+              <span className="player-ep-label">EP {activeEp + 1}</span>
               <span className="player-title">{info.title}</span>
+              <a
+                href={watchUrl(activeEp)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="player-fullscreen-btn"
+                title="Open fullscreen"
+              >⛶</a>
             </div>
             <div className="player-frame-wrap">
               <iframe
@@ -204,27 +226,22 @@ function DetailModal({ drama, onClose }) {
               />
             </div>
             <div className="player-actions">
-              <a
-                href={watchUrl(activeEp)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="player-btn player-btn--watch"
+              <button
+                onClick={handleDownload}
+                className={`player-btn player-btn--download ${dlLoading ? 'loading' : ''}`}
+                disabled={dlLoading}
               >
-                <span>⛶</span> Full Screen
-              </a>
-              <a
-                href={downloadUrl(activeEp)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="player-btn player-btn--download"
-              >
-                <span>⬇</span> Download
-              </a>
+                {dlLoading ? (
+                  <><span className="dl-spinner" /> Preparing…</>
+                ) : (
+                  <><span>⬇</span> Download Episode {activeEp + 1}</>
+                )}
+              </button>
             </div>
           </div>
         )}
 
-        {/* ── Episodes ── */}
+        {/* ── Episodes list ── */}
         {loading ? (
           <div className="modal-loading">
             <div className="db-spinner" />
@@ -232,19 +249,18 @@ function DetailModal({ drama, onClose }) {
           </div>
         ) : episodes.length > 0 ? (
           <div className="modal-episodes">
-            <h3 className="modal-section-title">
-              🎬 Episodes
+            <div className="modal-ep-header">
+              <span className="modal-ep-title">Episodes</span>
               {activeEp !== null && (
-                <span className="now-playing-badge">Now Playing: Ep {activeEp + 1}</span>
+                <span className="now-playing-badge">▶ Ep {activeEp + 1}</span>
               )}
-            </h3>
-            <div className="episode-grid">
+            </div>
+            <div className="episode-grid" ref={epListRef}>
               {episodes.map((ep, idx) => (
                 <button
                   key={idx}
                   className={`episode-btn ${activeEp === idx ? 'active' : ''}`}
                   onClick={() => selectEpisode(idx)}
-                  title={`Episode ${idx + 1}`}
                 >
                   {idx + 1}
                 </button>
@@ -252,6 +268,7 @@ function DetailModal({ drama, onClose }) {
             </div>
           </div>
         ) : null}
+
       </div>
     </div>
   )
