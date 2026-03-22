@@ -4,10 +4,10 @@ import '../tools.css'
 import './toosii-ai.css'
 
 const SUGGESTED = [
-  'What can you help me with?',
-  'Write a short story about a robot',
-  'Explain how WhatsApp bots work',
-  'Give me 5 business ideas for 2025',
+  'What can you do?',
+  'Write a short story about a self-taught developer',
+  'Give me 5 profitable business ideas for 2026',
+  'How do I build a WhatsApp bot from scratch?',
 ]
 
 const STORAGE_KEY = 'toosii-ai-sessions'
@@ -244,8 +244,8 @@ export default function ToosiiAI() {
           {isEmpty ? (
             <div className="tai-welcome">
               <div className="tai-welcome-icon">🤖</div>
-              <h2 className="tai-welcome-title">How can I help you today?</h2>
-              <p className="tai-welcome-sub">Ask me anything — questions, stories, code, advice, or just chat.</p>
+              <h2 className="tai-welcome-title">Toosii AI — Ask Me Anything</h2>
+              <p className="tai-welcome-sub">Powered by GPT-4o & Gemini. Get answers, write content, generate ideas, debug code, or just have a conversation — all free, no sign-up.</p>
               <div className="tai-suggestions">
                 {SUGGESTED.map((s, i) => (
                   <button key={i} className="tai-suggestion" onClick={() => send(s)}>
