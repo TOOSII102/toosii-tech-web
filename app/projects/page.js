@@ -120,10 +120,10 @@ export default function Projects() {
     <Layout>
       <section className="projects-hero">
         <div className="page-wrapper">
-          <p className="section-label">Projects</p>
-          <h1 className="section-title">Things I've Built</h1>
+          <p className="section-label">Portfolio</p>
+          <h1 className="section-title">What I've <span className="gradient-text">Shipped</span></h1>
           <p className="section-sub">
-            Real projects with real users. Every one of these started as a personal need or a community request — not a tutorial follow-along. Here's what I've shipped and kept running.
+            Real projects. Real users. Every one of these started as a personal need or a community request — not a tutorial clone. Here's what I've built, launched, and kept running.
           </p>
         </div>
       </section>
