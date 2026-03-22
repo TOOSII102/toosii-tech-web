@@ -3,7 +3,7 @@ import './contact.css'
 
 export const metadata = {
   title: 'Contact — Toosii Tech',
-  description: 'Get in touch with Toosii Tech for bot support, collaborations, or custom work.',
+  description: 'Reach out to Toosii Tech for collaborations, custom projects, bot support, or any enquiries.',
 }
 
 const whatsappNumbers = [
