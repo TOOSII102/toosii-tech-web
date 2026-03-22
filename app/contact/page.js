@@ -24,9 +24,9 @@ export default function Contact() {
     <Layout>
       <section className="contact-hero">
         <div className="page-wrapper">
-          <p className="section-label">Contact</p>
-          <h1 className="section-title">Let's Talk</h1>
-          <p className="section-sub">Have a question about the bot? Want to collaborate? Or just want to say hi? I'm reachable.</p>
+          <p className="section-label">Get In Touch</p>
+          <h1 className="section-title">Let's Build Something <span className="gradient-text">Together</span></h1>
+          <p className="section-sub">Whether it's a bot setup question, a collaboration proposal, a custom project, or just a conversation — I'm always reachable and happy to connect.</p>
         </div>
       </section>
 
@@ -87,15 +87,17 @@ export default function Contact() {
           </div>
 
           <div className="contact-note glass-card">
-            <h2>What I Can Help With</h2>
+            <h2>How I Can Help You</h2>
             <ul>
-              <li>🤖 Bot setup, session issues, and troubleshooting</li>
-              <li>🛠️ Custom WhatsApp bot development</li>
-              <li>🤝 Collaborations and open-source contributions</li>
-              <li>💼 Freelance web development projects</li>
-              <li>📦 Feature requests for TOOSII XD ULTRA</li>
+              <li>🤖 Bot setup, session troubleshooting & configuration support</li>
+              <li>🛠️ Custom WhatsApp bot development from scratch</li>
+              <li>🌐 Full-stack web development & API integration</li>
+              <li>🤝 Collaborations, partnerships & open-source contributions</li>
+              <li>💼 Freelance commissions & long-term project work</li>
+              <li>📦 Feature requests & improvements for TOOSII XD ULTRA</li>
+              <li>🎓 Mentoring & guidance for new developers</li>
             </ul>
-            <p className="contact-response">I usually respond within 24 hours.</p>
+            <p className="contact-response">⚡ Typically responds within 24 hours.</p>
           </div>
         </div>
       </section>
