@@ -182,6 +182,27 @@
   color: #25d366;
 }
 
+.dropdown-footer {
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  text-align: right;
+}
+
+.dropdown-all-link {
+  color: #25d366;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 0.3rem 0.5rem;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.dropdown-all-link:hover {
+  background: rgba(37, 211, 102, 0.1);
+}
+
 /* ── Hamburger ── */
 .hamburger {
   display: none;
