@@ -4,7 +4,6 @@ import { useState } from 'react'
 import './audio.css'
 
 const GT = 'https://api.giftedtech.co.ke/api/download'
-
 const STEPS = ['Fetching video info…', 'Converting to MP3…', 'Finalising…']
 
 function proxyUrl(url, title) {
@@ -23,9 +22,7 @@ function fmtDuration(raw) {
   if (/^\d+:\d+/.test(s)) return s
   const secs = Math.floor(Number(s))
   if (isNaN(secs) || secs < 0) return null
-  const h = Math.floor(secs / 3600)
-  const m = Math.floor((secs % 3600) / 60)
-  const sec = secs % 60
+  const h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60), sec = secs % 60
   if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`
   return `${m}:${String(sec).padStart(2,'0')}`
 }
@@ -42,95 +39,64 @@ export default function AudioDownloader() {
   const [step, setStep]               = useState(0)
   const [error, setError]             = useState('')
   const [selectedId, setSelectedId]   = useState(null)
+  const [playingId, setPlayingId]     = useState(null)
+  const [playingTitle, setPlayingTitle] = useState('')
 
-  /* ── Search ── */
   const search = async () => {
     const q = query.trim()
     if (!q) return setSearchError('Enter a song or video name to search')
-    setSearching(true); setSearchError(''); setSearchResults([])
+    setSearching(true); setSearchError(''); setSearchResults([]); setPlayingId(null)
     try {
       const res = await fetch(`/api/search/youtube?q=${encodeURIComponent(q)}`)
       const data = await res.json()
-      if (data.results?.length) {
-        setSearchResults(data.results)
-      } else {
-        setSearchError('No results found — try a different search term')
-      }
-    } catch {
-      setSearchError('Search failed — check your connection and try again')
-    } finally {
-      setSearching(false)
-    }
+      if (data.results?.length) setSearchResults(data.results)
+      else setSearchError('No results found — try a different search term')
+    } catch { setSearchError('Search failed — check your connection and try again') }
+    finally { setSearching(false) }
   }
 
-  /* ── Download ── */
   const download = async (overrideUrl) => {
     const trimmed = (overrideUrl || url).trim()
     if (!trimmed) return setError('Paste a YouTube URL first')
     if (!/youtube\.com|youtu\.be/i.test(trimmed)) return setError('Only YouTube links are supported for MP3 download')
-
     setLoading(true); setError(''); setResult(null); setStep(0)
     const timer = setInterval(() => setStep(s => Math.min(s + 1, STEPS.length - 1)), 7000)
-
     try {
-      const serverRes = await fetch('/api/download/audio', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: trimmed })
-      })
-      const serverData = await serverRes.json()
-
-      if (serverData.download_url) {
-        setResult(serverData)
-        clearInterval(timer); setLoading(false)
-        return
-      }
-
+      const serverData = await (await fetch('/api/download/audio', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: trimmed }) })).json()
+      if (serverData.download_url) { setResult(serverData); clearInterval(timer); setLoading(false); return }
       setStep(1)
-      const enc = encodeURIComponent(trimmed)
-      const gtRes = await fetch(`${GT}/ytmp3?apikey=gifted&url=${enc}`)
-      const gtData = await gtRes.json()
-
+      const gtData = await (await fetch(`${GT}/ytmp3?apikey=gifted&url=${encodeURIComponent(trimmed)}`)).json()
       if (gtData.success && gtData.result?.download_url) {
         const d = gtData.result
-        setResult({
-          download_url: d.download_url,
-          title:     d.title,
-          thumbnail: d.thumbnail || ytThumb(trimmed),
-          duration:  fmtDuration(d.duration),
-          quality:   d.quality || '128kbps',
-        })
-        clearInterval(timer); setLoading(false)
-        return
+        setResult({ download_url: d.download_url, title: d.title, thumbnail: d.thumbnail || ytThumb(trimmed), duration: fmtDuration(d.duration), quality: d.quality || '128kbps' })
+        clearInterval(timer); setLoading(false); return
       }
-
-      const msg = gtData.message || 'Could not extract audio. The conversion service is busy — please try again in a few minutes.'
+      const msg = gtData.message || 'Could not extract audio. The conversion service is busy — please try again.'
       setError(msg.includes('Limit') ? 'Download service is temporarily overloaded. Please try again in a few minutes.' : msg)
-
-    } catch {
-      setError('Network error — please check your connection and try again.')
-    } finally {
-      clearInterval(timer)
-      setLoading(false)
-    }
+    } catch { setError('Network error — please check your connection and try again.') }
+    finally { clearInterval(timer); setLoading(false) }
   }
 
-  /* ── Pick a search result → download it ── */
-  const pickResult = (item) => {
+  const pickResult = (item, e) => {
+    if (e) e.stopPropagation()
     setSelectedId(item.id)
+    setPlayingId(null)
     setUrl(item.url)
     setResult(null)
     setError('')
     download(item.url)
   }
 
-  const switchMode = (m) => {
-    setMode(m)
+  const playVideo = (item) => {
+    setPlayingId(item.id)
+    setPlayingTitle(item.title)
     setResult(null)
     setError('')
-    setSearchError('')
-    setSearchResults([])
-    setSelectedId(null)
+  }
+
+  const switchMode = (m) => {
+    setMode(m); setResult(null); setError(''); setSearchError('')
+    setSearchResults([]); setSelectedId(null); setPlayingId(null)
   }
 
   return (
@@ -139,7 +105,7 @@ export default function AudioDownloader() {
         <div className="page-wrapper">
           <div className="badge" style={{ marginBottom: '1.5rem' }}><span>🎧</span> MP3 Downloader</div>
           <h1 className="section-title">YouTube to MP3. <span className="gradient-text">In Seconds.</span></h1>
-          <p className="section-sub">Search any song by name or paste a YouTube link — get a high-quality MP3 file instantly. No account, no ads, no limits.</p>
+          <p className="section-sub">Search any song by name or paste a YouTube link. Preview it first, then download as MP3. No account, no ads, no limits.</p>
         </div>
       </section>
 
@@ -149,32 +115,16 @@ export default function AudioDownloader() {
 
             {/* Mode tabs */}
             <div className="mode-tabs">
-              <button
-                className={`mode-tab ${mode === 'url' ? 'active' : ''}`}
-                onClick={() => switchMode('url')}
-              >🔗 Paste URL</button>
-              <button
-                className={`mode-tab ${mode === 'search' ? 'active' : ''}`}
-                onClick={() => switchMode('search')}
-              >🎵 Search by Song Name</button>
+              <button className={`mode-tab ${mode === 'url' ? 'active' : ''}`} onClick={() => switchMode('url')}>🔗 Paste URL</button>
+              <button className={`mode-tab ${mode === 'search' ? 'active' : ''}`} onClick={() => switchMode('search')}>🎵 Search by Song Name</button>
             </div>
 
             {/* URL mode */}
             {mode === 'url' && (
               <div className="dl-search-wrapper">
                 <span className="dl-search-icon">🔗</span>
-                <input
-                  type="url"
-                  placeholder="Paste YouTube URL here…"
-                  value={url}
-                  onChange={e => { setUrl(e.target.value); setError('') }}
-                  className="dl-search-input"
-                  onKeyDown={e => e.key === 'Enter' && !loading && download()}
-                  disabled={loading}
-                />
-                <button onClick={() => download()} disabled={loading} className="dl-search-btn">
-                  {loading ? 'Converting…' : '🎵 Get MP3'}
-                </button>
+                <input type="url" placeholder="Paste YouTube URL here…" value={url} onChange={e => { setUrl(e.target.value); setError('') }} className="dl-search-input" onKeyDown={e => e.key === 'Enter' && !loading && download()} disabled={loading} />
+                <button onClick={() => download()} disabled={loading} className="dl-search-btn">{loading ? 'Converting…' : '🎵 Get MP3'}</button>
               </div>
             )}
 
@@ -183,65 +133,78 @@ export default function AudioDownloader() {
               <div>
                 <div className="dl-search-wrapper">
                   <span className="dl-search-icon">🔍</span>
-                  <input
-                    type="text"
-                    placeholder="Search a song — e.g. &quot;Tshwala Bami&quot;, &quot;Rema Calm Down&quot;…"
-                    value={query}
-                    onChange={e => { setQuery(e.target.value); setSearchError('') }}
-                    className="dl-search-input"
-                    onKeyDown={e => e.key === 'Enter' && !searching && search()}
-                    disabled={searching || loading}
-                  />
-                  <button onClick={search} disabled={searching || loading} className="dl-search-btn">
-                    {searching ? 'Searching…' : '🔍 Search'}
-                  </button>
+                  <input type="text" placeholder='Search a song — e.g. "Tshwala Bami", "Rema Calm Down"…' value={query} onChange={e => { setQuery(e.target.value); setSearchError('') }} className="dl-search-input" onKeyDown={e => e.key === 'Enter' && !searching && search()} disabled={searching || loading} />
+                  <button onClick={search} disabled={searching || loading} className="dl-search-btn">{searching ? 'Searching…' : '🔍 Search'}</button>
                 </div>
                 {searchError && <div className="error-box" style={{ marginTop: '0.75rem' }}>{searchError}</div>}
-                {searching && (
-                  <div className="progress-box" style={{ marginTop: '0.75rem' }}>
-                    <div className="spinner" />
-                    <span>Searching YouTube…</span>
-                  </div>
-                )}
+                {searching && <div className="progress-box" style={{ marginTop: '0.75rem' }}><div className="spinner" /><span>Searching YouTube…</span></div>}
               </div>
             )}
 
-            {loading && (
-              <div className="progress-box">
-                <div className="spinner" />
-                <span>{STEPS[step]}</span>
-                <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: '#64748b' }}>may take 20–40s</span>
-              </div>
-            )}
+            {loading && <div className="progress-box"><div className="spinner" /><span>{STEPS[step]}</span><span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: '#64748b' }}>may take 20–40s</span></div>}
             {error && <div className="error-box" style={{ marginTop: '1rem' }}>{error}</div>}
 
+            {/* Inline player */}
+            {playingId && (
+              <div className="inline-player">
+                <div className="player-header">
+                  <div className="player-now">
+                    <span className="player-live-dot" />
+                    <span className="player-now-label">Preview</span>
+                    {playingTitle && <span className="player-title-text">{playingTitle}</span>}
+                  </div>
+                  <button onClick={() => setPlayingId(null)} className="player-close-btn">✕ Close</button>
+                </div>
+                <div className="player-frame-wrap">
+                  <iframe
+                    src={`https://www.youtube.com/embed/${playingId}?autoplay=1&rel=0&modestbranding=1`}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="player-frame"
+                    title={playingTitle}
+                  />
+                </div>
+                <div className="player-actions">
+                  <button
+                    onClick={() => pickResult({ id: playingId, url: `https://youtu.be/${playingId}`, title: playingTitle })}
+                    className="btn-primary"
+                    disabled={loading}
+                  >{loading ? 'Converting…' : '🎵 Download as MP3'}</button>
+                  <button onClick={() => setPlayingId(null)} className="btn-outline">← Back to results</button>
+                </div>
+              </div>
+            )}
+
             {/* Search results */}
-            {mode === 'search' && searchResults.length > 0 && !result && (
+            {mode === 'search' && searchResults.length > 0 && !playingId && !result && (
               <div className="search-results">
-                <p className="results-label">{searchResults.length} results — click a song to convert to MP3</p>
+                <p className="results-label">{searchResults.length} results — click to preview, or hit Get MP3</p>
                 <div className="results-grid">
                   {searchResults.map(item => (
-                    <button
+                    <div
                       key={item.id}
-                      className={`result-card ${selectedId === item.id ? 'selected' : ''} ${loading && selectedId === item.id ? 'loading' : ''}`}
-                      onClick={() => !loading && pickResult(item)}
-                      disabled={loading}
+                      className={`result-card ${selectedId === item.id && loading ? 'loading' : ''}`}
+                      onClick={() => !loading && playVideo(item)}
                     >
                       <div className="rc-thumb-wrap">
                         <img src={item.thumbnail} alt={item.title} className="rc-thumb" loading="lazy" />
                         {item.duration && <span className="rc-dur">{item.duration}</span>}
-                        {loading && selectedId === item.id && (
-                          <div className="rc-loading-overlay"><div className="spinner" /></div>
-                        )}
+                        <div className="rc-play-overlay"><span className="rc-play-icon">▶</span></div>
                       </div>
                       <div className="rc-info">
                         <p className="rc-title">{item.title}</p>
-                        {item.channel && <p className="rc-channel">{item.channel}</p>}
-                        {(item.views || item.uploaded) && (
-                          <p className="rc-meta">{[item.views, item.uploaded].filter(Boolean).join(' · ')}</p>
-                        )}
+                        {item.channel  && <p className="rc-channel">{item.channel}</p>}
+                        {(item.views || item.uploaded) && <p className="rc-meta">{[item.views, item.uploaded].filter(Boolean).join(' · ')}</p>}
+                        <div className="rc-actions">
+                          <span className="rc-play-label">▶ Preview</span>
+                          <button
+                            className="rc-dl-btn"
+                            onClick={e => !loading && pickResult(item, e)}
+                            disabled={loading}
+                          >{loading && selectedId === item.id ? <span className="rc-spinner" /> : '🎵'} Get MP3</button>
+                        </div>
                       </div>
-                    </button>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -262,21 +225,8 @@ export default function AudioDownloader() {
                   </div>
                   <p className="expire-note">⚡ Download now — this link expires soon</p>
                   <div className="dl-buttons">
-                    <a
-                      href={proxyUrl(result.download_url, result.title)}
-                      download
-                      className="btn-primary"
-                      style={{ width: 'fit-content' }}
-                    >
-                      ⬇ Download MP3
-                    </a>
-                    {mode === 'search' && (
-                      <button
-                        onClick={() => { setResult(null); setSelectedId(null) }}
-                        className="btn-outline"
-                        style={{ width: 'fit-content', fontSize: '0.85rem' }}
-                      >← Back to results</button>
-                    )}
+                    <a href={proxyUrl(result.download_url, result.title)} download className="btn-primary" style={{ width: 'fit-content' }}>⬇ Download MP3</a>
+                    {mode === 'search' && <button onClick={() => { setResult(null); setSelectedId(null) }} className="btn-outline" style={{ width: 'fit-content', fontSize: '0.85rem' }}>← Back</button>}
                   </div>
                 </div>
               </div>
@@ -285,9 +235,9 @@ export default function AudioDownloader() {
 
           <div className="tips-grid">
             {[
-              { icon: '🔍', title: 'Search by Name',   desc: 'Type any song or video name — no URL needed.' },
-              { icon: '⚡', title: 'Fast Conversion',   desc: 'Your video converts to MP3 in seconds.' },
-              { icon: '🎵', title: '128kbps MP3',       desc: 'High quality audio, clear and clean.' },
+              { icon: '🔍', title: 'Search by Name',   desc: 'Type any song name — no URL needed.' },
+              { icon: '▶',  title: 'Preview First',     desc: 'Watch before you download — no surprises.' },
+              { icon: '🎵', title: 'High Quality MP3',  desc: 'Clear audio, fast conversion.' },
               { icon: '🔒', title: 'No Sign-up',        desc: 'No account, no login, no tracking.' },
             ].map(t => (
               <div key={t.title} className="tip-card glass-card">
