@@ -20,8 +20,12 @@
 }
 
 .thumb {
-  width: 160px; height: 100px;
-  object-fit: cover; border-radius: 8px; flex-shrink: 0;
+  width: 130px;
+  height: 130px;
+  object-fit: cover;
+  border-radius: 10px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
 }
 
 .result-title { font-size: 0.95rem; font-weight: 700; color: white; margin-bottom: 0.65rem; line-height: 1.4; }
