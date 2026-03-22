@@ -217,8 +217,8 @@ export default function Blog() {
       <section className="blog-hero">
         <div className="page-wrapper">
           <p className="section-label">Blog</p>
-          <h1 className="section-title">Thoughts, Builds & Lessons</h1>
-          <p className="section-sub">Writing about WhatsApp bots, self-taught development, web tools, and the African tech scene. Real experience, no fluff.</p>
+          <h1 className="section-title">Thoughts, Builds & <span className="gradient-text">Lessons</span></h1>
+          <p className="section-sub">Real-world writing from a self-taught developer — covering WhatsApp bots, AI tools, the African tech scene, and everything learned by actually shipping things.</p>
         </div>
       </section>
 
