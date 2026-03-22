@@ -64,18 +64,19 @@ export default function FireLogo() {
       <section className="section" style={{ paddingTop: '1rem' }}>
         <div className="page-wrapper">
           <div className="tool-card glass-card">
-            <div className="tool-input-row">
+            <div className="dl-search-wrapper">
+              <span className="dl-search-icon">🔥</span>
               <input
                 type="text"
                 placeholder="Enter your text (max 20 chars)…"
                 value={text}
                 maxLength={20}
                 onChange={e => { setText(e.target.value); setError('') }}
-                className="text-input"
+                className="dl-search-input"
                 onKeyDown={e => e.key === 'Enter' && !loading && generate()}
                 disabled={loading}
               />
-              <button onClick={generate} disabled={loading} className="btn-primary">
+              <button onClick={generate} disabled={loading} className="dl-search-btn">
                 {loading ? 'Generating…' : '🔥 Generate'}
               </button>
             </div>
