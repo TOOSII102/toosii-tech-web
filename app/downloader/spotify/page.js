@@ -42,8 +42,8 @@ export default function SpotifyDownloader() {
       <section className="tool-hero">
         <div className="page-wrapper">
           <div className="badge" style={{ marginBottom: '1.5rem' }}><span>🎵</span> Spotify Downloader</div>
-          <h1 className="section-title">Download Spotify Tracks</h1>
-          <p className="section-sub">Paste any Spotify track link and download it as MP3. Free, no sign-up.</p>
+          <h1 className="section-title">Spotify to MP3. <span className="gradient-text">Free & Fast.</span></h1>
+          <p className="section-sub">Paste any Spotify track link and download it as a high-quality MP3 in seconds — no premium subscription needed, no account required.</p>
         </div>
       </section>
 
