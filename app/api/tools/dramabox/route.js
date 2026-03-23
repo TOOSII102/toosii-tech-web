@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server'
 
-export const runtime = 'edge'
-
 const BASE = 'https://apis.xcasper.space/api/dramabox'
 const CDN_HEADERS = {
   'Referer': 'https://www.dramabox.com/',
@@ -9,10 +7,22 @@ const CDN_HEADERS = {
 }
 
 async function getStreamSrc(id, epIdx) {
-  const res  = await fetch(`${BASE}?action=streams&id=${encodeURIComponent(id)}&episode=${epIdx}`, {
-    headers: { 'User-Agent': 'Mozilla/5.0' },
-  })
-  const data = await res.json()
+  const tryFetch = async () => {
+    const res  = await fetch(`${BASE}?action=streams&id=${encodeURIComponent(id)}&episode=${epIdx}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+      signal: AbortSignal.timeout(12000),
+    })
+    return res.json()
+  }
+
+  let data = await tryFetch()
+
+  /* xcasper.space occasionally returns success:false on the first call — retry once */
+  if (!data.success || (!data.qualities?.length && !data.default_url)) {
+    await new Promise(r => setTimeout(r, 800))
+    data = await tryFetch()
+  }
+
   const qualities = data.qualities || []
   const src = qualities.find(q => q.is_default)?.url || qualities[0]?.url || data.default_url || ''
   return { src, epNum: data.episode_number || epIdx + 1, title: data.drama_title || '' }
