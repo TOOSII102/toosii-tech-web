@@ -7,25 +7,24 @@ const CDN_HEADERS = {
 }
 
 async function getStreamSrc(id, epIdx) {
-  const tryFetch = async () => {
-    const res  = await fetch(`${BASE}?action=streams&id=${encodeURIComponent(id)}&episode=${epIdx}`, {
+  const tryFetch = () =>
+    fetch(`${BASE}?action=streams&id=${encodeURIComponent(id)}&episode=${epIdx}`, {
       headers: { 'User-Agent': 'Mozilla/5.0' },
       signal: AbortSignal.timeout(12000),
-    })
-    return res.json()
-  }
+    }).then(r => r.json())
 
+  const hasUrl = d => d?.success && (d.qualities?.length || d.default_url)
+
+  /* Retry up to 3 times with short back-off — API is reliable but can hiccup */
   let data = await tryFetch()
-
-  /* xcasper.space occasionally returns success:false on the first call — retry once */
-  if (!data.success || (!data.qualities?.length && !data.default_url)) {
-    await new Promise(r => setTimeout(r, 800))
+  for (let attempt = 1; attempt <= 3 && !hasUrl(data); attempt++) {
+    await new Promise(r => setTimeout(r, attempt * 600))
     data = await tryFetch()
   }
 
-  const qualities = data.qualities || []
-  const src = qualities.find(q => q.is_default)?.url || qualities[0]?.url || data.default_url || ''
-  return { src, epNum: data.episode_number || epIdx + 1, title: data.drama_title || '' }
+  const qualities = data?.qualities || []
+  const src = qualities.find(q => q.is_default)?.url || qualities[0]?.url || data?.default_url || ''
+  return { src, epNum: data?.episode_number || epIdx + 1, title: data?.drama_title || '' }
 }
 
 export async function GET(req) {
