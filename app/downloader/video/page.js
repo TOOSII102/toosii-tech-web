@@ -1,6 +1,6 @@
 'use client'
 import Layout from '../../../components/Layout'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './video.css'
 
 const GT = 'https://api.giftedtech.co.ke/api/download'
@@ -61,6 +61,16 @@ export default function VideoDownloader() {
   const [selectedId, setSelectedId]   = useState(null)
   const [playingId, setPlayingId]     = useState(null)
   const [playingTitle, setPlayingTitle] = useState('')
+  const [trending, setTrending]       = useState([])
+  const [trendingLoading, setTrendingLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/search/youtube?q=' + encodeURIComponent('trending videos 2025'))
+      .then(r => r.json())
+      .then(d => { if (d.results?.length) setTrending(d.results) })
+      .catch(() => {})
+      .finally(() => setTrendingLoading(false))
+  }, [])
 
   const search = async () => {
     const q = query.trim()
@@ -276,8 +286,56 @@ export default function VideoDownloader() {
             )}
           </div>
 
+          {/* Trending section */}
+          {!result && !playingId && !(mode === 'search' && searchResults.length > 0) && (
+            <div className="trending-section">
+              <div className="trending-header">
+                <div>
+                  <h2 className="trending-title">🔥 Trending <span className="gradient-text">Videos</span></h2>
+                  <p className="trending-sub">Popular right now — click to play, hit Download to save</p>
+                </div>
+                <span className="trending-live-badge">● Live</span>
+              </div>
+
+              {trendingLoading ? (
+                <div className="trending-skeletons">
+                  {[...Array(8)].map((_, i) => <div key={i} className="trending-skeleton" />)}
+                </div>
+              ) : trending.length > 0 ? (
+                <div className="results-grid">
+                  {trending.map(item => (
+                    <div
+                      key={item.id}
+                      className={`result-card ${selectedId === item.id && loading ? 'loading' : ''}`}
+                      onClick={() => !loading && playVideo(item)}
+                    >
+                      <div className="rc-thumb-wrap">
+                        <img src={item.thumbnail} alt={item.title} className="rc-thumb" loading="lazy" />
+                        {item.duration && <span className="rc-dur">{item.duration}</span>}
+                        <div className="rc-play-overlay"><span className="rc-play-icon">▶</span></div>
+                      </div>
+                      <div className="rc-info">
+                        <p className="rc-title">{item.title}</p>
+                        {item.channel && <p className="rc-channel">{item.channel}</p>}
+                        {(item.views || item.uploaded) && <p className="rc-meta">{[item.views, item.uploaded].filter(Boolean).join(' · ')}</p>}
+                        <div className="rc-actions">
+                          <span className="rc-play-label">▶ Play</span>
+                          <button
+                            className="rc-dl-btn"
+                            onClick={e => { e.stopPropagation(); !loading && pickResult(item, e) }}
+                            disabled={loading}
+                          >{loading && selectedId === item.id ? <span className="rc-spinner" /> : '⬇'} Download</button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          )}
+
           <div className="platforms">
-            <p className="section-label" style={{ marginBottom: '1.5rem' }}>Supported Platforms</p>
+            <p className="section-label" style={{ marginBottom: '1rem' }}>Supported Platforms</p>
             <div className="platform-grid">
               {['YouTube', 'TikTok', 'Instagram', 'Facebook', 'Twitter / X'].map(p => (
                 <div key={p} className="platform-chip glass-card">{p}</div>
