@@ -66,8 +66,20 @@ export async function GET(req) {
       position:absolute;inset:0;width:100%;height:100%;
       object-fit:contain;
     }
-    .err{position:absolute;inset:0;color:#f87171;font-family:sans-serif;font-size:13px;
-         display:flex;align-items:center;justify-content:center;text-align:center;padding:20px}
+    .err{
+      position:absolute;inset:0;font-family:sans-serif;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      text-align:center;padding:24px;gap:14px;background:#0a0a0a;
+    }
+    .err-icon{font-size:2rem}
+    .err-msg{color:#f87171;font-size:13px;line-height:1.5}
+    .retry-btn{
+      margin-top:4px;padding:10px 24px;
+      background:#25d366;color:#000;
+      border:none;border-radius:8px;
+      font-size:13px;font-weight:700;cursor:pointer;
+    }
+    .retry-btn:hover{opacity:.85}
   </style>
 </head>
 <body>
@@ -75,7 +87,12 @@ export async function GET(req) {
   <div class="wrap">
     <video class="bg" src="${src}" autoplay muted loop playsinline preload="metadata"></video>
     <video class="fg" src="${src}" controls autoplay playsinline preload="metadata"></video>
-  </div>` : `<div class="err">Stream unavailable for Episode ${epNum}</div>`}
+  </div>` : `
+  <div class="err">
+    <span class="err-icon">⚠️</span>
+    <span class="err-msg">Episode ${epNum} didn't load — the stream server had a hiccup.<br>Hit retry and it should work.</span>
+    <button class="retry-btn" onclick="location.reload()">↺ Retry</button>
+  </div>`}
 </body>
 </html>`
 
