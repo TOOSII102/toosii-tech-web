@@ -4,9 +4,9 @@ import BuyCoffee from '../components/BuyCoffee'
 import NavigationHistory from '../components/NavigationHistory'
 
 export const metadata = {
-  title: 'Toosii Tech — AI-Powered Tools & Intelligent Automation',
-  description: 'A precision-built developer platform from Nairobi, Kenya — delivering AI-powered tools, WhatsApp automation, HD movie streaming, media utilities, and intelligent digital experiences. All free. No sign-up.',
-  keywords: 'Toosii Tech, AI tools, WhatsApp automation, developer platform, video downloader, MP3 downloader, movie streaming, vocal remover, Nairobi Kenya, African tech',
+  title: 'Toosii Tech — Free Tools, WhatsApp Bot & Movie Streaming',
+  description: 'A developer platform from Nairobi, Kenya. 11+ free web tools, a WhatsApp bot with 150+ commands, HD movie streaming, video & MP3 downloads, vocal removal, and more — no account, no cost, always free.',
+  keywords: 'Toosii Tech, free web tools, WhatsApp bot, movie streaming, video downloader, MP3 downloader, vocal remover, temp email, APK download, developer platform, Nairobi Kenya, African tech',
 }
 
 /* Responsive — works naturally on every device */
