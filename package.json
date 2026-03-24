@@ -1,7 +1,7 @@
 {
   "name": "toosii-tech-web",
   "version": "1.0.0",
-  "description": "Toosii Tech — AI-Powered Tools & Intelligent Automation from Nairobi",
+  "description": "Toosii Tech — Free Tools, WhatsApp Bot & Movie Streaming from Kenya",
   "private": true,
   "scripts": {
     "dev": "next dev",
