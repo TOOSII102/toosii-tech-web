@@ -124,6 +124,51 @@ export async function GET(req) {
     }
   }
 
+  /* ── YouTube trailer download at specific quality ── */
+  if (action === 'trailer-dl-yt') {
+    const ytId    = searchParams.get('ytId')     || ''
+    const quality = searchParams.get('quality')  || '720'
+
+    if (!ytId) return NextResponse.json({ error: 'Missing ytId' }, { status: 400 })
+
+    try {
+      const { ytdlpGetUrl } = await import('../../../../lib/ytdlp.js')
+      const ytUrl = `https://www.youtube.com/watch?v=${ytId}`
+
+      const fmtMap = {
+        '360':  'best[height<=360][ext=mp4]/best[height<=360]',
+        '480':  'best[height<=480][ext=mp4]/best[height<=480]',
+        '720':  'best[height<=720][ext=mp4]/best[height<=720]',
+        '1080': 'best[height<=1080][ext=mp4]/best[height<=1080]',
+      }
+      const fmt = fmtMap[quality] || fmtMap['720']
+
+      const dlUrl = await ytdlpGetUrl(ytUrl, fmt)
+      if (!dlUrl) return NextResponse.json({ error: 'Quality not available' }, { status: 404 })
+
+      const vidRes = await fetch(dlUrl, {
+        headers: { 'User-Agent': HDRS['User-Agent'], 'Referer': 'https://www.youtube.com/' },
+        signal: AbortSignal.timeout(30000),
+      })
+      if (!vidRes.ok) return NextResponse.json({ error: 'CDN unavailable' }, { status: 502 })
+
+      const safe     = title.replace(/[^a-zA-Z0-9 _-]/g, '').trim().replace(/\s+/g, '_') || 'trailer'
+      const filename = `${safe}_trailer_${quality}p.mp4`
+
+      const outHeaders = new Headers()
+      outHeaders.set('Content-Type',        vidRes.headers.get('content-type') || 'video/mp4')
+      outHeaders.set('Content-Disposition', `attachment; filename="${filename}"`)
+      outHeaders.set('Cache-Control',       'no-store')
+      const cl = vidRes.headers.get('content-length')
+      if (cl) outHeaders.set('Content-Length', cl)
+
+      return new Response(vidRes.body, { status: 200, headers: outHeaders })
+    } catch (e) {
+      console.error('[movies:trailer-dl-yt]', e.message)
+      return NextResponse.json({ error: 'YouTube trailer download failed. Try again.' }, { status: 500 })
+    }
+  }
+
   /* ── Regular actions ── */
   try {
     let url
