@@ -15,6 +15,28 @@ async function up(url) {
   return res.json()
 }
 
+/* Extract a trailer URL from detail data */
+function getTrailerUrl(d) {
+  if (!d) return { directUrl: null, ytId: null }
+  const urlFields = [
+    d.trailerList?.[0]?.url,
+    d.trailerList?.[0]?.videoUrl,
+    d.trailer?.url,
+    d.trailer?.videoUrl,
+    d.trailerUrl,
+  ]
+  const directUrl = urlFields.find(u => u && typeof u === 'string' && u.startsWith('http')) || null
+
+  const ytFields = [
+    d.trailerId, d.youtubeTrailerId, d.ytTrailerId,
+    d.trailerList?.[0]?.youtubeId, d.trailerList?.[0]?.id,
+    d.trailer?.youtubeId, d.trailer?.id,
+  ]
+  const ytId = ytFields.find(v => v && typeof v === 'string') || null
+
+  return { directUrl, ytId }
+}
+
 export async function GET(req) {
   const { searchParams } = new URL(req.url)
   const action = searchParams.get('action') || 'trending'
@@ -25,6 +47,7 @@ export async function GET(req) {
   const res    = searchParams.get('res')  || ''
   const title  = searchParams.get('title')|| 'movie'
 
+  /* ── Full movie download proxy ── */
   if (action === 'download') {
     try {
       if (!id || !res) return NextResponse.json({ error: 'Missing id or res' }, { status: 400 })
@@ -60,6 +83,48 @@ export async function GET(req) {
     }
   }
 
+  /* ── Trailer download proxy ── */
+  if (action === 'trailer-dl') {
+    try {
+      if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+
+      const detailData = await up(`${BASE}/api/rich-detail?subjectId=${encodeURIComponent(id)}`)
+      const { directUrl, ytId } = getTrailerUrl(detailData?.data || null)
+
+      if (directUrl) {
+        /* Stream direct MP4 trailer as attachment */
+        const vidRes = await fetch(directUrl, {
+          headers: { 'User-Agent': HDRS['User-Agent'], 'Referer': HDRS['Referer'] },
+          signal: AbortSignal.timeout(30000),
+        })
+        if (!vidRes.ok) return NextResponse.json({ error: 'Trailer CDN unavailable' }, { status: 502 })
+
+        const safe     = title.replace(/[^a-zA-Z0-9 _-]/g, '').trim().replace(/\s+/g, '_') || 'trailer'
+        const filename = `${safe}_trailer.mp4`
+
+        const outHeaders = new Headers()
+        outHeaders.set('Content-Type',        vidRes.headers.get('content-type') || 'video/mp4')
+        outHeaders.set('Content-Disposition', `attachment; filename="${filename}"`)
+        outHeaders.set('Cache-Control',       'no-store')
+        const cl = vidRes.headers.get('content-length')
+        if (cl) outHeaders.set('Content-Length', cl)
+
+        return new Response(vidRes.body, { status: 200, headers: outHeaders })
+      }
+
+      if (ytId) {
+        /* Redirect to YouTube watch page when only YouTube ID available */
+        return Response.redirect(`https://www.youtube.com/watch?v=${ytId}`, 302)
+      }
+
+      return NextResponse.json({ error: 'No trailer available for download' }, { status: 404 })
+    } catch (e) {
+      console.error('[movies:trailer-dl]', e.message)
+      return NextResponse.json({ error: 'Trailer download failed.' }, { status: 500 })
+    }
+  }
+
+  /* ── Regular actions ── */
   try {
     let url
     switch (action) {
