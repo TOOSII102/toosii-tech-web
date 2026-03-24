@@ -7,24 +7,24 @@ const CDN_HEADERS = {
 }
 
 async function getStreamSrc(id, epIdx) {
-  const tryFetch = () =>
-    fetch(`${BASE}?action=streams&id=${encodeURIComponent(id)}&episode=${epIdx}`, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-      signal: AbortSignal.timeout(12000),
-    }).then(r => r.json())
+  /* Use the episodes action — each episode object already contains stream_url.
+     The old `streams` action is broken and always returns an error. */
+  const res = await fetch(
+    `${BASE}?action=episodes&id=${encodeURIComponent(id)}`,
+    { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(12000) }
+  )
+  const data = await res.json()
 
-  const hasUrl = d => d?.success && (d.qualities?.length || d.default_url)
-
-  /* Retry up to 3 times with short back-off — API is reliable but can hiccup */
-  let data = await tryFetch()
-  for (let attempt = 1; attempt <= 3 && !hasUrl(data); attempt++) {
-    await new Promise(r => setTimeout(r, attempt * 600))
-    data = await tryFetch()
+  if (!data?.success || !Array.isArray(data.episodes)) {
+    return { src: '', epNum: epIdx + 1, title: data?.title || '' }
   }
 
-  const qualities = data?.qualities || []
-  const src = qualities.find(q => q.is_default)?.url || qualities[0]?.url || data?.default_url || ''
-  return { src, epNum: data?.episode_number || epIdx + 1, title: data?.drama_title || '' }
+  /* Find by index — episodes list uses zero-based `index` field */
+  const ep = data.episodes.find(e => e.index === epIdx) ?? data.episodes[epIdx] ?? null
+  const src = ep?.stream_url || ''
+  const epNum = ep?.number ? parseInt(ep.number, 10) : epIdx + 1
+
+  return { src, epNum, title: data.title || '' }
 }
 
 export async function GET(req) {
@@ -88,9 +88,8 @@ export async function GET(req) {
     <video class="fg" src="${src}" controls autoplay playsinline preload="metadata"></video>
   </div>` : `
   <div class="err">
-    <span class="err-icon">⚠️</span>
-    <span class="err-msg">Episode ${epNum} didn't load — the stream server had a hiccup.<br>Hit retry and it should work.</span>
-    <button class="retry-btn" onclick="location.reload()">↺ Retry</button>
+    <span class="err-icon">🔒</span>
+    <span class="err-msg">Episode ${epNum} is a premium episode on DramaBox and is not available for free streaming.<br>Try an earlier episode or search for a different drama.</span>
   </div>`}
 </body>
 </html>`
