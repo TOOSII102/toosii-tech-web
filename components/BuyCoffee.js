@@ -54,10 +54,36 @@ export default function BuyCoffee() {
     }
   }, [open]);
 
-  const handleClose = () => { setOpen(false); setAmount(''); setLoading(false); };
+  const handleClose = () => {
+    setOpen(false);
+    setAmount('');
+    setLoading(false);
+    if (history.state?.coffeeModal) history.back();
+  };
 
+  /* push history entry when modal opens so back button closes it */
+  useEffect(() => {
+    if (open) {
+      history.pushState({ coffeeModal: true }, '');
+    }
+  }, [open]);
+
+  /* intercept hardware/browser back button */
+  useEffect(() => {
+    const onPop = (e) => {
+      if (open) {
+        setOpen(false);
+        setAmount('');
+        setLoading(false);
+      }
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [open]);
+
+  const MIN_AMOUNT = 10;
   const parsed = parseInt(amount, 10);
-  const canPay = !isNaN(parsed) && parsed > 0;
+  const canPay = !isNaN(parsed) && parsed >= MIN_AMOUNT;
 
   const handlePay = async () => {
     if (!canPay || loading) return;
@@ -115,8 +141,8 @@ export default function BuyCoffee() {
                   ref={inputRef}
                   className="bc-custom-input"
                   type="number"
-                  min="1"
-                  placeholder="Enter any amount"
+                  min="10"
+                  placeholder="Min KSh 10"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handlePay()}
@@ -124,6 +150,9 @@ export default function BuyCoffee() {
                 />
               </div>
 
+              {!isNaN(parsed) && parsed > 0 && parsed < MIN_AMOUNT && (
+                <p className="bc-min-note">Minimum amount is KSh {MIN_AMOUNT}</p>
+              )}
               {canPay && !loading && (
                 <p className="bc-summary">
                   Sending <strong>KSh {parsed.toLocaleString()}</strong> — thank you! 🎉
