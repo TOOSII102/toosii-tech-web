@@ -76,7 +76,7 @@ export default function Home() {
 
           <div className="hero-eyebrow">
             <span className="hero-dot" />
-            Platform Active — Serving Thousands from Nairobi, Kenya
+            Platform Active — Serving Thousands from Kenya
           </div>
 
           <h1 className="hero-title">
@@ -86,7 +86,7 @@ export default function Home() {
 
           <p className="hero-sub">
             A developer platform featuring powerful web tools, AI features, a full
-            WhatsApp bot suite, and free movie streaming. Built in Nairobi.
+            WhatsApp bot suite, and free movie streaming. Built in Kenya.
             All free. No sign-up.
           </p>
 
@@ -292,7 +292,7 @@ export default function Home() {
               <p className="section-eyebrow">The Developer</p>
               <h2 className="about-title">Built by Toosii Tech</h2>
               <p className="about-desc">
-                Software developer &amp; tool builder from Nairobi, Kenya. Started with zero experience
+                Software developer &amp; tool builder from Kenya. Started with zero experience
                 in 2021 — now shipping a full multi-device bot, a growing web platform, and AI tools
                 used by thousands. Built from passion, not a classroom.
               </p>
@@ -307,7 +307,7 @@ export default function Home() {
                 <div>
                   <div className="dev-name">Toosii Tech</div>
                   <div className="dev-role">Software Developer &amp; Tool Builder</div>
-                  <div className="dev-location">📍 Nairobi, Kenya</div>
+                  <div className="dev-location">📍 Kenya</div>
                 </div>
               </div>
               <div className="skills-list">
