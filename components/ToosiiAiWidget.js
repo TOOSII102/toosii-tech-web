@@ -39,15 +39,12 @@ export default function ToosiiAiWidget() {
     }
   }, [open])
 
-  /* Back-button support */
+  /* Close on Escape key */
   useEffect(() => {
-    if (open) history.pushState({ aiWidget: true }, '')
-  }, [open])
-
-  useEffect(() => {
-    const onPop = () => { if (open) setOpen(false) }
-    window.addEventListener('popstate', onPop)
-    return () => window.removeEventListener('popstate', onPop)
+    if (!open) return
+    const handler = (e) => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
   }, [open])
 
   const send = async (text) => {
