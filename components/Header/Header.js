@@ -5,52 +5,59 @@ import { usePathname } from 'next/navigation'
 import './header.css'
 
 const mainNav = [
-  { href: '/', label: 'Home' },
-  { href: '/about', label: 'About' },
-  { href: '/bot', label: 'XD Ultra Bot' },
-  { href: '/blog', label: 'Blog' },
-  { href: '/projects', label: 'Portfolio' },
-  { href: '/team', label: 'Team' },
+  { href: '/',        label: 'Home' },
+  { href: '/about',   label: 'About' },
+  { href: '/bot',     label: 'XD Bot' },
+  { href: '/blog',    label: 'Blog' },
   { href: '/contact', label: 'Contact' },
 ]
 
 const toolsNav = [
-  { href: '/tools/ai',            icon: '🤖', label: 'Toosii AI',         desc: 'GPT-4o & Gemini powered chat' },
+  { href: '/tools/ai',            icon: '🤖', label: 'Toosii AI',         desc: 'GPT-4o & Gemini chat' },
   { href: '/tools/dramabox',      icon: '🎭', label: 'DramaBox',           desc: 'Stream short dramas free' },
-  { href: '/downloader/video',    icon: '🎬', label: 'Video Downloader',   desc: 'YouTube, TikTok & more in HD' },
-  { href: '/downloader/audio',    icon: '🎧', label: 'MP3 Downloader',     desc: 'YouTube to MP3 in seconds' },
-  { href: '/downloader/spotify',  icon: '🎵', label: 'Spotify Downloader', desc: 'Spotify tracks as MP3, free' },
-  { href: '/tools/vocal-remover', icon: '🎤', label: 'Vocal Remover',      desc: 'Separate vocals & instrumentals' },
-  { href: '/session',             icon: '🔑', label: 'Session Generator',  desc: 'WhatsApp session ID instantly' },
-  { href: '/tools/firelogo',      icon: '🔥', label: 'Fire Logo Maker',    desc: 'Generate striking fire logos' },
-  { href: '/tools/story',         icon: '📖', label: 'AI Story Generator', desc: 'Full story from any prompt' },
-  { href: '/tools/tempemail',     icon: '📧', label: 'Temp Email',         desc: 'Disposable email, zero trace' },
-  { href: '/tools/apk',           icon: '📦', label: 'APK Search',         desc: 'Direct Android APK downloads' },
+  { href: '/downloader/video',    icon: '🎬', label: 'Video Downloader',   desc: 'YouTube, TikTok & more' },
+  { href: '/downloader/audio',    icon: '🎧', label: 'MP3 Downloader',     desc: 'YouTube to MP3 fast' },
+  { href: '/downloader/spotify',  icon: '🎵', label: 'Spotify',            desc: 'Spotify tracks as MP3' },
+  { href: '/tools/vocal-remover', icon: '🎤', label: 'Vocal Remover',      desc: 'Separate vocals & beat' },
+  { href: '/session',             icon: '🔑', label: 'Session Generator',  desc: 'WhatsApp session ID' },
+  { href: '/tools/firelogo',      icon: '🔥', label: 'Fire Logo Maker',    desc: 'Striking fire logos' },
+  { href: '/tools/story',         icon: '📖', label: 'Story Generator',    desc: 'Full story from prompt' },
+  { href: '/tools/tempemail',     icon: '📧', label: 'Temp Email',         desc: 'Disposable email' },
+  { href: '/tools/apk',           icon: '📦', label: 'APK Search',         desc: 'Direct APK downloads' },
+  { href: '/projects',            icon: '🗂️', label: 'Portfolio',          desc: 'Projects & work' },
 ]
 
 export default function Header() {
   const [mobileOpen, setMobileOpen]   = useState(false)
   const [toolsOpen, setToolsOpen]     = useState(false)
   const [mobileTools, setMobileTools] = useState(false)
-  const pathname  = usePathname()
-  const dropRef   = useRef()
+  const pathname = usePathname()
+  const dropRef  = useRef()
 
   const isActive      = (href) => href === '/' ? pathname === '/' : pathname.startsWith(href)
-  const isToolsActive = toolsNav.some(t => pathname.startsWith(t.href))
+  const isToolsActive = toolsNav.some(t => isActive(t.href))
 
+  /* close dropdown on outside click */
   useEffect(() => {
-    function handleClick(e) {
+    const handler = (e) => {
       if (dropRef.current && !dropRef.current.contains(e.target)) setToolsOpen(false)
     }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
   }, [])
 
+  /* close everything on route change */
   useEffect(() => {
     setMobileOpen(false)
     setToolsOpen(false)
     setMobileTools(false)
   }, [pathname])
+
+  /* lock body scroll when mobile menu open */
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [mobileOpen])
 
   return (
     <header className="site-header">
@@ -63,75 +70,74 @@ export default function Header() {
         </Link>
 
         {/* Desktop nav */}
-        <nav className="nav-menu">
+        <nav className="nav-menu" aria-label="Main navigation">
           {mainNav.map(item => (
             <Link
               key={item.href}
               href={item.href}
-              className={`nav-link ${isActive(item.href) ? 'active' : ''}`}
+              className={`nav-link${isActive(item.href) ? ' active' : ''}`}
             >
               {item.label}
             </Link>
           ))}
 
           {/* Tools dropdown */}
-          <div className={`nav-dropdown ${toolsOpen ? 'open' : ''}`} ref={dropRef}>
+          <div className={`nav-dropdown${toolsOpen ? ' open' : ''}`} ref={dropRef}>
             <button
-              className={`nav-link nav-dropdown-btn ${isToolsActive ? 'active' : ''}`}
+              className={`nav-link nav-dropdown-btn${isToolsActive ? ' active' : ''}`}
               onClick={() => setToolsOpen(o => !o)}
               aria-expanded={toolsOpen}
+              aria-haspopup="true"
             >
               Tools
-              <svg className="dropdown-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <svg className="dropdown-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
 
-            {toolsOpen && (
-              <div className="nav-dropdown-panel">
-                <div className="dropdown-grid">
-                  {toolsNav.map(t => (
-                    <Link
-                      key={t.href}
-                      href={t.href}
-                      className={`dropdown-link ${isActive(t.href) ? 'active' : ''}`}
-                    >
-                      <span className="dropdown-icon">{t.icon}</span>
-                      <span className="dropdown-text">
-                        <span className="dropdown-label">{t.label}</span>
-                        <span className="dropdown-desc">{t.desc}</span>
-                      </span>
-                    </Link>
-                  ))}
-                </div>
-                <div className="dropdown-footer">
-                  <Link href="/tools" className="dropdown-all-link">
-                    Browse all tools →
+            <div className={`nav-dropdown-panel${toolsOpen ? ' panel-open' : ''}`} role="menu">
+              <div className="dropdown-grid">
+                {toolsNav.map(t => (
+                  <Link
+                    key={t.href}
+                    href={t.href}
+                    className={`dropdown-link${isActive(t.href) ? ' active' : ''}`}
+                    role="menuitem"
+                  >
+                    <span className="dropdown-icon">{t.icon}</span>
+                    <span className="dropdown-text">
+                      <span className="dropdown-label">{t.label}</span>
+                      <span className="dropdown-desc">{t.desc}</span>
+                    </span>
                   </Link>
-                </div>
+                ))}
               </div>
-            )}
+              <div className="dropdown-footer">
+                <Link href="/tools" className="dropdown-all-link">Browse all tools →</Link>
+              </div>
+            </div>
           </div>
         </nav>
 
         {/* Hamburger */}
         <button
-          className={`hamburger ${mobileOpen ? 'open' : ''}`}
-          onClick={() => setMobileOpen(!mobileOpen)}
-          aria-label="Toggle menu"
+          className={`hamburger${mobileOpen ? ' open' : ''}`}
+          onClick={() => setMobileOpen(o => !o)}
+          aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={mobileOpen}
         >
           <span /><span /><span />
         </button>
       </div>
 
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <div className="mobile-menu">
+      {/* Mobile drawer */}
+      <div className={`mobile-menu${mobileOpen ? ' mobile-menu--open' : ''}`} aria-hidden={!mobileOpen}>
+        <div className="mobile-menu-inner">
           {mainNav.map(item => (
             <Link
               key={item.href}
               href={item.href}
-              className={`mobile-link ${isActive(item.href) ? 'active' : ''}`}
+              className={`mobile-link${isActive(item.href) ? ' active' : ''}`}
             >
               {item.label}
             </Link>
@@ -139,31 +145,35 @@ export default function Header() {
 
           {/* Tools accordion */}
           <button
-            className={`mobile-link mobile-tools-toggle ${isToolsActive ? 'active' : ''}`}
+            className={`mobile-link mobile-tools-toggle${isToolsActive ? ' active' : ''}`}
             onClick={() => setMobileTools(o => !o)}
+            aria-expanded={mobileTools}
           >
             <span>Tools</span>
-            <svg className={`dropdown-chevron ${mobileTools ? 'rotated' : ''}`} width="14" height="14" viewBox="0 0 12 12" fill="none">
-              <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <svg className={`dropdown-chevron${mobileTools ? ' rotated' : ''}`} width="14" height="14" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
 
-          {mobileTools && (
-            <div className="mobile-tools-list">
-              {toolsNav.map(t => (
-                <Link
-                  key={t.href}
-                  href={t.href}
-                  className={`mobile-link mobile-tool-link ${isActive(t.href) ? 'active' : ''}`}
-                >
-                  <span className="mobile-tool-icon">{t.icon}</span>
-                  {t.label}
-                </Link>
-              ))}
-            </div>
-          )}
+          <div className={`mobile-tools-list${mobileTools ? ' mobile-tools-list--open' : ''}`}>
+            {toolsNav.map(t => (
+              <Link
+                key={t.href}
+                href={t.href}
+                className={`mobile-link mobile-tool-link${isActive(t.href) ? ' active' : ''}`}
+              >
+                <span className="mobile-tool-icon">{t.icon}</span>
+                <span className="mobile-tool-name">{t.label}</span>
+              </Link>
+            ))}
+          </div>
+
+          <div className="mobile-menu-footer">
+            <Link href="/team" className="mobile-link">Team</Link>
+            <Link href="/projects" className="mobile-link">Portfolio</Link>
+          </div>
         </div>
-      )}
+      </div>
     </header>
   )
 }
