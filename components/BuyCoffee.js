@@ -71,6 +71,23 @@ function loadPaystack() {
   });
 }
 
+/* Force a 1280-wide viewport so Paystack always renders its desktop UI */
+function forceDesktopViewport() {
+  let vp = document.querySelector('meta[name="viewport"]');
+  if (!vp) { vp = document.createElement('meta'); vp.name = 'viewport'; document.head.appendChild(vp); }
+  vp.dataset.saved = vp.content;
+  vp.content = 'width=1280, initial-scale=1';
+}
+
+/* Restore the original viewport after Paystack closes */
+function restoreViewport() {
+  const vp = document.querySelector('meta[name="viewport"]');
+  if (vp && vp.dataset.saved) {
+    vp.content = vp.dataset.saved;
+    delete vp.dataset.saved;
+  }
+}
+
 export default function BuyCoffee() {
   const [open, setOpen]       = useState(false);
   const [method, setMethod]   = useState(null);
@@ -167,18 +184,21 @@ export default function BuyCoffee() {
         channels: method?.channels || ['card', 'mobile_money'],
         metadata: { custom_fields: [] },
         onClose: () => {
-          /* User closed Paystack without paying — bring our modal back */
+          /* Restore viewport then bring our modal back */
+          restoreViewport();
           setLoading(false);
           setOpen(true);
         },
         callback: () => {
-          /* Payment succeeded — close everything */
+          /* Restore viewport then close everything */
+          restoreViewport();
           setLoading(false);
           handleClose();
         },
       });
-      /* Hide our modal so Paystack gets a clear, unobstructed view */
+      /* Hide our modal, force desktop viewport, then open Paystack */
       setOpen(false);
+      forceDesktopViewport();
       handler.openIframe();
     } catch (err) {
       console.error('[Paystack]', err);
