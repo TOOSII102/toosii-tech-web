@@ -3,12 +3,14 @@ import { useState, useEffect, useRef } from 'react';
 import './BuyCoffee.css';
 
 const PAYSTACK_LINK = 'https://paystack.shop/pay/4uqgih810w';
+const CUR = 'KSh';
+const MIN = 50;
 
 const PRESETS = [
-  { label: '1 Coffee', emoji: '☕', amount: 200 },
-  { label: '3 Coffees', emoji: '☕☕☕', amount: 500 },
-  { label: 'Big Support', emoji: '🙏', amount: 1000 },
-  { label: 'Legend', emoji: '🚀', amount: 2000 },
+  { label: '1 Coffee', emoji: '☕', amount: 100 },
+  { label: '3 Coffees', emoji: '☕☕☕', amount: 250 },
+  { label: 'Big Support', emoji: '🙏', amount: 500 },
+  { label: 'Legend', emoji: '🚀', amount: 1000 },
 ];
 
 export default function BuyCoffee() {
@@ -37,10 +39,7 @@ export default function BuyCoffee() {
     return () => { document.body.style.overflow = ''; };
   }, [open]);
 
-  const handleOpen = () => {
-    setOpen(true);
-    setPulse(false);
-  };
+  const handleOpen = () => { setOpen(true); setPulse(false); };
 
   const getAmount = () => {
     if (selected !== null) return PRESETS[selected].amount;
@@ -50,13 +49,15 @@ export default function BuyCoffee() {
 
   const handlePay = () => {
     const amt = getAmount();
-    if (amt < 100) return;
-    window.open(`${PAYSTACK_LINK}?amount=${amt}`, '_blank', 'noopener,noreferrer');
+    if (amt < MIN) return;
+    window.open(`${PAYSTACK_LINK}?amount=${amt * 100}`, '_blank', 'noopener,noreferrer');
     setOpen(false);
   };
 
   const amount = getAmount();
-  const canPay = amount >= 100;
+  const canPay = amount >= MIN;
+
+  const fmt = (n) => `${CUR} ${n.toLocaleString()}`;
 
   return (
     <>
@@ -93,7 +94,7 @@ export default function BuyCoffee() {
                 >
                   <span className="bc-preset-emoji">{p.emoji}</span>
                   <span className="bc-preset-label">{p.label}</span>
-                  <span className="bc-preset-amt">₦{p.amount.toLocaleString()}</span>
+                  <span className="bc-preset-amt">{fmt(p.amount)}</span>
                 </button>
               ))}
             </div>
@@ -101,12 +102,12 @@ export default function BuyCoffee() {
             <div className="bc-divider"><span>or enter amount</span></div>
 
             <div className="bc-custom-wrap">
-              <span className="bc-currency">₦</span>
+              <span className="bc-currency">KSh</span>
               <input
                 className="bc-custom-input"
                 type="number"
-                min="100"
-                placeholder="Custom amount (min ₦100)"
+                min={MIN}
+                placeholder={`Custom amount (min ${fmt(MIN)})`}
                 value={custom}
                 onChange={(e) => { setCustom(e.target.value); setSelected(null); }}
               />
@@ -114,7 +115,7 @@ export default function BuyCoffee() {
 
             {amount > 0 && (
               <p className="bc-summary">
-                You're sending <strong>₦{amount.toLocaleString()}</strong> — thank you! 🎉
+                You're sending <strong>{fmt(amount)}</strong> — thank you! 🎉
               </p>
             )}
 
@@ -123,11 +124,11 @@ export default function BuyCoffee() {
               onClick={handlePay}
               disabled={!canPay}
             >
-              ☕ Send {amount >= 100 ? `₦${amount.toLocaleString()}` : 'a Coffee'}
+              ☕ Send {canPay ? fmt(amount) : 'a Coffee'}
             </button>
 
             {!canPay && amount > 0 && (
-              <p className="bc-min-note">Minimum amount is ₦100</p>
+              <p className="bc-min-note">Minimum amount is {fmt(MIN)}</p>
             )}
 
             <p className="bc-secure">🔒 Secure &amp; encrypted payment</p>
