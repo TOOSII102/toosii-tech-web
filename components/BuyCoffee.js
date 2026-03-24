@@ -2,11 +2,22 @@
 import { useState, useEffect, useRef } from 'react';
 import './BuyCoffee.css';
 
-const PAYSTACK_LINK = 'https://paystack.shop/pay/4uqgih810w';
+const PK = 'pk_live_151add3eee89135c64ed91ee899f1e4ddba6e4dd';
+
+function loadPaystack() {
+  return new Promise((resolve) => {
+    if (window.PaystackPop) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://js.paystack.co/v1/inline.js';
+    s.onload = () => resolve();
+    document.head.appendChild(s);
+  });
+}
 
 export default function BuyCoffee() {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState('');
+  const [loading, setLoading] = useState(false);
   const [pulse, setPulse] = useState(false);
   const overlayRef = useRef(null);
   const inputRef = useRef(null);
@@ -36,15 +47,31 @@ export default function BuyCoffee() {
     }
   }, [open]);
 
-  const handleClose = () => { setOpen(false); setAmount(''); };
+  const handleClose = () => { setOpen(false); setAmount(''); setLoading(false); };
 
   const parsed = parseInt(amount, 10);
   const canPay = !isNaN(parsed) && parsed > 0;
 
-  const handlePay = () => {
-    if (!canPay) return;
-    window.open(`${PAYSTACK_LINK}?amount=${parsed}`, '_blank', 'noopener,noreferrer');
-    handleClose();
+  const handlePay = async () => {
+    if (!canPay || loading) return;
+    setLoading(true);
+    await loadPaystack();
+
+    const ref = 'toosii_' + Date.now();
+    const handler = window.PaystackPop.setup({
+      key: PK,
+      email: 'support@toosiitech.com',
+      amount: parsed * 100,
+      currency: 'KES',
+      ref,
+      metadata: { custom_fields: [] },
+      onClose: () => { setLoading(false); },
+      callback: () => {
+        setLoading(false);
+        handleClose();
+      },
+    });
+    handler.openIframe();
   };
 
   return (
@@ -86,21 +113,25 @@ export default function BuyCoffee() {
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handlePay()}
+                  disabled={loading}
                 />
               </div>
 
-              {canPay && (
+              {canPay && !loading && (
                 <p className="bc-summary">
                   Sending <strong>KSh {parsed.toLocaleString()}</strong> — thank you! 🎉
                 </p>
               )}
 
               <button
-                className={`bc-pay-btn${!canPay ? ' bc-pay-btn--disabled' : ''}`}
+                className={`bc-pay-btn${!canPay || loading ? ' bc-pay-btn--disabled' : ''}`}
                 onClick={handlePay}
-                disabled={!canPay}
+                disabled={!canPay || loading}
               >
-                ☕ {canPay ? `Send KSh ${parsed.toLocaleString()}` : 'Enter an Amount'}
+                {loading
+                  ? <span className="bc-btn-spinner" />
+                  : <>☕ {canPay ? `Send KSh ${parsed.toLocaleString()}` : 'Enter an Amount'}</>
+                }
               </button>
 
               <p className="bc-secure">🔒 Secure &amp; encrypted payment</p>
