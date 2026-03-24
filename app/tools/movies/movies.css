@@ -361,6 +361,33 @@
   background: rgba(59,130,246,0.2);
 }
 
+/* YouTube quality download buttons */
+.mv-trailer-dl-qualities {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+.mv-trailer-dl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: rgba(59,130,246,0.1);
+  border: 1px solid rgba(59,130,246,0.25);
+  color: #60a5fa;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.28rem 0.55rem;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: background 0.18s, border-color 0.18s;
+  white-space: nowrap;
+}
+.mv-trailer-dl-btn:hover {
+  background: rgba(59,130,246,0.22);
+  border-color: rgba(59,130,246,0.5);
+}
+
 /* Thumbnail / click-to-play area */
 .mv-trailer-thumb-wrap {
   position: absolute;
