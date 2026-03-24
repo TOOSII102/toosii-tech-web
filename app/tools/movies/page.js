@@ -231,9 +231,8 @@ function DetailModal({ movie, onClose }) {
                     {streams.map(s => (
                       <a
                         key={s.resolutions}
-                        href={s.downloadUrl || s.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        href={`/api/tools/movies?action=download&id=${movie.subjectId}&res=${s.resolutions}&title=${encodeURIComponent(d.title || 'movie')}`}
+                        download={`${(d.title || 'movie').replace(/[^a-zA-Z0-9 ]/g,'').trim()}_${s.resolutions}p.mp4`}
                         className="mv-download-btn"
                       >
                         <span>⬇</span>
