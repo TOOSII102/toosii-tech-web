@@ -68,7 +68,7 @@ const blogPosts = [
       </ul>
       
       <h3>What This Means for Developers</h3>
-      <p>Build for the actual user, not the imagined one. A feature that works perfectly on fiber internet in Nairobi CBD might break in Kisumu on 3G. Test on old Android devices. Keep responses short. Make every KB count.</p>
+      <p>Build for the actual user, not the imagined one. A feature that works perfectly on fiber internet in the city might break on 3G in a rural area. Test on old Android devices. Keep responses short. Make every KB count.</p>
     `
   },
   {
@@ -78,7 +78,7 @@ const blogPosts = [
     author: "Toosii Tech",
     date: "February 10, 2026",
     readTime: "5 min read",
-    excerpt: "Things I wish someone had told me when I was learning to code from YouTube videos in Nairobi. The real lessons that only come from shipping actual software.",
+    excerpt: "Things I wish someone had told me when I was learning to code from YouTube videos in Kenya. The real lessons that only come from shipping actual software.",
     featured: false,
     content: `
       <h2>It's Not About the Language</h2>
