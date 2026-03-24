@@ -8,7 +8,7 @@ export default function Footer() {
       <div className="footer-inner">
         <div className="footer-brand">
           <div className="footer-logo">
-            <div className="footer-icon">T</div>
+            <img src="/logo.png" alt="Toosii Tech" className="footer-logo-img" />
             <span>Toosii Tech</span>
           </div>
           <p className="footer-tagline">Building tools, bots, and digital experiences for the world — from Kenya.</p>
