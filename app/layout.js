@@ -1,7 +1,6 @@
 import './globals.css'
 import AnimatedBackground from '../components/AnimatedBackground'
 import BuyCoffee from '../components/BuyCoffee'
-import ToosiiAiWidget from '../components/ToosiiAiWidget'
 import NavigationHistory from '../components/NavigationHistory'
 
 export const metadata = {
@@ -25,7 +24,6 @@ export default function RootLayout({ children }) {
         <AnimatedBackground />
         {children}
         <BuyCoffee />
-        <ToosiiAiWidget />
       </body>
     </html>
   )
