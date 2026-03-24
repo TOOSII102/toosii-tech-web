@@ -14,7 +14,7 @@ const mainNav = [
 
 const toolsNav = [
   { href: '/tools/ai',            icon: '🤖', label: 'Toosii AI',         desc: 'GPT-4o & Gemini chat' },
-  { href: '/tools/dramabox',      icon: '🎭', label: 'DramaBox',           desc: 'Stream short dramas free' },
+  { href: '/tools/movies',        icon: '🎬', label: 'Movies & Streams',    desc: 'Stream & download free movies' },
   { href: '/downloader/video',    icon: '🎬', label: 'Video Downloader',   desc: 'YouTube, TikTok & more' },
   { href: '/downloader/audio',    icon: '🎧', label: 'MP3 Downloader',     desc: 'YouTube to MP3 fast' },
   { href: '/downloader/spotify',  icon: '🎵', label: 'Spotify',            desc: 'Spotify tracks as MP3' },
