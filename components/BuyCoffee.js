@@ -36,7 +36,7 @@ export default function BuyCoffee() {
 
   const handlePay = () => {
     if (!canPay) return;
-    window.open(`${PAYSTACK_LINK}?amount=${parsed * 100}`, '_blank', 'noopener,noreferrer');
+    window.open(`${PAYSTACK_LINK}?amount=${parsed}`, '_blank', 'noopener,noreferrer');
     setOpen(false);
     setAmount('');
   };
