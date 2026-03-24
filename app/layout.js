@@ -9,11 +9,10 @@ export const metadata = {
   keywords: 'Toosii Tech, developer tools, AI tools, WhatsApp bot, session generator, video downloader, MP3 downloader, DramaBox, Nairobi Kenya',
 }
 
-/* Proper responsive viewport — works on every device */
+/* Force desktop layout on every device */
 export const viewport = {
-  width: 'device-width',
+  width: 1280,
   initialScale: 1,
-  maximumScale: 5,
 }
 
 export default function RootLayout({ children }) {
