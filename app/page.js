@@ -24,9 +24,9 @@ export default function Home() {
     {
       icon: '🛠️',
       title: 'Free Web Tools',
-      desc: 'Video & MP3 downloaders, session generator, fire logo maker, vocal remover, temp email, AI story generator — all free, no account needed.',
+      desc: 'Stream & download movies, video & MP3 downloaders, session generator, fire logo maker, vocal remover, temp email, AI story generator — all free.',
       cta: 'Browse Tools →',
-      href: '/tools/dramabox',
+      href: '/tools/movies',
       color: '#3b82f6',
     },
     {
@@ -44,7 +44,7 @@ export default function Home() {
     { icon: '🎬', title: 'Video Downloader', desc: 'YouTube, TikTok, Instagram — download in HD, no ads, no sign-up.', href: '/downloader/video', label: 'Download Video', color: '#ef4444' },
     { icon: '🎧', title: 'MP3 Downloader', desc: 'Extract high-quality audio from any YouTube video, free and fast.', href: '/downloader/audio', label: 'Download MP3', color: '#f59e0b' },
     { icon: '🎵', title: 'Spotify Downloader', desc: 'Paste a Spotify link and get the MP3 — no premium needed.', href: '/downloader/spotify', label: 'Download Track', color: '#25d366' },
-    { icon: '🎭', title: 'DramaBox', desc: 'Stream trending short dramas free — all episodes, no subscription.', href: '/tools/dramabox', label: 'Watch Now', color: '#ec4899' },
+    { icon: '🎬', title: 'Movies & Streams', desc: 'Stream and download full movies & TV series free — HD quality, no sign-up.', href: '/tools/movies', label: 'Watch Now', color: '#8b5cf6' },
     { icon: '🎤', title: 'Vocal Remover', desc: 'Separate vocals from any song and get the instrumental instantly.', href: '/tools/vocal-remover', label: 'Remove Vocals', color: '#06b6d4' },
     { icon: '🔑', title: 'Session Generator', desc: 'Get your WhatsApp session ID in seconds — pair code or QR scan.', href: '/session', label: 'Generate Now', color: '#25d366' },
     { icon: '🔥', title: 'Fire Logo Maker', desc: 'Turn any name or brand into a striking fire-style logo instantly.', href: '/tools/firelogo', label: 'Make Logo', color: '#f97316' },
