@@ -236,16 +236,24 @@ function DetailModal({ movie, onClose }) {
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
                       YouTube
                     </a>
-                    {(trailer.ytId || trailer.directUrl) && (
+                    {trailer.ytId && (
+                      <div className="mv-trailer-dl-qualities">
+                        {['360', '480', '720', '1080'].map(q => (
+                          <a
+                            key={q}
+                            href={`/api/tools/movies?action=trailer-dl-yt&ytId=${trailer.ytId}&quality=${q}&title=${encodeURIComponent(d.title || 'trailer')}`}
+                            download={`${(d.title || 'trailer').replace(/[^a-zA-Z0-9 ]/g,'').trim() || 'trailer'}_trailer_${q}p.mp4`}
+                            className="mv-trailer-dl-btn"
+                          >
+                            ⬇ {q}p
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                    {trailer.directUrl && (
                       <a
-                        href={
-                          trailer.directUrl
-                            ? `/api/tools/movies?action=trailer-dl&id=${movie.subjectId}&title=${encodeURIComponent(d.title || 'trailer')}`
-                            : `https://www.youtube.com/watch?v=${trailer.ytId}`
-                        }
-                        target={trailer.directUrl ? '_self' : '_blank'}
-                        rel="noopener noreferrer"
-                        download={!!trailer.directUrl}
+                        href={`/api/tools/movies?action=trailer-dl&id=${movie.subjectId}&title=${encodeURIComponent(d.title || 'trailer')}`}
+                        download={`${(d.title || 'trailer').replace(/[^a-zA-Z0-9 ]/g,'').trim() || 'trailer'}_trailer.mp4`}
                         className="mv-trailer-dl-link"
                       >
                         ⬇ Download
