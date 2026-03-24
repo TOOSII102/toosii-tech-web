@@ -66,7 +66,7 @@ export default function Header() {
 
           {/* Brand */}
           <Link href="/" className="brand-link">
-            <div className="brand-icon">T</div>
+            <img src="/logo.png" alt="Toosii Tech" className="brand-logo" />
             <span className="brand-name">Toosii Tech</span>
           </Link>
 
