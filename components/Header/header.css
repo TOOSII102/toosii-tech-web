@@ -17,7 +17,7 @@
   max-width: 1280px;
   margin: 0 auto;
   padding: 0 1.5rem;
-  height: 62px;
+  height: 70px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -33,7 +33,7 @@
   flex-shrink: 0;
 }
 .brand-logo {
-  height: 40px;
+  height: 54px;
   width: auto;
   object-fit: contain;
   flex-shrink: 0;
@@ -286,7 +286,7 @@
 ══════════════════════════════════ */
 .mobile-menu {
   position: fixed;
-  inset: 62px 0 0 0;
+  inset: 70px 0 0 0;
   background: rgba(5, 5, 12, 0.97);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
@@ -453,6 +453,7 @@
 
 @media (max-width: 480px) {
   .brand-name   { font-size: 0.95rem; }
-  .header-inner { padding: 0 1rem; height: 58px; }
-  .mobile-menu  { inset: 58px 0 0 0; }
+  .header-inner { padding: 0 1rem; height: 64px; }
+  .mobile-menu  { inset: 64px 0 0 0; }
+  .brand-logo   { height: 46px; }
 }
