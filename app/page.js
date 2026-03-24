@@ -7,7 +7,7 @@ export default function Home() {
 
   const stats = [
     { num: '150+', label: 'Bot Commands',  accent: '#25d366' },
-    { num: '10+',  label: 'Free Tools',    accent: '#3b82f6' },
+    { num: '11+',  label: 'Free Tools',    accent: '#3b82f6' },
     { num: '6+',   label: 'AI Models',     accent: '#8b5cf6' },
     { num: '5K+',  label: 'Users Served',  accent: '#f59e0b' },
   ]
@@ -52,7 +52,7 @@ export default function Home() {
     { icon: '🔑', title: 'Session Generator',   desc: 'WhatsApp session ID in seconds.', href: '/session',           color: '#25d366' },
     { icon: '🔥', title: 'Fire Logo Maker',      desc: 'Striking fire-style logo, instant.', href: '/tools/firelogo', color: '#f97316' },
     { icon: '📖', title: 'AI Story Generator',  desc: 'Idea → full creative story in 20s.', href: '/tools/story',    color: '#a855f7' },
-    { icon: '📧', title: 'Temp Email',           desc: 'Instant disposable email, no trace.', href: '/tools/tempemail', color: '#64748b' },
+    { icon: '📧', title: 'Temp Email',           desc: 'Instant disposable email, no trace.', href: '/tools/tempemail', color: '#ec4899' },
     { icon: '📱', title: 'APK Search',           desc: 'Find and download any Android APK.', href: '/tools/apk',     color: '#10b981' },
   ]
 
@@ -99,6 +99,8 @@ export default function Home() {
             </Link>
             <a
               href="https://github.com/TOOSII102/TOOSII-XD-ULTRA/archive/refs/heads/main.zip"
+              target="_blank"
+              rel="noopener noreferrer"
               className="hero-btn-ghost"
             >
               <span>⬇️</span> Download Bot
