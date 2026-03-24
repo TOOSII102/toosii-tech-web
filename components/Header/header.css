@@ -2,10 +2,11 @@
    SITE HEADER
 ══════════════════════════════════ */
 .site-header {
-  background: rgba(7, 7, 14, 0.94);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-bottom: 1px solid rgba(37, 211, 102, 0.12);
+  background: rgba(7, 7, 14, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 1px 0 rgba(37,211,102,0.08), 0 4px 24px rgba(0,0,0,0.3);
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -32,10 +33,10 @@
   flex-shrink: 0;
 }
 .brand-icon {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   background: linear-gradient(135deg, #25d366, #128c7e);
-  border-radius: 8px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -43,6 +44,7 @@
   font-weight: 900;
   color: white;
   flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(37,211,102,0.35), inset 0 1px 0 rgba(255,255,255,0.2);
 }
 .brand-name {
   font-size: 1.05rem;
@@ -95,20 +97,29 @@
   color: #07070e;
   font-size: 0.82rem;
   font-weight: 800;
-  padding: 0.42rem 0.9rem;
-  border-radius: 8px;
+  padding: 0.48rem 1rem;
+  border-radius: 9px;
   border: none;
   cursor: pointer;
   font-family: inherit;
   white-space: nowrap;
   transition: filter 0.18s, box-shadow 0.18s, transform 0.15s;
-  box-shadow: 0 2px 10px rgba(245,158,11,0.3);
-  margin-left: 0.25rem;
+  box-shadow: 0 3px 14px rgba(245,158,11,0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+  margin-left: 0.35rem;
   flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+.nav-support-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.14), transparent);
+  pointer-events: none;
 }
 .nav-support-btn:hover {
-  filter: brightness(1.08);
-  box-shadow: 0 4px 16px rgba(245,158,11,0.45);
+  filter: brightness(1.1);
+  box-shadow: 0 6px 20px rgba(245,158,11,0.5), inset 0 1px 0 rgba(255,255,255,0.2);
   transform: translateY(-1px);
 }
 .nav-support-btn:active { transform: translateY(0); }
