@@ -11,7 +11,7 @@ export default function Footer() {
             <div className="footer-icon">T</div>
             <span>Toosii Tech</span>
           </div>
-          <p className="footer-tagline">Building intelligent tools, AI automation, and precision-crafted digital experiences — from Nairobi, Kenya to the world.</p>
+          <p className="footer-tagline">Building tools, bots, and digital experiences for the world — from Kenya.</p>
           <div className="footer-contact-direct">
             <a href="mailto:toosiitechcompany@gmail.com" className="email-direct">📧 Email Directly</a>
             <p className="response-note">⚡ Usually responds within 24 hours</p>
@@ -74,12 +74,12 @@ export default function Footer() {
           <a href="https://wa.me/254746677793" target="_blank" rel="noopener noreferrer">+254 746 677 793</a>
           <a href="https://wa.me/254788781373" target="_blank" rel="noopener noreferrer">+254 788 781 373</a>
           <a href="https://t.me/toosiitech" target="_blank" rel="noopener noreferrer">@toosiitech (Telegram)</a>
-          <span>📍 Nairobi, Kenya</span>
+          <span>📍 Kenya</span>
         </div>
       </div>
 
       <div className="footer-bottom">
-        <p>© {year} Toosii Tech — Built in Nairobi, Kenya. All rights reserved.</p>
+        <p>© {year} Toosii Tech — Built in Kenya. All rights reserved.</p>
         <Link href="/privacy-policy">Privacy Policy</Link>
       </div>
     </footer>
