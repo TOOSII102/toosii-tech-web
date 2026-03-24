@@ -1,5 +1,6 @@
 import Layout from '../components/Layout'
 import Link from 'next/link'
+import SupportSection from '../components/SupportSection'
 import './home.css'
 
 export default function Home() {
@@ -204,6 +205,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── Support / Buy Me a Coffee ── */}
+      <SupportSection />
 
       {/* ── About CTA ── */}
       <section className="section about-cta">
