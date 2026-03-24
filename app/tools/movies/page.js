@@ -20,6 +20,33 @@ function fmtSize(bytes) {
 function fmtYear(date) { return date?.slice(0, 4) || '' }
 function coverUrl(m) { return m?.cover?.url || m?.cover || '' }
 
+/* ── Trailer helpers ── */
+function parseYTId(val) {
+  if (!val || typeof val !== 'string') return null
+  const c = val.trim()
+  if (/^[a-zA-Z0-9_-]{11}$/.test(c)) return c
+  const m = c.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
+  return m ? m[1] : null
+}
+function extractTrailer(d) {
+  if (!d) return { ytId: null, directUrl: null }
+  const ytFields = [
+    d.trailerId, d.youtubeTrailerId, d.ytTrailerId,
+    d.trailerList?.[0]?.youtubeId, d.trailerList?.[0]?.id,
+    d.trailer?.youtubeId, d.trailer?.id,
+  ]
+  for (const f of ytFields) {
+    const id = parseYTId(f)
+    if (id) return { ytId: id, directUrl: null }
+  }
+  const urlFields = [
+    d.trailerList?.[0]?.url, d.trailerList?.[0]?.videoUrl,
+    d.trailer?.url, d.trailer?.videoUrl, d.trailerUrl,
+  ]
+  const directUrl = urlFields.find(u => u && typeof u === 'string' && u.startsWith('http')) || null
+  return { ytId: null, directUrl }
+}
+
 /* ── Movie card ── */
 function MovieCard({ movie, onClick }) {
   return (
@@ -65,14 +92,17 @@ function SkeletonCard() {
 
 /* ── Detail modal ── */
 function DetailModal({ movie, onClose }) {
-  const [detail,   setDetail]   = useState(null)
-  const [streams,  setStreams]  = useState([])
-  const [recs,     setRecs]     = useState([])
-  const [loading,  setLoading]  = useState(true)
-  const [activeQ,  setActiveQ]  = useState(null)
-  const [playing,  setPlaying]  = useState(false)
-  const videoRef   = useRef(null)
-  const histRef    = useRef(false)
+  const [detail,         setDetail]        = useState(null)
+  const [streams,        setStreams]        = useState([])
+  const [recs,           setRecs]          = useState([])
+  const [loading,        setLoading]       = useState(true)
+  const [activeQ,        setActiveQ]       = useState(null)
+  const [playing,        setPlaying]       = useState(false)
+  const [trailer,        setTrailer]       = useState({ ytId: null, directUrl: null })
+  const [trailerPlaying, setTrailerPlaying]= useState(false)
+  const videoRef  = useRef(null)
+  const histRef   = useRef(false)
+  const trailerRef= useRef(null)
 
   /* lock scroll + history */
   useEffect(() => {
@@ -94,7 +124,9 @@ function DetailModal({ movie, onClose }) {
 
   /* fetch detail + streams + recs in parallel */
   useEffect(() => {
-    setDetail(null); setStreams([]); setRecs([]); setLoading(true); setPlaying(false); setActiveQ(null)
+    setDetail(null); setStreams([]); setRecs([]); setLoading(true)
+    setPlaying(false); setActiveQ(null)
+    setTrailer({ ytId: null, directUrl: null }); setTrailerPlaying(false)
     const id = movie.subjectId
     async function load() {
       try {
@@ -105,7 +137,10 @@ function DetailModal({ movie, onClose }) {
         ])
         const [dData, pData, rData] = await Promise.all([dRes.json(), pRes.json(), rRes.json()])
 
-        setDetail(dData?.data || null)
+        const detailData = dData?.data || null
+        setDetail(detailData)
+        setTrailer(extractTrailer(detailData))
+
         const st = pData?.data?.streams || []
         const sorted = [...st].sort((a, b) => (+b.resolutions) - (+a.resolutions))
         setStreams(sorted)
@@ -119,6 +154,13 @@ function DetailModal({ movie, onClose }) {
 
   const cover = coverUrl(detail || movie)
   const d = detail || movie
+
+  const ytSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent((d.title || '') + ' official trailer')}`
+
+  function scrollToTrailer() {
+    setTrailerPlaying(true)
+    setTimeout(() => trailerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
+  }
 
   return (
     <div className="mv-modal-backdrop" onClick={e => { if (e.target === e.currentTarget) close() }}>
@@ -149,6 +191,18 @@ function DetailModal({ movie, onClose }) {
                   <span key={g} style={{ color: '#a78bfa' }}>{g.trim()}</span>
                 ))}
               </div>
+              {/* Hero action buttons */}
+              <div className="mv-modal-hero-actions">
+                <button className="mv-modal-trailer-btn" onClick={scrollToTrailer}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                  Watch Trailer
+                </button>
+                {streams.length > 0 && (
+                  <button className="mv-modal-watch-btn" onClick={() => { setPlaying(true); setTimeout(() => document.querySelector('.mv-player-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80) }}>
+                    ▶ Watch Movie
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -165,13 +219,111 @@ function DetailModal({ movie, onClose }) {
               {/* Description */}
               {d.description && <p className="mv-modal-desc">{d.description}</p>}
 
-              {/* Player */}
+              {/* ══ TRAILER SECTION ══ */}
+              <div className="mv-trailer-section" ref={trailerRef}>
+                <div className="mv-trailer-head">
+                  <span className="mv-player-label">
+                    <span className="mv-trailer-dot" />
+                    Official Trailer
+                  </span>
+                  <div className="mv-trailer-head-actions">
+                    <a
+                      href={ytSearchUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mv-trailer-yt-link"
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                      YouTube
+                    </a>
+                    {(trailer.ytId || trailer.directUrl) && (
+                      <a
+                        href={
+                          trailer.directUrl
+                            ? `/api/tools/movies?action=trailer-dl&id=${movie.subjectId}&title=${encodeURIComponent(d.title || 'trailer')}`
+                            : `https://www.youtube.com/watch?v=${trailer.ytId}`
+                        }
+                        target={trailer.directUrl ? '_self' : '_blank'}
+                        rel="noopener noreferrer"
+                        download={!!trailer.directUrl}
+                        className="mv-trailer-dl-link"
+                      >
+                        ⬇ Download
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                {/* Player area */}
+                <div className="mv-video-wrap">
+                  {trailerPlaying && trailer.ytId ? (
+                    <iframe
+                      src={`https://www.youtube-nocookie.com/embed/${trailer.ytId}?autoplay=1&rel=0&modestbranding=1&color=white`}
+                      className="mv-video"
+                      allow="autoplay; fullscreen; picture-in-picture"
+                      allowFullScreen
+                      title={`${d.title} – Official Trailer`}
+                      style={{ border: 'none' }}
+                    />
+                  ) : trailerPlaying && trailer.directUrl ? (
+                    <video
+                      className="mv-video"
+                      src={trailer.directUrl}
+                      controls
+                      autoPlay
+                      playsInline
+                      preload="metadata"
+                    />
+                  ) : (
+                    /* Thumbnail / click-to-play state */
+                    <div
+                      className="mv-trailer-thumb-wrap"
+                      onClick={() => trailer.ytId || trailer.directUrl
+                        ? setTrailerPlaying(true)
+                        : window.open(ytSearchUrl, '_blank')
+                      }
+                      role="button"
+                      aria-label="Play trailer"
+                    >
+                      {trailer.ytId ? (
+                        <img
+                          src={`https://img.youtube.com/vi/${trailer.ytId}/maxresdefault.jpg`}
+                          alt={`${d.title} trailer thumbnail`}
+                          className="mv-trailer-thumb-img"
+                          onError={e => {
+                            e.target.src = `https://img.youtube.com/vi/${trailer.ytId}/hqdefault.jpg`
+                          }}
+                        />
+                      ) : (
+                        <img
+                          src={cover}
+                          alt={d.title}
+                          className="mv-trailer-thumb-img"
+                          style={{ opacity: 0.35 }}
+                        />
+                      )}
+                      <div className="mv-trailer-play-overlay">
+                        <div className="mv-trailer-play-circle">
+                          <svg width="32" height="32" viewBox="0 0 24 24" fill="white" aria-hidden="true">
+                            <path d="M8 5v14l11-7z"/>
+                          </svg>
+                        </div>
+                        <span className="mv-trailer-play-label">
+                          {trailer.ytId || trailer.directUrl ? 'Play Trailer' : 'Search Trailer on YouTube'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* ══ FULL MOVIE PLAYER ══ */}
               {streams.length > 0 ? (
                 <div className="mv-player-section">
                   <div className="mv-player-head">
                     <span className="mv-player-label">
                       <span className="mv-player-dot" />
-                      Stream Now
+                      Full Movie — Stream Now
                     </span>
                     <div className="mv-quality-tabs">
                       {streams.map(s => (
@@ -202,12 +354,16 @@ function DetailModal({ movie, onClose }) {
                   ) : (
                     <div className="mv-video-wrap" style={{ cursor: 'pointer' }}
                       onClick={() => setPlaying(true)}>
-                      <div className="mv-video-placeholder">
-                        <div style={{ position: 'relative', display: 'inline-block' }}>
-                          <img src={cover} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0, opacity: 0.3, borderRadius: 12 }} />
-                          <div className="mv-video-placeholder-icon">▶</div>
+                      <div className="mv-trailer-thumb-wrap">
+                        <img src={cover} alt="" className="mv-trailer-thumb-img" style={{ opacity: 0.25 }} />
+                        <div className="mv-trailer-play-overlay">
+                          <div className="mv-trailer-play-circle" style={{ background: 'rgba(139,92,246,0.85)' }}>
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+                          </div>
+                          <span className="mv-trailer-play-label">
+                            Click to play — {activeQ?.resolutions}p available
+                          </span>
                         </div>
-                        <p>Click to play — {activeQ?.resolutions}p available</p>
                       </div>
                     </div>
                   )}
@@ -216,16 +372,16 @@ function DetailModal({ movie, onClose }) {
                 <div className="mv-player-section">
                   <div className="mv-video-placeholder" style={{ padding: '2.5rem', minHeight: 120 }}>
                     <span className="mv-video-placeholder-icon">🔒</span>
-                    <p>Stream not available for this title.</p>
+                    <p>Full movie stream not available for this title.</p>
                   </div>
                 </div>
               )}
 
-              {/* Downloads */}
+              {/* ══ DOWNLOADS ══ */}
               {streams.length > 0 && (
                 <div className="mv-download-section">
                   <div className="mv-download-head">
-                    ⬇ Download
+                    ⬇ Download Full Movie
                   </div>
                   <div className="mv-download-grid">
                     {streams.map(s => (
@@ -304,14 +460,13 @@ export default function MoviesPage() {
   const [results,  setResults]    = useState([])
   const [query,    setQuery]      = useState('')
   const [type,     setType]       = useState('')
-  const [tab,      setTab]        = useState('trending') // 'trending' | 'search'
+  const [tab,      setTab]        = useState('trending')
   const [loading,  setLoading]    = useState(true)
   const [srchLoad, setSrchLoad]   = useState(false)
   const [selected, setSelected]   = useState(null)
   const debRef     = useRef(null)
   const inputRef   = useRef(null)
 
-  /* Load trending on mount */
   useEffect(() => {
     async function load() {
       try {
@@ -325,14 +480,12 @@ export default function MoviesPage() {
     load()
   }, [])
 
-  /* Handle recommendation cross-open */
   useEffect(() => {
     const h = e => setSelected(e.detail)
     window.addEventListener('mv-open', h)
     return () => window.removeEventListener('mv-open', h)
   }, [])
 
-  /* Debounced search */
   const runSearch = useCallback(async (q, t) => {
     if (!q.trim()) { setResults([]); setTab('trending'); return }
     setSrchLoad(true); setTab('search')
@@ -362,7 +515,7 @@ export default function MoviesPage() {
     <Layout>
       <div className="mv-page">
 
-        {/* ── Hero banner (featured movie) ── */}
+        {/* ── Hero banner ── */}
         {featured && (
           <div className="mv-hero">
             <div className="mv-hero-bg" style={{ backgroundImage: `url(${coverUrl(featured)})` }} />
@@ -383,8 +536,8 @@ export default function MoviesPage() {
                 <button className="mv-hero-play-btn" onClick={() => setSelected(featured)}>
                   ▶ Watch Now
                 </button>
-                <button className="mv-hero-info-btn" onClick={() => setSelected(featured)}>
-                  ⓘ More Info
+                <button className="mv-hero-trailer-btn" onClick={() => setSelected(featured)}>
+                  🎬 Trailer
                 </button>
               </div>
             </div>
@@ -455,10 +608,8 @@ export default function MoviesPage() {
         <div className="mv-made-by">
           Toosii Movies · Made by <a href="/">TOOSII</a> · Toosii Tech Kenya
         </div>
-
       </div>
 
-      {/* ── Detail modal ── */}
       {selected && (
         <DetailModal
           movie={selected}
