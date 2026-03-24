@@ -227,11 +227,33 @@ a { -webkit-tap-highlight-color: transparent; }
   box-shadow: 0 0 20px rgba(37,211,102,0.1), inset 0 1px 0 rgba(255,255,255,0.06);
 }
 
+/* ── Responsive ── */
+
+@media (max-width: 900px) {
+  .page-wrapper { padding: 0 1.5rem; }
+}
+
 @media (max-width: 640px) {
   .page-wrapper { padding: 0 1rem; }
   .section { padding: 3rem 0; }
-  .glass-card { padding: 1.25rem; border-radius: 12px; }
-  .btn-primary, .btn-outline, .btn-secondary { padding: 0.8rem 1.4rem; font-size: 0.9rem; }
+  .glass-card { padding: 1.25rem; border-radius: 14px; }
+  .section-label { font-size: 0.72rem; padding: 0.32rem 0.85rem; }
+  .btn-primary,
+  .btn-outline,
+  .btn-secondary {
+    padding: 0.82rem 1.5rem;
+    font-size: 0.9rem;
+    min-height: 44px;         /* WCAG touch target */
+    border-radius: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-wrapper { padding: 0 0.875rem; }
+  .section { padding: 2.25rem 0; }
+  .glass-card { padding: 1rem; border-radius: 12px; }
+  /* Prevent iOS auto-zoom on input focus */
+  input, textarea, select { font-size: 16px; }
 }
 
 /* ── Paystack popup — compact centred box on every device ── */
