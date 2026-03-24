@@ -451,10 +451,9 @@ export default function MoviesPage() {
           </div>
         </div>
 
-        {/* ── Attribution ── */}
+        {/* ── Footer ── */}
         <div className="mv-made-by">
-          Streams powered by <a href="https://movieapi.xcasper.space" target="_blank" rel="noopener noreferrer">XCASPER Movies API</a>
-          {' · '}Toosii Movies · Made by <a href="/">TOOSII</a> · Toosii Tech Kenya
+          Toosii Movies · Made by <a href="/">TOOSII</a> · Toosii Tech Kenya
         </div>
 
       </div>
