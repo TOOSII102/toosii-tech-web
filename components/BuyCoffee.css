@@ -194,6 +194,18 @@
 .bc-pay-btn:active:not(:disabled) { transform: translateY(0); }
 .bc-pay-btn--disabled { opacity: 0.4; cursor: not-allowed; }
 
+/* ── Button spinner ── */
+.bc-btn-spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(7,7,14,0.3);
+  border-top-color: #07070e;
+  border-radius: 50%;
+  animation: bc-spin 0.75s linear infinite;
+  display: inline-block;
+}
+@keyframes bc-spin { to { transform: rotate(360deg); } }
+
 /* ── Secure note ── */
 .bc-secure {
   text-align: center;
