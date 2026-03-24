@@ -95,8 +95,9 @@ export default function BuyCoffee() {
   const [loading, setLoading] = useState(false);
   const [payErr, setPayErr]   = useState('');
   const [pulse, setPulse]     = useState(false);
-  const overlayRef = useRef(null);
-  const inputRef   = useRef(null);
+  const overlayRef    = useRef(null);
+  const inputRef      = useRef(null);
+  const historyPushed = useRef(false);
 
   useEffect(() => {
     const t = setTimeout(() => setPulse(true), 4000);
@@ -126,6 +127,29 @@ export default function BuyCoffee() {
     return () => { document.body.style.overflow = ''; };
   }, [open]);
 
+  /* Push a history entry when modal opens so the device back button closes it */
+  useEffect(() => {
+    if (open) {
+      history.pushState({ bcModal: true }, '');
+      historyPushed.current = true;
+    }
+  }, [open]);
+
+  /* Intercept back button — close modal instead of navigating away */
+  useEffect(() => {
+    const handler = () => {
+      if (!historyPushed.current) return;
+      historyPushed.current = false;
+      setOpen(false);
+      setMethod(null);
+      setAmount('');
+      setLoading(false);
+      setPayErr('');
+    };
+    window.addEventListener('popstate', handler);
+    return () => window.removeEventListener('popstate', handler);
+  }, []);
+
   /* focus input when method selected */
   useEffect(() => {
     if (method && inputRef.current) {
@@ -147,6 +171,11 @@ export default function BuyCoffee() {
   }, [open, method]);
 
   const handleClose = () => {
+    /* If we pushed a history entry, pop it so back-button stays clean */
+    if (historyPushed.current) {
+      historyPushed.current = false;
+      history.back();
+    }
     setOpen(false);
     setMethod(null);
     setAmount('');
