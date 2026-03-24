@@ -333,12 +333,23 @@
 }
 
 /* ── Mobile ── */
+@media (max-width: 640px) {
+  .bc-amount-grid { grid-template-columns: repeat(3, 1fr); gap: 0.45rem; }
+  .bc-method-btn  { padding: 0.9rem 0.85rem; min-height: 52px; }
+  .bc-pay-btn     { min-height: 52px; font-size: 1rem; }
+}
+
 @media (max-width: 480px) {
+  /* Modal slides up as bottom sheet */
   .bc-overlay { align-items: flex-end; padding: 0; }
-  .bc-modal { border-radius: 16px 16px 0 0; max-width: 100%; }
-  .bc-body { padding: 1.25rem 1.25rem 1.5rem; }
-  .bc-fab { bottom: 1.25rem; right: 1.25rem; }
+  .bc-modal   { border-radius: 20px 20px 0 0; max-width: 100%; }
+  .bc-body    { padding: 1.25rem 1.25rem 2rem; }
+
+  /* iOS: prevent form zoom */
+  .bc-custom-input { font-size: 16px; }
+
+  /* FAB becomes a circle icon-only */
+  .bc-fab       { bottom: 1.25rem; right: 1.25rem; border-radius: 50%; width: 54px; height: 54px; padding: 0; justify-content: center; }
   .bc-fab-label { display: none; }
-  .bc-fab { border-radius: 50%; width: 52px; height: 52px; padding: 0; justify-content: center; }
-  .bc-fab-icon { font-size: 1.4rem; }
+  .bc-fab-icon  { font-size: 1.45rem; }
 }
