@@ -4,7 +4,7 @@ import '../home.css'
 
 export const metadata = {
   title: 'Free Tools — Toosii Tech',
-  description: 'Browse all free tools by Toosii Tech — AI chat, video & MP3 downloaders, Spotify downloader, vocal remover, DramaBox streaming, fire logo maker, story AI, temp email, and more.',
+  description: 'Browse all free tools by Toosii Tech — AI chat, movie streaming & downloads, video & MP3 downloaders, Spotify downloader, vocal remover, fire logo maker, story AI, temp email, and more.',
 }
 
 const categories = [
@@ -31,15 +31,15 @@ const categories = [
   },
   {
     label: 'Streaming & Entertainment',
-    color: '#ec4899',
+    color: '#8b5cf6',
     tools: [
       {
-        icon: '🎭',
-        title: 'DramaBox',
-        desc: 'Stream hundreds of trending short dramas completely free — no subscription, no sign-up.',
-        href: '/tools/dramabox',
+        icon: '🎬',
+        title: 'Movies & Streams',
+        desc: 'Stream and download full Hollywood & international movies and TV series in HD — completely free, no sign-up.',
+        href: '/tools/movies',
         label: 'Watch Now',
-        badge: 'Free Streaming',
+        badge: 'HD Streaming',
       },
     ],
   },
