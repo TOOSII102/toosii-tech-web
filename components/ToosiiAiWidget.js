@@ -18,8 +18,9 @@ export default function ToosiiAiWidget() {
   ])
   const [input, setInput]     = useState('')
   const [loading, setLoading] = useState(false)
-  const bottomRef = useRef(null)
-  const inputRef  = useRef(null)
+  const bottomRef     = useRef(null)
+  const inputRef      = useRef(null)
+  const historyPushed = useRef(false)
 
   /* Pulse the button after 6 s to grab attention */
   useEffect(() => {
@@ -39,10 +40,38 @@ export default function ToosiiAiWidget() {
     }
   }, [open])
 
+  /* Push a history entry when panel opens so the device back button closes it */
+  useEffect(() => {
+    if (open) {
+      history.pushState({ aiPanel: true }, '')
+      historyPushed.current = true
+    }
+  }, [open])
+
+  /* Intercept back button — close panel instead of navigating away */
+  useEffect(() => {
+    const handler = () => {
+      if (!historyPushed.current) return
+      historyPushed.current = false
+      setOpen(false)
+    }
+    window.addEventListener('popstate', handler)
+    return () => window.removeEventListener('popstate', handler)
+  }, [])
+
+  /* Close panel and clean up the history entry */
+  const closePanel = () => {
+    if (historyPushed.current) {
+      historyPushed.current = false
+      history.back()
+    }
+    setOpen(false)
+  }
+
   /* Close on Escape key */
   useEffect(() => {
     if (!open) return
-    const handler = (e) => { if (e.key === 'Escape') setOpen(false) }
+    const handler = (e) => { if (e.key === 'Escape') closePanel() }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
   }, [open])
@@ -72,8 +101,12 @@ export default function ToosiiAiWidget() {
   }
 
   const toggle = () => {
-    setOpen(o => !o)
-    setPulse(false)
+    if (open) {
+      closePanel()
+    } else {
+      setOpen(true)
+      setPulse(false)
+    }
   }
 
   return (
@@ -101,7 +134,7 @@ export default function ToosiiAiWidget() {
                 <div className="tai-panel-sub">Ask me anything</div>
               </div>
             </div>
-            <Link href="/tools/ai" className="tai-panel-open-link" onClick={() => setOpen(false)}>
+            <Link href="/tools/ai" className="tai-panel-open-link" onClick={closePanel}>
               Full chat ↗
             </Link>
           </div>
