@@ -261,12 +261,6 @@ export default function Home() {
               <h3 className="movies-card-title">Toosii Movies</h3>
               <p className="movies-card-sub">Free HD streaming by TOOSII</p>
 
-              <div className="movies-platforms">
-                {['Netflix', 'Prime Video', 'Disney+', 'Apple TV', 'Hulu', 'HBO Max'].map(p => (
-                  <span key={p} className="movies-platform-chip">{p}</span>
-                ))}
-              </div>
-
               <div className="movies-quality-row">
                 {['360p', '480p', '720p', '1080p'].map(q => (
                   <span key={q} className="movies-q-chip">{q}</span>
