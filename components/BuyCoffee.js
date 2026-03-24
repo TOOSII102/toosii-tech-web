@@ -59,12 +59,15 @@ const METHODS = [
 ];
 
 function loadPaystack() {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     if (window.PaystackPop) { resolve(); return; }
     const s = document.createElement('script');
     s.src = 'https://js.paystack.co/v1/inline.js';
-    s.onload = () => resolve();
+    s.onload  = () => resolve();
+    s.onerror = () => reject(new Error('Could not load payment SDK. Check your connection.'));
     document.head.appendChild(s);
+    /* Safety timeout — reject after 12 s so the spinner doesn't hang forever */
+    setTimeout(() => reject(new Error('Payment SDK timed out. Please try again.')), 12000);
   });
 }
 
@@ -73,6 +76,7 @@ export default function BuyCoffee() {
   const [method, setMethod]   = useState(null);
   const [amount, setAmount]   = useState('');
   const [loading, setLoading] = useState(false);
+  const [payErr, setPayErr]   = useState('');
   const [pulse, setPulse]     = useState(false);
   const overlayRef = useRef(null);
   const inputRef   = useRef(null);
@@ -130,12 +134,14 @@ export default function BuyCoffee() {
     setMethod(null);
     setAmount('');
     setLoading(false);
+    setPayErr('');
   };
 
   const handleBack = () => {
     setMethod(null);
     setAmount('');
     setLoading(false);
+    setPayErr('');
   };
 
   const MIN_AMOUNT = 10;
@@ -145,24 +151,34 @@ export default function BuyCoffee() {
   const handlePay = async () => {
     if (!canPay || loading) return;
     setLoading(true);
-    await loadPaystack();
+    setPayErr('');
+    try {
+      await loadPaystack();
 
-    const ref = 'toosii_' + Date.now();
-    const handler = window.PaystackPop.setup({
-      key: PK,
-      email: 'support@toosiitech.com',
-      amount: parsed * 100,
-      currency: 'KES',
-      ref,
-      channels: method?.channels || ['card', 'mobile_money'],
-      metadata: { custom_fields: [] },
-      onClose: () => { setLoading(false); },
-      callback: () => {
-        setLoading(false);
-        handleClose();
-      },
-    });
-    handler.openIframe();
+      if (!window.PaystackPop) throw new Error('Payment SDK not available.');
+
+      const ref = 'toosii_' + Date.now();
+      const handler = window.PaystackPop.setup({
+        key: PK,
+        email: 'support@toosiitech.com',
+        amount: parsed * 100,
+        currency: 'KES',
+        ref,
+        channels: method?.channels || ['card', 'mobile_money'],
+        metadata: { custom_fields: [] },
+        onClose: () => { setLoading(false); },
+        callback: () => {
+          setLoading(false);
+          handleClose();
+        },
+      });
+      handler.openIframe();
+      /* loading stays true until the popup closes via onClose/callback */
+    } catch (err) {
+      console.error('[Paystack]', err);
+      setLoading(false);
+      setPayErr(err.message || 'Payment could not open. Please try again.');
+    }
   };
 
   return (
@@ -272,6 +288,10 @@ export default function BuyCoffee() {
                     : <>☕ {canPay ? `Send KSh ${parsed.toLocaleString()}` : 'Enter an Amount'}</>
                   }
                 </button>
+
+                {payErr && (
+                  <p className="bc-pay-error">{payErr}</p>
+                )}
 
                 <p className="bc-secure">🔒 Secure &amp; encrypted payment via Paystack</p>
               </div>
