@@ -1,6 +1,7 @@
 import './globals.css'
 import AnimatedBackground from '../components/AnimatedBackground'
 import BuyCoffee from '../components/BuyCoffee'
+import ToosiiAiWidget from '../components/ToosiiAiWidget'
 
 export const metadata = {
   title: 'Toosii Tech — AI Tools, Bots & Digital Experiences',
@@ -15,6 +16,7 @@ export default function RootLayout({ children }) {
         <AnimatedBackground />
         {children}
         <BuyCoffee />
+        <ToosiiAiWidget />
       </body>
     </html>
   )
