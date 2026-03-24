@@ -243,16 +243,3 @@ a { -webkit-tap-highlight-color: transparent; }
   z-index: -1;
 }
 
-/* On small screens go edge-to-edge from the bottom */
-@media (max-width: 520px) {
-  #paystackIframe {
-    width: 100% !important;
-    max-width: 100% !important;
-    height: 75vh !important;
-    top: auto !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    transform: none !important;
-    border-radius: 18px 18px 0 0 !important;
-  }
-}
