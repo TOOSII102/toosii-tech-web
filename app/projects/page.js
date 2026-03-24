@@ -4,7 +4,7 @@ import './projects.css'
 
 export const metadata = {
   title: 'Portfolio — Toosii Tech',
-  description: 'Real projects, real users. Explore the portfolio of tools, bots, and platforms built by Toosii Tech from Nairobi, Kenya.',
+  description: 'Real projects, real users. Explore the portfolio of tools, bots, and platforms built by Toosii Tech from Kenya.',
 }
 
 const projects = [
@@ -191,7 +191,7 @@ export default function Projects() {
         <div className="page-wrapper">
           <div className="pf-hero-inner">
             <div className="pf-hero-text">
-              <span className="pf-eyebrow">Portfolio · Nairobi, Kenya</span>
+              <span className="pf-eyebrow">Portfolio · Kenya</span>
               <h1 className="pf-hero-title">
                 Things I've<br />
                 <span className="gradient-text">Actually Built</span>
