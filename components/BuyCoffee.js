@@ -166,14 +166,20 @@ export default function BuyCoffee() {
         ref,
         channels: method?.channels || ['card', 'mobile_money'],
         metadata: { custom_fields: [] },
-        onClose: () => { setLoading(false); },
+        onClose: () => {
+          /* User closed Paystack without paying — bring our modal back */
+          setLoading(false);
+          setOpen(true);
+        },
         callback: () => {
+          /* Payment succeeded — close everything */
           setLoading(false);
           handleClose();
         },
       });
+      /* Hide our modal so Paystack gets a clear, unobstructed view */
+      setOpen(false);
       handler.openIframe();
-      /* loading stays true until the popup closes via onClose/callback */
     } catch (err) {
       console.error('[Paystack]', err);
       setLoading(false);
