@@ -15,7 +15,7 @@ const whatsappNumbers = [
 const otherContacts = [
   { icon: '📧', label: 'Email', value: 'toosiitechcompany@gmail.com', href: 'mailto:toosiitechcompany@gmail.com' },
   { icon: '✈️', label: 'Telegram', value: '@toosiitech', href: 'https://t.me/toosiitech' },
-  { icon: '📍', label: 'Location', value: 'Nairobi, Kenya', href: null },
+  { icon: '📍', label: 'Location', value: 'Kenya', href: null },
   { icon: '🐙', label: 'GitHub', value: 'github.com/TOOSII102', href: 'https://github.com/TOOSII102' },
 ]
 
