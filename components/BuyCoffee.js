@@ -190,7 +190,7 @@ export default function BuyCoffee() {
     setPayErr('');
   };
 
-  const MIN_AMOUNT = 10;
+  const MIN_AMOUNT = 20;
   const parsed = parseInt(amount, 10);
   const canPay = !isNaN(parsed) && parsed >= MIN_AMOUNT;
 
@@ -315,8 +315,8 @@ export default function BuyCoffee() {
                     ref={inputRef}
                     className="bc-custom-input"
                     type="number"
-                    min="10"
-                    placeholder="Min KSh 10"
+                    min="20"
+                    placeholder="Min KSh 20"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handlePay()}
