@@ -81,6 +81,15 @@ export default function Header() {
             </Link>
           ))}
 
+          {/* Support button */}
+          <button
+            className="nav-support-btn"
+            onClick={() => window.dispatchEvent(new Event('open-coffee-modal'))}
+            aria-label="Buy me a coffee"
+          >
+            ☕ Support
+          </button>
+
           {/* Tools dropdown */}
           <div className={`nav-dropdown${toolsOpen ? ' open' : ''}`} ref={dropRef}>
             <button
@@ -171,6 +180,12 @@ export default function Header() {
           <div className="mobile-menu-footer">
             <Link href="/team" className="mobile-link">Team</Link>
             <Link href="/projects" className="mobile-link">Portfolio</Link>
+            <button
+              className="mobile-support-btn"
+              onClick={() => { setMobileOpen(false); setTimeout(() => window.dispatchEvent(new Event('open-coffee-modal')), 180); }}
+            >
+              ☕ Buy Me a Coffee
+            </button>
           </div>
         </div>
       </div>
