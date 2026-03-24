@@ -3,20 +3,10 @@ import { useState, useEffect, useRef } from 'react';
 import './BuyCoffee.css';
 
 const PAYSTACK_LINK = 'https://paystack.shop/pay/4uqgih810w';
-const CUR = 'KSh';
-const MIN = 50;
-
-const PRESETS = [
-  { label: '1 Coffee', emoji: '☕', amount: 100 },
-  { label: '3 Coffees', emoji: '☕☕☕', amount: 250 },
-  { label: 'Big Support', emoji: '🙏', amount: 500 },
-  { label: 'Legend', emoji: '🚀', amount: 1000 },
-];
 
 export default function BuyCoffee() {
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState(null);
-  const [custom, setCustom] = useState('');
+  const [amount, setAmount] = useState('');
   const [pulse, setPulse] = useState(false);
   const overlayRef = useRef(null);
 
@@ -41,23 +31,15 @@ export default function BuyCoffee() {
 
   const handleOpen = () => { setOpen(true); setPulse(false); };
 
-  const getAmount = () => {
-    if (selected !== null) return PRESETS[selected].amount;
-    const v = parseInt(custom, 10);
-    return isNaN(v) ? 0 : v;
-  };
+  const parsed = parseInt(amount, 10);
+  const canPay = !isNaN(parsed) && parsed > 0;
 
   const handlePay = () => {
-    const amt = getAmount();
-    if (amt < MIN) return;
-    window.open(`${PAYSTACK_LINK}?amount=${amt * 100}`, '_blank', 'noopener,noreferrer');
+    if (!canPay) return;
+    window.open(`${PAYSTACK_LINK}?amount=${parsed * 100}`, '_blank', 'noopener,noreferrer');
     setOpen(false);
+    setAmount('');
   };
-
-  const amount = getAmount();
-  const canPay = amount >= MIN;
-
-  const fmt = (n) => `${CUR} ${n.toLocaleString()}`;
 
   return (
     <>
@@ -85,37 +67,22 @@ export default function BuyCoffee() {
               </p>
             </div>
 
-            <div className="bc-presets">
-              {PRESETS.map((p, i) => (
-                <button
-                  key={i}
-                  className={`bc-preset${selected === i ? ' bc-preset--active' : ''}`}
-                  onClick={() => { setSelected(i); setCustom(''); }}
-                >
-                  <span className="bc-preset-emoji">{p.emoji}</span>
-                  <span className="bc-preset-label">{p.label}</span>
-                  <span className="bc-preset-amt">{fmt(p.amount)}</span>
-                </button>
-              ))}
-            </div>
-
-            <div className="bc-divider"><span>or enter amount</span></div>
-
             <div className="bc-custom-wrap">
               <span className="bc-currency">KSh</span>
               <input
                 className="bc-custom-input"
                 type="number"
-                min={MIN}
-                placeholder={`Custom amount (min ${fmt(MIN)})`}
-                value={custom}
-                onChange={(e) => { setCustom(e.target.value); setSelected(null); }}
+                min="1"
+                placeholder="Enter any amount"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                autoFocus
               />
             </div>
 
-            {amount > 0 && (
+            {canPay && (
               <p className="bc-summary">
-                You're sending <strong>{fmt(amount)}</strong> — thank you! 🎉
+                You're sending <strong>KSh {parsed.toLocaleString()}</strong> — thank you! 🎉
               </p>
             )}
 
@@ -124,12 +91,8 @@ export default function BuyCoffee() {
               onClick={handlePay}
               disabled={!canPay}
             >
-              ☕ Send {canPay ? fmt(amount) : 'a Coffee'}
+              ☕ Send {canPay ? `KSh ${parsed.toLocaleString()}` : 'a Coffee'}
             </button>
-
-            {!canPay && amount > 0 && (
-              <p className="bc-min-note">Minimum amount is {fmt(MIN)}</p>
-            )}
 
             <p className="bc-secure">🔒 Secure &amp; encrypted payment</p>
           </div>
