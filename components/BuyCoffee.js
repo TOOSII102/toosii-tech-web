@@ -34,6 +34,7 @@ export default function BuyCoffee() {
     return () => window.removeEventListener('open-coffee-modal', handler);
   }, []);
 
+  /* close on backdrop click */
   useEffect(() => {
     if (!open) return;
     const handler = (e) => {
@@ -43,43 +44,32 @@ export default function BuyCoffee() {
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
+  /* lock scroll while open */
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [open]);
 
+  /* focus input when modal opens */
   useEffect(() => {
     if (open && inputRef.current) {
       setTimeout(() => inputRef.current?.focus(), 80);
     }
   }, [open]);
 
+  /* close on Escape key */
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => { if (e.key === 'Escape') handleClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [open]);
+
   const handleClose = () => {
     setOpen(false);
     setAmount('');
     setLoading(false);
-    if (history.state?.coffeeModal) history.back();
   };
-
-  /* push history entry when modal opens so back button closes it */
-  useEffect(() => {
-    if (open) {
-      history.pushState({ coffeeModal: true }, '');
-    }
-  }, [open]);
-
-  /* intercept hardware/browser back button */
-  useEffect(() => {
-    const onPop = (e) => {
-      if (open) {
-        setOpen(false);
-        setAmount('');
-        setLoading(false);
-      }
-    };
-    window.addEventListener('popstate', onPop);
-    return () => window.removeEventListener('popstate', onPop);
-  }, [open]);
 
   const MIN_AMOUNT = 10;
   const parsed = parseInt(amount, 10);
