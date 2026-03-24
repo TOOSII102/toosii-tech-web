@@ -6,7 +6,7 @@ const REASONS = [
   { icon: '⚡', text: 'Keeps the servers running 24/7' },
   { icon: '🔧', text: 'Funds new tool development' },
   { icon: '🤖', text: 'Powers the AI model subscriptions' },
-  { icon: '❤️', text: 'Supports a solo dev from Nairobi' },
+  { icon: '❤️', text: 'Supports a solo dev from Kenya' },
 ]
 
 export default function SupportSection() {
@@ -30,7 +30,7 @@ export default function SupportSection() {
             </h2>
             <p className="support-sub">
               Toosii Tech is built and maintained solo — no team, no VC funding,
-              just passion and late nights in Nairobi. Every tool on this platform
+              just passion and late nights in Kenya. Every tool on this platform
               is free to use. If anything here has saved you time or made your day,
               a small contribution keeps it all alive.
             </p>
