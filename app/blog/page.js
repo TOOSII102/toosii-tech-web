@@ -151,7 +151,7 @@ const blogPosts = [
     featured: false,
     content: `
       <h2>The Goal</h2>
-      <p>I wanted to add a movie streaming feature to Toosii Tech that felt premium — full movies, multiple quality options (360p to 1080p), one-click downloads, real search, and a clean UI. No subscription, no sign-up, no ads. The XCASPER Movies API by Casper Tech Kenya made this possible.</p>
+      <p>I wanted to add a movie streaming feature to Toosii Tech that felt premium — full movies, multiple quality options (360p to 1080p), one-click downloads, real search, and a clean UI. No subscription, no sign-up, no ads.</p>
 
       <h3>Bypassing Bot Protection</h3>
       <p>The movies API blocks automated server-to-server requests with a 403 "Automated requests not allowed" error. The fix is to make our Next.js API route impersonate a real browser — setting <code>Origin</code> and <code>Referer</code> headers to the API's own domain, plus a realistic Chrome User-Agent string. From the API's perspective, every request looks like it's coming from their own documentation page.</p>
