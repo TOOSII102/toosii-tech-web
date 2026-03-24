@@ -142,6 +142,9 @@ export default function Header() {
       {/* Mobile drawer */}
       <div className={`mobile-menu${mobileOpen ? ' mobile-menu--open' : ''}`} aria-hidden={!mobileOpen}>
         <div className="mobile-menu-inner">
+
+          <p className="mobile-nav-label">Navigate</p>
+
           {mainNav.map(item => (
             <Link
               key={item.href}
@@ -152,13 +155,15 @@ export default function Header() {
             </Link>
           ))}
 
+          <p className="mobile-nav-label">Tools &amp; Apps</p>
+
           {/* Tools accordion */}
           <button
             className={`mobile-link mobile-tools-toggle${isToolsActive ? ' active' : ''}`}
             onClick={() => setMobileTools(o => !o)}
             aria-expanded={mobileTools}
           >
-            <span>Tools</span>
+            <span>Browse All Tools</span>
             <svg className={`dropdown-chevron${mobileTools ? ' rotated' : ''}`} width="14" height="14" viewBox="0 0 12 12" fill="none" aria-hidden="true">
               <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -178,6 +183,7 @@ export default function Header() {
           </div>
 
           <div className="mobile-menu-footer">
+            <p className="mobile-nav-label" style={{padding:'0.5rem 0.75rem 0.35rem'}}>More</p>
             <Link href="/team" className="mobile-link">Team</Link>
             <Link href="/projects" className="mobile-link">Portfolio</Link>
             <button
