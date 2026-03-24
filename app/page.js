@@ -76,7 +76,7 @@ export default function Home() {
 
           <div className="hero-eyebrow">
             <span className="hero-dot" />
-            Platform Active — Tools, Bots &amp; AI from Nairobi, Kenya
+            Platform Active — Serving Thousands from Nairobi, Kenya
           </div>
 
           <h1 className="hero-title">
