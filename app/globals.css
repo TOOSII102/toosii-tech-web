@@ -47,12 +47,24 @@ a { -webkit-tap-highlight-color: transparent; }
 .section { padding: 5rem 0; }
 
 .section-label {
-  font-size: 0.78rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--green);
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+.section-label::before {
+  content: '';
+  display: inline-block;
+  width: 18px;
+  height: 2px;
+  background: linear-gradient(90deg, #25d366, #3b82f6);
+  border-radius: 1px;
+  flex-shrink: 0;
 }
 
 .section-title {
@@ -71,18 +83,20 @@ a { -webkit-tap-highlight-color: transparent; }
 }
 
 .glass-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 18px;
   padding: 2rem;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  transition: border-color 0.3s, transform 0.3s;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 28px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.06);
+  transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
 }
 @media (hover: hover) {
   .glass-card:hover {
-    border-color: rgba(37, 211, 102, 0.25);
-    transform: translateY(-4px);
+    border-color: rgba(37, 211, 102, 0.28);
+    transform: translateY(-5px);
+    box-shadow: 0 20px 56px rgba(0,0,0,0.4), 0 0 0 1px rgba(37,211,102,0.08), inset 0 1px 0 rgba(255,255,255,0.08);
   }
 }
 
@@ -192,7 +206,7 @@ a { -webkit-tap-highlight-color: transparent; }
 .btn-outline:active { transform: translateY(0); }
 
 .gradient-text {
-  background: linear-gradient(135deg, #25d366, #3b82f6);
+  background: linear-gradient(135deg, #25d366 0%, #3b82f6 55%, #8b5cf6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -201,14 +215,16 @@ a { -webkit-tap-highlight-color: transparent; }
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  background: rgba(37, 211, 102, 0.1);
-  border: 1px solid rgba(37, 211, 102, 0.25);
+  gap: 0.45rem;
+  background: rgba(37, 211, 102, 0.08);
+  border: 1px solid rgba(37, 211, 102, 0.22);
   color: #25d366;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
-  padding: 0.3rem 0.75rem;
+  padding: 0.38rem 1rem;
   border-radius: 999px;
+  letter-spacing: 0.02em;
+  box-shadow: 0 0 20px rgba(37,211,102,0.1), inset 0 1px 0 rgba(255,255,255,0.06);
 }
 
 @media (max-width: 640px) {
