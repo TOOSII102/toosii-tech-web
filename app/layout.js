@@ -2,6 +2,7 @@ import './globals.css'
 import AnimatedBackground from '../components/AnimatedBackground'
 import BuyCoffee from '../components/BuyCoffee'
 import ToosiiAiWidget from '../components/ToosiiAiWidget'
+import NavigationHistory from '../components/NavigationHistory'
 
 export const metadata = {
   title: 'Toosii Tech — AI Tools, Bots & Digital Experiences',
@@ -20,6 +21,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
+        <NavigationHistory />
         <AnimatedBackground />
         {children}
         <BuyCoffee />
