@@ -1,7 +1,7 @@
 {
   "name": "toosii-tech-web",
   "version": "1.0.0",
-  "description": "Toosii Tech — AI Tools, Bots & Digital Experiences by a Nairobi Developer",
+  "description": "Toosii Tech — AI-Powered Tools & Intelligent Automation from Nairobi",
   "private": true,
   "scripts": {
     "dev": "next dev",
