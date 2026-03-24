@@ -27,6 +27,13 @@ export default function BuyCoffee() {
     return () => clearTimeout(t);
   }, []);
 
+  /* listen for nav trigger */
+  useEffect(() => {
+    const handler = () => { setOpen(true); setPulse(false); };
+    window.addEventListener('open-coffee-modal', handler);
+    return () => window.removeEventListener('open-coffee-modal', handler);
+  }, []);
+
   useEffect(() => {
     if (!open) return;
     const handler = (e) => {
