@@ -37,7 +37,7 @@ export default function Header() {
   const isActive      = (href) => href === '/' ? pathname === '/' : pathname.startsWith(href)
   const isToolsActive = toolsNav.some(t => isActive(t.href))
 
-  /* close dropdown on outside click */
+  /* close desktop dropdown on outside click */
   useEffect(() => {
     const handler = (e) => {
       if (dropRef.current && !dropRef.current.contains(e.target)) setToolsOpen(false)
@@ -60,87 +60,100 @@ export default function Header() {
   }, [mobileOpen])
 
   return (
-    <header className="site-header">
-      <div className="header-inner">
+    <>
+      <header className="site-header">
+        <div className="header-inner">
 
-        {/* Brand */}
-        <Link href="/" className="brand-link">
-          <div className="brand-icon">T</div>
-          <span className="brand-name">Toosii Tech</span>
-        </Link>
+          {/* Brand */}
+          <Link href="/" className="brand-link">
+            <div className="brand-icon">T</div>
+            <span className="brand-name">Toosii Tech</span>
+          </Link>
 
-        {/* Desktop nav */}
-        <nav className="nav-menu" aria-label="Main navigation">
-          {mainNav.map(item => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`nav-link${isActive(item.href) ? ' active' : ''}`}
-            >
-              {item.label}
-            </Link>
-          ))}
+          {/* Desktop nav */}
+          <nav className="nav-menu" aria-label="Main navigation">
+            {mainNav.map(item => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`nav-link${isActive(item.href) ? ' active' : ''}`}
+              >
+                {item.label}
+              </Link>
+            ))}
 
-          {/* Support button */}
-          <button
-            className="nav-support-btn"
-            onClick={() => window.dispatchEvent(new Event('open-coffee-modal'))}
-            aria-label="Buy me a coffee"
-          >
-            ☕ Support
-          </button>
-
-          {/* Tools dropdown */}
-          <div className={`nav-dropdown${toolsOpen ? ' open' : ''}`} ref={dropRef}>
+            {/* Support button */}
             <button
-              className={`nav-link nav-dropdown-btn${isToolsActive ? ' active' : ''}`}
-              onClick={() => setToolsOpen(o => !o)}
-              aria-expanded={toolsOpen}
-              aria-haspopup="true"
+              className="nav-support-btn"
+              onClick={() => window.dispatchEvent(new Event('open-coffee-modal'))}
+              aria-label="Buy me a coffee"
             >
-              Tools
-              <svg className="dropdown-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+              ☕ Support
             </button>
 
-            <div className={`nav-dropdown-panel${toolsOpen ? ' panel-open' : ''}`} role="menu">
-              <div className="dropdown-grid">
-                {toolsNav.map(t => (
-                  <Link
-                    key={t.href}
-                    href={t.href}
-                    className={`dropdown-link${isActive(t.href) ? ' active' : ''}`}
-                    role="menuitem"
-                  >
-                    <span className="dropdown-icon">{t.icon}</span>
-                    <span className="dropdown-text">
-                      <span className="dropdown-label">{t.label}</span>
-                      <span className="dropdown-desc">{t.desc}</span>
-                    </span>
-                  </Link>
-                ))}
-              </div>
-              <div className="dropdown-footer">
-                <Link href="/tools" className="dropdown-all-link">Browse all tools →</Link>
+            {/* Tools dropdown */}
+            <div className={`nav-dropdown${toolsOpen ? ' open' : ''}`} ref={dropRef}>
+              <button
+                className={`nav-link nav-dropdown-btn${isToolsActive ? ' active' : ''}`}
+                onClick={() => setToolsOpen(o => !o)}
+                aria-expanded={toolsOpen}
+                aria-haspopup="true"
+              >
+                Tools
+                <svg className="dropdown-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                  <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+
+              <div className={`nav-dropdown-panel${toolsOpen ? ' panel-open' : ''}`} role="menu">
+                <div className="dropdown-grid">
+                  {toolsNav.map(t => (
+                    <Link
+                      key={t.href}
+                      href={t.href}
+                      className={`dropdown-link${isActive(t.href) ? ' active' : ''}`}
+                      role="menuitem"
+                    >
+                      <span className="dropdown-icon">{t.icon}</span>
+                      <span className="dropdown-text">
+                        <span className="dropdown-label">{t.label}</span>
+                        <span className="dropdown-desc">{t.desc}</span>
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+                <div className="dropdown-footer">
+                  <Link href="/tools" className="dropdown-all-link">Browse all tools →</Link>
+                </div>
               </div>
             </div>
-          </div>
-        </nav>
+          </nav>
 
-        {/* Hamburger */}
-        <button
-          className={`hamburger${mobileOpen ? ' open' : ''}`}
-          onClick={() => setMobileOpen(o => !o)}
-          aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
-          aria-expanded={mobileOpen}
-        >
-          <span /><span /><span />
-        </button>
-      </div>
+          {/* Hamburger — mobile only */}
+          <button
+            className={`hamburger${mobileOpen ? ' open' : ''}`}
+            onClick={() => setMobileOpen(o => !o)}
+            aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-nav"
+          >
+            <span /><span /><span />
+          </button>
+        </div>
+      </header>
 
-      {/* Mobile drawer */}
-      <div className={`mobile-menu${mobileOpen ? ' mobile-menu--open' : ''}`} aria-hidden={!mobileOpen}>
+      {/*
+        Mobile drawer is a SIBLING of <header>, not a child.
+        This prevents the backdrop-filter stacking-context bug in Chrome/WebKit
+        where position:fixed children get trapped inside a backdrop-filter parent.
+      */}
+      <div
+        id="mobile-nav"
+        className={`mobile-menu${mobileOpen ? ' mobile-menu--open' : ''}`}
+        aria-hidden={!mobileOpen}
+        role="dialog"
+        aria-label="Site navigation"
+      >
         <div className="mobile-menu-inner">
 
           <p className="mobile-nav-label">Navigate</p>
@@ -157,7 +170,6 @@ export default function Header() {
 
           <p className="mobile-nav-label">Tools &amp; Apps</p>
 
-          {/* Tools accordion */}
           <button
             className={`mobile-link mobile-tools-toggle${isToolsActive ? ' active' : ''}`}
             onClick={() => setMobileTools(o => !o)}
@@ -188,13 +200,13 @@ export default function Header() {
             <Link href="/projects" className="mobile-link">Portfolio</Link>
             <button
               className="mobile-support-btn"
-              onClick={() => { setMobileOpen(false); setTimeout(() => window.dispatchEvent(new Event('open-coffee-modal')), 180); }}
+              onClick={() => { setMobileOpen(false); setTimeout(() => window.dispatchEvent(new Event('open-coffee-modal')), 180) }}
             >
               ☕ Buy Me a Coffee
             </button>
           </div>
         </div>
       </div>
-    </header>
+    </>
   )
 }
