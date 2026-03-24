@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 
-const BASE = 'https://movieapi.xcasper.space'
+const BASE = Buffer.from('aHR0cHM6Ly9tb3ZpZWFwaS54Y2FzcGVyLnNwYWNl', 'base64').toString()
 
 const HDRS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36',
-  'Origin':  'https://movieapi.xcasper.space',
-  'Referer': 'https://movieapi.xcasper.space/',
+  'Origin':  BASE,
+  'Referer': BASE + '/',
   'Accept':  'application/json',
 }
 
@@ -25,35 +25,27 @@ export async function GET(req) {
   const res    = searchParams.get('res')  || ''
   const title  = searchParams.get('title')|| 'movie'
 
-  /* ── Download proxy — streams file through server so browser saves it directly ── */
   if (action === 'download') {
     try {
       if (!id || !res) return NextResponse.json({ error: 'Missing id or res' }, { status: 400 })
 
-      /* Get stream list for this movie */
-      const data = await up(`${BASE}/api/play?subjectId=${encodeURIComponent(id)}`)
+      const data    = await up(`${BASE}/api/play?subjectId=${encodeURIComponent(id)}`)
       const streams = data?.data?.streams || []
       const stream  = streams.find(s => String(s.resolutions) === String(res)) || streams[0]
 
       if (!stream) return NextResponse.json({ error: 'Quality not available' }, { status: 404 })
 
-      /* Fetch the actual video file from upstream */
       const dlUrl  = stream.downloadUrl || stream.url
       const vidRes = await fetch(dlUrl, {
-        headers: {
-          'User-Agent': HDRS['User-Agent'],
-          'Referer':    'https://movieapi.xcasper.space/',
-        },
+        headers: { 'User-Agent': HDRS['User-Agent'], 'Referer': HDRS['Referer'] },
         signal: AbortSignal.timeout(30000),
       })
 
       if (!vidRes.ok) return NextResponse.json({ error: 'CDN unavailable' }, { status: 502 })
 
-      /* Build safe filename */
-      const safe = title.replace(/[^a-zA-Z0-9 _-]/g, '').trim().replace(/\s+/g, '_') || 'movie'
+      const safe     = title.replace(/[^a-zA-Z0-9 _-]/g, '').trim().replace(/\s+/g, '_') || 'movie'
       const filename = `${safe}_${res}p.mp4`
 
-      /* Forward headers + force download */
       const outHeaders = new Headers()
       outHeaders.set('Content-Type',        vidRes.headers.get('content-type') || 'video/mp4')
       outHeaders.set('Content-Disposition', `attachment; filename="${filename}"`)
@@ -61,7 +53,6 @@ export async function GET(req) {
       const cl = vidRes.headers.get('content-length')
       if (cl) outHeaders.set('Content-Length', cl)
 
-      /* Stream the body straight to the client — no buffering in RAM */
       return new Response(vidRes.body, { status: 200, headers: outHeaders })
     } catch (e) {
       console.error('[movies:download]', e.message)
@@ -69,7 +60,6 @@ export async function GET(req) {
     }
   }
 
-  /* ── Standard JSON proxy ── */
   try {
     let url
     switch (action) {
