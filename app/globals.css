@@ -218,21 +218,24 @@ a { -webkit-tap-highlight-color: transparent; }
   .btn-primary, .btn-outline, .btn-secondary { padding: 0.8rem 1.4rem; font-size: 0.9rem; }
 }
 
-/* ── Paystack popup — shrink to centred box instead of full screen ── */
+/* ── Paystack popup — compact centred box on every device ── */
 #paystackIframe {
-  width: 460px !important;
-  max-width: calc(100vw - 32px) !important;
-  height: 620px !important;
-  max-height: calc(100vh - 60px) !important;
-  top: 50% !important;
+  /* Never wider than 460 px, but always fits within the viewport */
+  width: min(460px, calc(100vw - 16px)) !important;
+  max-width: calc(100vw - 16px) !important;
+  /* Pin 40 px from the top so the × close button is always reachable,
+     and fill the rest of the viewport minus a 40 px bottom gap */
+  top: 40px !important;
   left: 50% !important;
-  transform: translate(-50%, -50%) !important;
-  border-radius: 18px !important;
+  transform: translateX(-50%) !important;
+  height: calc(100vh - 80px) !important;
+  max-height: 640px !important;
+  border-radius: 16px !important;
   overflow: hidden !important;
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.85) !important;
 }
 
-/* Dark backdrop behind the shrunk popup */
+/* Dark backdrop behind the popup */
 #paystackIframe::before {
   content: '';
   position: fixed;
