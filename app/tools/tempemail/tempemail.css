@@ -1,0 +1,304 @@
+/* ════════════════════════════════════════
+   Temp Email Page
+   ════════════════════════════════════════ */
+
+.te-hero-badges {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+  justify-content: center;
+}
+.te-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #25d366;
+  background: rgba(37,211,102,0.09);
+  border: 1px solid rgba(37,211,102,0.22);
+  border-radius: 999px;
+  padding: 0.3rem 0.85rem;
+  letter-spacing: 0.02em;
+}
+
+/* ── Generate button area ── */
+.te-empty-state {
+  text-align: center;
+  padding: 1.5rem 0;
+}
+.te-empty-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  display: block;
+  line-height: 1;
+}
+.te-empty-desc {
+  color: #94a3b8;
+  font-size: 0.925rem;
+  line-height: 1.7;
+  max-width: 420px;
+  margin: 0 auto 1.75rem;
+}
+.te-generate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #25d366, #16a34a);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 800;
+  padding: 0.9rem 2.2rem;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 6px 24px rgba(37,211,102,0.35);
+  transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+  letter-spacing: -0.01em;
+}
+.te-generate-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 32px rgba(37,211,102,0.5);
+  filter: brightness(1.06);
+}
+.te-generate-btn:active:not(:disabled) { transform: translateY(0); }
+.te-generate-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── Result header ── */
+.te-result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 1.1rem;
+}
+.te-result-label {
+  color: #94a3b8;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+.te-result-label strong { color: #fff; }
+.te-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: #94a3b8;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.42rem 0.9rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s;
+}
+.te-refresh-btn:hover:not(:disabled) { background: rgba(255,255,255,0.1); color: #fff; }
+.te-refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Email cards ── */
+.te-email-list { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.1rem; }
+
+.te-email-card {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1rem 1.1rem;
+  background: rgba(37,211,102,0.04);
+  border: 1px solid rgba(37,211,102,0.15);
+  border-radius: 12px;
+  transition: border-color 0.2s, background 0.2s;
+  flex-wrap: wrap;
+}
+.te-email-card:hover {
+  border-color: rgba(37,211,102,0.3);
+  background: rgba(37,211,102,0.07);
+}
+.te-email-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(37,211,102,0.12);
+  border: 1px solid rgba(37,211,102,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+.te-email-address-wrap {
+  flex: 1;
+  min-width: 0;
+}
+.te-email-address {
+  display: block;
+  color: #25d366;
+  font-weight: 700;
+  font-size: 0.95rem;
+  word-break: break-all;
+  line-height: 1.3;
+  font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
+}
+.te-email-domain {
+  font-size: 0.72rem;
+  color: #475569;
+  font-weight: 600;
+  margin-top: 0.2rem;
+  letter-spacing: 0.03em;
+}
+.te-email-btns {
+  display: flex;
+  gap: 0.45rem;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.te-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  border: 1.5px solid rgba(37,211,102,0.35);
+  background: rgba(37,211,102,0.1);
+  color: #25d366;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.te-copy-btn:hover { background: rgba(37,211,102,0.18); border-color: rgba(37,211,102,0.6); }
+.te-copy-btn.copied {
+  background: rgba(37,211,102,0.2);
+  border-color: #25d366;
+  color: #4ade80;
+}
+.te-inbox-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  border: 1.5px solid rgba(59,130,246,0.35);
+  background: rgba(59,130,246,0.1);
+  color: #60a5fa;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+.te-inbox-btn:hover { background: rgba(59,130,246,0.18); border-color: rgba(59,130,246,0.6); }
+
+/* ── Warning box ── */
+.te-warning {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+  padding: 0.85rem 1rem;
+  background: rgba(245,158,11,0.07);
+  border: 1px solid rgba(245,158,11,0.22);
+  border-radius: 10px;
+  font-size: 0.82rem;
+  color: #fbbf24;
+  line-height: 1.6;
+}
+.te-warning-icon { font-size: 1rem; flex-shrink: 0; padding-top: 0.05rem; }
+
+/* ── Error box ── */
+.te-error {
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.25);
+  border-radius: 10px;
+  color: #fca5a5;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ── Steps section ── */
+.te-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.1rem;
+  max-width: 860px;
+  margin: 0 auto;
+}
+.te-step-card {
+  padding: 1.4rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+.te-step-num {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #25d366, #16a34a);
+  color: #000;
+  font-size: 0.9rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(37,211,102,0.3);
+}
+.te-step-title {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+.te-step-body {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  line-height: 1.65;
+  margin: 0;
+}
+
+/* ── Info card (can't see inbox / notes) ── */
+.te-info-card {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 1.5rem 1.75rem;
+}
+.te-info-heading {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 0.6rem;
+}
+.te-info-body {
+  font-size: 0.875rem;
+  color: #94a3b8;
+  line-height: 1.7;
+  margin: 0;
+}
+.te-info-body a { color: #25d366; text-decoration: none; }
+.te-info-body a:hover { text-decoration: underline; }
+.te-info-note {
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  font-size: 0.78rem;
+  color: #475569;
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .te-email-card { gap: 0.65rem; }
+  .te-email-btns { width: 100%; justify-content: flex-start; }
+  .te-steps-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 420px) {
+  .te-steps-grid { grid-template-columns: 1fr; }
+  .te-email-address { font-size: 0.85rem; }
+}
