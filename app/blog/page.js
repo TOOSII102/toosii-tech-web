@@ -142,31 +142,31 @@ const blogPosts = [
   },
   {
     id: 6,
-    title: "How I Built a Free Streaming Platform with No CDN Budget",
+    title: "How I Built a Free Movie Streaming Platform with No CDN Budget",
     category: "Web Development",
     author: "Toosii Tech",
-    date: "March 18, 2026",
+    date: "March 24, 2026",
     readTime: "7 min read",
-    excerpt: "DramaBox streams hundreds of short dramas for free — but the CDN blocked every browser request. Here's how I solved referrer blocking, handled locked episodes, and made it feel like Netflix on zero budget.",
+    excerpt: "Toosii Movies streams full Hollywood and international films for free — multiple quality options, direct downloads, bot-protection bypass, and a Netflix-style UI. Here's exactly how I built it.",
     featured: false,
     content: `
-      <h2>The Problem: CDN Blocking</h2>
-      <p>The DramaBox API is straightforward — you fetch a list of dramas, get episodes, get a stream URL. But there's a catch: the CDN that hosts the actual video files checks the HTTP Referer header and blocks any requests that don't come from an approved origin. Load the URL in a standard <code>&lt;video&gt;</code> tag and you get a 403 immediately.</p>
+      <h2>The Goal</h2>
+      <p>I wanted to add a movie streaming feature to Toosii Tech that felt premium — full movies, multiple quality options (360p to 1080p), one-click downloads, real search, and a clean UI. No subscription, no sign-up, no ads. The XCASPER Movies API by Casper Tech Kenya made this possible.</p>
 
-      <h3>The Referrer Fix</h3>
-      <p>The solution has two layers. First, a <code>&lt;meta name="referrer" content="no-referrer"&gt;</code> tag tells the browser not to send any Referer header at all when loading sub-resources. Second, I render two <code>&lt;video&gt;</code> elements with <code>referrerPolicy="no-referrer"</code> and <code>crossOrigin="anonymous"</code> — primary and fallback — and swap to the fallback automatically if the primary fails. This combination passes all major browsers including mobile Chrome on Android, which is by far the dominant browser for this content.</p>
+      <h3>Bypassing Bot Protection</h3>
+      <p>The movies API blocks automated server-to-server requests with a 403 "Automated requests not allowed" error. The fix is to make our Next.js API route impersonate a real browser — setting <code>Origin</code> and <code>Referer</code> headers to the API's own domain, plus a realistic Chrome User-Agent string. From the API's perspective, every request looks like it's coming from their own documentation page.</p>
 
-      <h3>Locked Episodes and the Wrong Endpoint</h3>
-      <p>Every DramaBox API has an "episodes" endpoint and a "streams" endpoint. The episodes endpoint only returns free episodes. The streams endpoint returns everything — free and locked. I switched to <code>?action=streams</code> and then added a <code>locked</code> flag in my UI so users can see all episodes but understand which ones require the app. This is much better UX than silently hiding half the content.</p>
+      <h3>Multi-Quality Streams and Direct Downloads</h3>
+      <p>The <code>/api/play</code> endpoint returns a <code>streams</code> array with one entry per quality level. Each entry has both a <code>proxyUrl</code> (for streaming) and a <code>downloadUrl</code> (which triggers a real file download). I render quality tabs — 360p, 480p, 720p, 1080p — and switch the HTML5 video source when the user picks one. Downloads link directly to the API's own download endpoint, so the file goes straight to the user's device.</p>
 
-      <h3>State, History, and Deep Linking</h3>
-      <p>Clicking a drama card calls <code>history.pushState</code> with the drama ID in the URL. Closing it calls <code>history.back()</code>. A <code>popstate</code> listener on the window resets selected state when the user presses the browser back button. This means the back button works exactly as expected — no jarring full-page reload, no broken navigation.</p>
+      <h3>State, History, and the Back Button</h3>
+      <p>Clicking a movie card calls <code>history.pushState</code> to inject a history entry. Closing the modal calls <code>history.back()</code>. A <code>popstate</code> listener closes the modal when the user presses the device back button. This means navigation feels completely native — no full-page reloads, no broken back-button behaviour on mobile.</p>
 
-      <h3>Download Proxying</h3>
-      <p>Video downloads face the same referrer problem as streaming, but worse — the download attribute on an anchor tag has no referrerPolicy support in most browsers. The fix is a server-side proxy route: the user clicks download, the browser hits my Next.js API route, the API route fetches the CDN URL server-side (no Referer), and streams it back to the user as a content-disposition attachment. The user gets the file. The CDN never sees a blocked request.</p>
+      <h3>Recommendations and Search</h3>
+      <p>Every movie detail view fetches related titles from the <code>/api/recommend</code> endpoint in parallel with the stream and detail calls — all three fire simultaneously with <code>Promise.all</code>. Search uses a 500ms debounce on the input so it only fires when the user pauses typing, keeping API calls minimal while still feeling live.</p>
 
-      <h3>What I'd Do Differently</h3>
-      <p>The biggest remaining challenge is search. Fuzzy matching against the full drama catalogue requires either a local index or a search API — I'm currently using the API's own search endpoint, which is slow on cold requests. A cached lightweight index built at build time would make search feel instant. That's on the roadmap.</p>
+      <h3>What's Next</h3>
+      <p>TV series support — the API supports series with episode lists — is the next feature on the roadmap. Subtitles are also available from the API; I plan to overlay them using a WebVTT parser directly in the browser player.</p>
     `
   },
   {
