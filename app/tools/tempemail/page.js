@@ -2,90 +2,97 @@
 import Layout from '../../../components/Layout'
 import { useState } from 'react'
 import '../tools.css'
+import './tempemail.css'
 
 const INBOX_MAP = {
-  'guerrillamail.com':   u => `https://www.guerrillamail.com/inbox`,
+  'guerrillamail.com':      u => `https://www.guerrillamail.com/inbox`,
   'guerrillamailblock.com': u => `https://www.guerrillamail.com/inbox`,
-  'sharklasers.com':     u => `https://www.guerrillamail.com/inbox`,
-  'grr.la':              u => `https://www.guerrillamail.com/inbox`,
-  'spam4.me':            u => `https://www.guerrillamail.com/inbox`,
-  'guerrillamail.biz':   u => `https://www.guerrillamail.com/inbox`,
-  'guerrillamail.de':    u => `https://www.guerrillamail.com/inbox`,
-  'guerrillamail.net':   u => `https://www.guerrillamail.com/inbox`,
-  'guerrillamail.org':   u => `https://www.guerrillamail.com/inbox`,
-  'yopmail.com':         u => `https://yopmail.com/en/inbox.php?login=${u}`,
-  'yopmail.fr':          u => `https://yopmail.com/en/inbox.php?login=${u}`,
-  'cool.fr.nf':          u => `https://yopmail.com/en/inbox.php?login=${u}`,
-  'jetable.fr.nf':       u => `https://yopmail.com/en/inbox.php?login=${u}`,
-  'nospam.ze.tc':        u => `https://yopmail.com/en/inbox.php?login=${u}`,
-  'maildrop.cc':         u => `https://maildrop.cc/inbox/?mailbox=${u}`,
-  'mailnull.com':        u => `https://www.mailnull.com/`,
-  'throwam.com':         u => `https://throwam.com/`,
-  'dispostable.com':     u => `https://www.dispostable.com/inbox/${u}/`,
-  'mailinator.com':      u => `https://www.mailinator.com/v4/public/inboxes.jsp?to=${u}`,
-  'trashmail.com':       u => `https://trashmail.com/?cmd=get_emails&account=${u}`,
-  'trashmail.at':        u => `https://trashmail.com/?cmd=get_emails&account=${u}`,
-  'trashmail.me':        u => `https://trashmail.com/?cmd=get_emails&account=${u}`,
-  'trashmail.net':       u => `https://trashmail.com/?cmd=get_emails&account=${u}`,
-  'fakeinbox.com':       u => `https://fakeinbox.com/inbox.php?q=${u}`,
+  'sharklasers.com':        u => `https://www.guerrillamail.com/inbox`,
+  'grr.la':                 u => `https://www.guerrillamail.com/inbox`,
+  'spam4.me':               u => `https://www.guerrillamail.com/inbox`,
+  'guerrillamail.biz':      u => `https://www.guerrillamail.com/inbox`,
+  'guerrillamail.de':       u => `https://www.guerrillamail.com/inbox`,
+  'guerrillamail.net':      u => `https://www.guerrillamail.com/inbox`,
+  'guerrillamail.org':      u => `https://www.guerrillamail.com/inbox`,
+  'yopmail.com':            u => `https://yopmail.com/en/inbox.php?login=${u}`,
+  'yopmail.fr':             u => `https://yopmail.com/en/inbox.php?login=${u}`,
+  'cool.fr.nf':             u => `https://yopmail.com/en/inbox.php?login=${u}`,
+  'jetable.fr.nf':          u => `https://yopmail.com/en/inbox.php?login=${u}`,
+  'nospam.ze.tc':           u => `https://yopmail.com/en/inbox.php?login=${u}`,
+  'maildrop.cc':            u => `https://maildrop.cc/inbox/?mailbox=${u}`,
+  'mailinator.com':         u => `https://www.mailinator.com/v4/public/inboxes.jsp?to=${u}`,
+  'dispostable.com':        u => `https://www.dispostable.com/inbox/${u}/`,
+  'trashmail.com':          u => `https://trashmail.com/?cmd=get_emails&account=${u}`,
+  'trashmail.at':           u => `https://trashmail.com/?cmd=get_emails&account=${u}`,
+  'trashmail.me':           u => `https://trashmail.com/?cmd=get_emails&account=${u}`,
+  'trashmail.net':          u => `https://trashmail.com/?cmd=get_emails&account=${u}`,
+  'fakeinbox.com':          u => `https://fakeinbox.com/inbox.php?q=${u}`,
+  'mailnull.com':           u => `https://www.mailnull.com/`,
+  'throwam.com':            u => `https://throwam.com/`,
 }
 
 function getInboxUrl(email) {
   const [user, domain] = email.split('@')
   if (!domain) return null
   const fn = INBOX_MAP[domain.toLowerCase()]
-  return fn ? fn(user) : null
+  return fn ? fn(user) : `https://temp-mail.org/`
 }
 
+const steps = [
+  {
+    num: '1',
+    icon: '⚡',
+    title: 'Generate',
+    body: 'Click the button below and get 3 fresh disposable addresses instantly — no sign-up.',
+  },
+  {
+    num: '2',
+    icon: '📋',
+    title: 'Copy & Use',
+    body: 'Copy any address and paste it into any form — newsletters, trials, download gates, anything.',
+  },
+  {
+    num: '3',
+    icon: '📬',
+    title: 'Check Inbox',
+    body: 'Click "Open Inbox" next to your address to read any email that was sent to it.',
+  },
+  {
+    num: '4',
+    icon: '✅',
+    title: 'Done',
+    body: 'Once you have what you need, just close the tab. The address expires on its own.',
+  },
+]
+
 function EmailCard({ email, onCopy, copied }) {
+  const [user, domain] = email.split('@')
   const inboxUrl = getInboxUrl(email)
-  const domain   = email.split('@')[1] || ''
+  const isCopied = copied === email
 
   return (
-    <div style={{
-      background: '#0d0d1a',
-      border: '1px solid #25d366',
-      borderRadius: 10,
-      padding: '1rem 1.2rem',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.75rem',
-      flexWrap: 'wrap',
-      marginBottom: '0.85rem',
-    }}>
-      <span style={{ color: '#25d366', fontWeight: 700, fontSize: '1rem', wordBreak: 'break-all', flex: 1, minWidth: 160 }}>
-        {email}
-      </span>
-      <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0, flexWrap: 'wrap' }}>
+    <div className="te-email-card">
+      <div className="te-email-icon">📧</div>
+      <div className="te-email-address-wrap">
+        <span className="te-email-address">{email}</span>
+        <span className="te-email-domain">{domain}</span>
+      </div>
+      <div className="te-email-btns">
         <button
           onClick={() => onCopy(email)}
-          className="btn-primary"
-          style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', minHeight: 36 }}
+          className={`te-copy-btn${isCopied ? ' copied' : ''}`}
         >
-          {copied === email ? '✅ Copied!' : '📋 Copy'}
+          {isCopied ? '✅ Copied!' : '📋 Copy'}
         </button>
-        {inboxUrl ? (
-          <a
-            href={inboxUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-secondary"
-            style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', minHeight: 36, textDecoration: 'none' }}
-          >
-            📬 Check Inbox
-          </a>
-        ) : (
-          <a
-            href={`https://temp-mail.org/`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-secondary"
-            style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', minHeight: 36, textDecoration: 'none' }}
-            title={`Visit temp-mail.org and enter ${email}`}
-          >
-            📬 Check Inbox
-          </a>
-        )}
+        <a
+          href={inboxUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="te-inbox-btn"
+          title={`Open inbox for ${email}`}
+        >
+          📬 Open Inbox ↗
+        </a>
       </div>
     </div>
   )
@@ -98,11 +105,17 @@ export default function TempEmail() {
   const [error, setError]     = useState('')
 
   const generate = async () => {
-    setLoading(true); setError(''); setEmails([]); setCopied('')
+    setLoading(true)
+    setError('')
+    setEmails([])
+    setCopied('')
     try {
       const res  = await fetch('/api/tools/tempemail?count=3')
       const data = await res.json()
-      if (!res.ok || data.error) return setError(data.error || 'Failed to generate. Try again.')
+      if (!res.ok || data.error) {
+        setError(data.error || 'Failed to generate addresses. Please try again.')
+        return
+      }
       setEmails(data.emails || [data.email])
     } catch {
       setError('Network error — check your connection and try again.')
@@ -114,110 +127,137 @@ export default function TempEmail() {
   const copy = (email) => {
     navigator.clipboard.writeText(email).then(() => {
       setCopied(email)
-      setTimeout(() => setCopied(''), 2000)
+      setTimeout(() => setCopied(''), 2500)
     })
   }
 
   return (
     <Layout>
+
+      {/* ── Hero ── */}
       <section className="tool-hero">
-        <div className="page-wrapper">
-          <div className="badge" style={{ marginBottom: '1.5rem' }}><span>📧</span> Temp Email</div>
-          <h1 className="section-title">Disposable Email. <span className="gradient-text">Zero Trace.</span></h1>
-          <p className="section-sub">
+        <div className="page-wrapper" style={{ textAlign: 'center' }}>
+          <div className="badge" style={{ marginBottom: '1.25rem' }}>
+            <span>📧</span> Temp Email
+          </div>
+          <h1 className="section-title">
+            Disposable Email.<br />
+            <span className="gradient-text">Zero Trace.</span>
+          </h1>
+          <p className="section-sub" style={{ maxWidth: 520, margin: '0 auto' }}>
             Get instant throwaway email addresses — sign up for anything without exposing your real inbox. No account, no setup, no spam that follows you home.
           </p>
+          <div className="te-hero-badges">
+            <span className="te-hero-badge">⚡ Instant</span>
+            <span className="te-hero-badge">🔒 No Sign-up</span>
+            <span className="te-hero-badge">🗑️ Auto-expires</span>
+            <span className="te-hero-badge">🌐 Any device</span>
+          </div>
         </div>
       </section>
 
-      <section className="section" style={{ paddingTop: '1rem' }}>
+      {/* ── Main tool card ── */}
+      <section className="section" style={{ paddingTop: '0.5rem' }}>
         <div className="page-wrapper">
-
           <div className="tool-card glass-card">
+
             {emails.length === 0 ? (
-              <div style={{ textAlign: 'center' }}>
-                <p style={{ color: '#aaa', marginBottom: '1.5rem', lineHeight: 1.7 }}>
-                  Click below to generate <strong style={{ color: '#fff' }}>3 fresh disposable email addresses</strong> at once. Pick any one and use it anywhere.
+              <div className="te-empty-state">
+                <span className="te-empty-icon">📬</span>
+                <p className="te-empty-desc">
+                  Click below to generate <strong style={{ color: '#fff' }}>3 fresh disposable email addresses</strong> at once. Pick whichever one you prefer and use it immediately.
                 </p>
-                <button onClick={generate} disabled={loading} className="btn-primary" style={{ fontSize: '1rem', padding: '.85rem 2rem' }}>
-                  {loading ? '⏳ Generating…' : '📧 Generate 3 Emails'}
+                <button
+                  onClick={generate}
+                  disabled={loading}
+                  className="te-generate-btn"
+                >
+                  {loading ? (
+                    <>
+                      <span className="spinner" style={{ width: 16, height: 16, borderTopColor: '#fff', borderColor: 'rgba(255,255,255,0.3)' }} />
+                      Generating…
+                    </>
+                  ) : '📧 Generate 3 Addresses'}
                 </button>
               </div>
             ) : (
               <>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  <p style={{ margin: 0, color: '#aaa', fontSize: '.9rem' }}>Pick any address — click <strong style={{ color: '#25d366' }}>Check Inbox</strong> after using it:</p>
-                  <button onClick={generate} disabled={loading} className="btn-secondary" style={{ fontSize: '0.85rem', padding: '0.5rem 1.1rem' }}>
-                    {loading ? '⏳…' : '🔄 Refresh All'}
+                <div className="te-result-header">
+                  <p className="te-result-label">
+                    <strong>{emails.length} fresh addresses</strong> — pick any one
+                  </p>
+                  <button
+                    onClick={generate}
+                    disabled={loading}
+                    className="te-refresh-btn"
+                  >
+                    {loading ? '⏳ Refreshing…' : '🔄 Refresh All'}
                   </button>
                 </div>
 
-                {emails.map(e => (
-                  <EmailCard key={e} email={e} onCopy={copy} copied={copied} />
-                ))}
+                <div className="te-email-list">
+                  {emails.map(e => (
+                    <EmailCard key={e} email={e} onCopy={copy} copied={copied} />
+                  ))}
+                </div>
 
-                <div style={{ marginTop: '0.5rem', padding: '0.85rem 1rem', background: 'rgba(240,165,0,0.08)', borderRadius: 8, border: '1px solid rgba(240,165,0,0.25)' }}>
-                  <p style={{ margin: 0, color: '#f0a500', fontSize: '0.82rem' }}>
-                    ⚠️ <strong>These addresses expire.</strong> Do not use them for accounts you need long-term. Inbox links open a third-party reader — no data is stored by this site.
-                  </p>
+                <div className="te-warning">
+                  <span className="te-warning-icon">⚠️</span>
+                  <span>
+                    <strong>These addresses expire.</strong> Don't use them for accounts you need long-term. Inbox links open a third-party reader — no data is stored by this site.
+                  </span>
                 </div>
               </>
             )}
-            {error && <p className="tool-error" style={{ marginTop: '1rem' }}>{error}</p>}
-          </div>
 
-          <div className="tool-card glass-card" style={{ marginTop: '2rem' }}>
-            <h3 style={{ margin: '0 0 1.25rem', color: '#25d366' }}>How to use a temp email — step by step</h3>
-
-            {[
-              {
-                step: '1',
-                title: 'Generate addresses',
-                body: 'Click "Generate 3 Emails" above. You\'ll get 3 different addresses at once — pick whichever one you prefer.',
-              },
-              {
-                step: '2',
-                title: 'Copy it and sign up',
-                body: 'Click 📋 Copy next to the address you want. Paste it into the sign-up form of any website or app — newsletters, free trials, download gates, anything.',
-              },
-              {
-                step: '3',
-                title: 'Open the inbox to read your email',
-                body: 'After signing up, click 📬 Check Inbox next to the same address. This opens the inbox for that address in a new tab. Wait a few seconds and refresh — your confirmation or verification email will appear there.',
-              },
-              {
-                step: '4',
-                title: 'Done — discard it after',
-                body: 'Once you\'ve confirmed your account or grabbed what you needed, simply close the tab. The address and its inbox disappear on their own — no cleanup needed.',
-              },
-            ].map(s => (
-              <div key={s.step} style={{ display: 'flex', gap: '1rem', marginBottom: '1.1rem' }}>
-                <div style={{
-                  width: 32, height: 32, borderRadius: '50%',
-                  background: '#25d366', color: '#000',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontWeight: 800, fontSize: '0.9rem', flexShrink: 0,
-                }}>
-                  {s.step}
-                </div>
-                <div>
-                  <strong style={{ color: '#fff', display: 'block', marginBottom: '0.25rem' }}>{s.title}</strong>
-                  <p style={{ margin: 0, color: '#94a3b8', lineHeight: 1.65, fontSize: '0.9rem' }}>{s.body}</p>
-                </div>
+            {error && (
+              <div className="te-error">
+                <span>❌</span>
+                <span>{error}</span>
               </div>
-            ))}
-
-            <div style={{ marginTop: '1.25rem', padding: '1rem', background: '#0d0d1a', borderRadius: 8, border: '1px solid #222' }}>
-              <p style={{ margin: '0 0 0.5rem', color: '#ccc', fontSize: '0.875rem', fontWeight: 600 }}>📬 Can't see an inbox button for your address?</p>
-              <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.85rem', lineHeight: 1.6 }}>
-                Go to <a href="https://temp-mail.org" target="_blank" rel="noopener noreferrer" style={{ color: '#25d366' }}>temp-mail.org</a> or <a href="https://www.guerrillamail.com" target="_blank" rel="noopener noreferrer" style={{ color: '#25d366' }}>guerrillamail.com</a> and paste your address there to check for messages.
-              </p>
-            </div>
-
-            <p style={{ margin: '1rem 0 0', color: '#444', fontSize: '.8rem' }}>Made by Toosii Tech · Free & instant · No tracking</p>
+            )}
           </div>
         </div>
       </section>
+
+      {/* ── How it works ── */}
+      <section className="section" style={{ paddingTop: '0.5rem', paddingBottom: '1.5rem' }}>
+        <div className="page-wrapper">
+          <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
+            <p className="section-label">Step by step</p>
+            <h2 className="section-title" style={{ fontSize: 'clamp(1.3rem, 3vw, 1.8rem)' }}>How it works</h2>
+          </div>
+          <div className="te-steps-grid">
+            {steps.map(s => (
+              <div key={s.num} className="te-step-card glass-card">
+                <div className="te-step-num">{s.num}</div>
+                <h3 className="te-step-title">{s.icon} {s.title}</h3>
+                <p className="te-step-body">{s.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Info / notes ── */}
+      <section className="section" style={{ paddingTop: '0.5rem', paddingBottom: '5rem' }}>
+        <div className="page-wrapper">
+          <div className="te-info-card glass-card">
+            <h3 className="te-info-heading">📬 Can't see your email in the inbox?</h3>
+            <p className="te-info-body">
+              If the inbox button doesn't show your message right away, wait 10–20 seconds and refresh. Some providers have a slight delay. You can also visit{' '}
+              <a href="https://www.guerrillamail.com" target="_blank" rel="noopener noreferrer">guerrillamail.com</a>{' '}
+              or{' '}
+              <a href="https://yopmail.com" target="_blank" rel="noopener noreferrer">yopmail.com</a>{' '}
+              and paste your address there manually to check.
+            </p>
+            <div className="te-info-note">
+              Made by Toosii Tech · Free & instant · No tracking · No data stored
+            </div>
+          </div>
+        </div>
+      </section>
+
     </Layout>
   )
 }
