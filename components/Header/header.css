@@ -86,6 +86,33 @@
   border-color: rgba(37, 211, 102, 0.22);
 }
 
+/* ── Support button (desktop) ── */
+.nav-support-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #07070e;
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 0.42rem 0.9rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: filter 0.18s, box-shadow 0.18s, transform 0.15s;
+  box-shadow: 0 2px 10px rgba(245,158,11,0.3);
+  margin-left: 0.25rem;
+  flex-shrink: 0;
+}
+.nav-support-btn:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 4px 16px rgba(245,158,11,0.45);
+  transform: translateY(-1px);
+}
+.nav-support-btn:active { transform: translateY(0); }
+
 /* ── Tools dropdown ── */
 .nav-dropdown { position: relative; }
 
@@ -330,6 +357,28 @@
   flex-direction: column;
   gap: 0.2rem;
 }
+
+/* ── Support button (mobile) ── */
+.mobile-support-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #07070e;
+  font-size: 1rem;
+  font-weight: 800;
+  padding: 0.9rem 1.25rem;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  margin-top: 0.35rem;
+  box-shadow: 0 4px 16px rgba(245,158,11,0.3);
+  transition: filter 0.18s;
+}
+.mobile-support-btn:hover { filter: brightness(1.08); }
 
 /* ══════════════════════════════════
    RESPONSIVE BREAKPOINTS
