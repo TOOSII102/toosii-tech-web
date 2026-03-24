@@ -15,16 +15,6 @@ const team = [
     initial: "T",
   },
   {
-    name: "Casper Tech",
-    role: "Technology Advisor",
-    dept: "Technology",
-    bio: "Technology expert and close collaborator. Brings expertise in system architecture, cloud infrastructure, and AI/ML to help shape the technical direction of Toosii Tech projects.",
-    expertise: ["AI/ML", "Cloud Architecture", "System Design", "Blockchain", "DevOps"],
-    email: "caspertechke@gmail.com",
-    featured: true,
-    initial: "C",
-  },
-  {
     name: "Jamal",
     role: "Security Consultant",
     dept: "Security",
