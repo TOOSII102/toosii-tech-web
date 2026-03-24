@@ -11,7 +11,7 @@ export default function Footer() {
             <div className="footer-icon">T</div>
             <span>Toosii Tech</span>
           </div>
-          <p className="footer-tagline">Software developer & tool builder from Nairobi, Kenya — shipping bots, AI tools, and digital experiences that actually work.</p>
+          <p className="footer-tagline">Building intelligent tools, AI automation, and precision-crafted digital experiences — from Nairobi, Kenya to the world.</p>
           <div className="footer-contact-direct">
             <a href="mailto:toosiitechcompany@gmail.com" className="email-direct">📧 Email Directly</a>
             <p className="response-note">⚡ Usually responds within 24 hours</p>
