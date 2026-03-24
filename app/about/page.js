@@ -4,7 +4,7 @@ import './about.css'
 
 export const metadata = {
   title: 'About — Toosii Tech',
-  description: 'The story behind Toosii Tech — a self-taught developer from Nairobi, Kenya building tools, bots, and digital experiences that reach thousands.',
+  description: 'The story behind Toosii Tech — a self-taught developer from Kenya building tools, bots, and digital experiences that reach thousands.',
 }
 
 const skills = [
@@ -46,7 +46,7 @@ export default function About() {
             <span className="gradient-text">Driven by purpose.</span>
           </h1>
           <p className="section-sub" style={{ maxWidth: '640px', margin: '0 auto' }}>
-            I'm Toosii Tech — a self-taught software developer from Nairobi, Kenya who turned
+            I'm Toosii Tech — a self-taught software developer from Kenya who turned
             curiosity into a platform that serves thousands of users across Africa and beyond.
           </p>
           <div className="hero-cta" style={{ marginTop: '2rem' }}>
@@ -106,7 +106,7 @@ export default function About() {
               <h3>Toosii Tech</h3>
               <p style={{ color: '#25d366', fontWeight: 600, fontSize: '0.9rem' }}>Software Developer & Tool Builder</p>
               <div className="profile-meta">
-                <span>📍 Nairobi, Kenya</span>
+                <span>📍 Kenya</span>
                 <span>🗓️ Building since 2021</span>
                 <span>🤖 150+ bot commands shipped</span>
                 <span>🌍 Serving users across Africa & beyond</span>
