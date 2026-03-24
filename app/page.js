@@ -81,8 +81,8 @@ export default function Home() {
           </p>
           <div className="hero-cta">
             <Link href="/tools/ai" className="btn-primary">Try Toosii AI ✨</Link>
-            <Link href="/tools/dramabox" className="btn-primary" style={{ background: 'linear-gradient(135deg,#ec4899,#8b5cf6)' }}>
-              🎭 Watch DramaBox
+            <Link href="/tools/movies" className="btn-primary" style={{ background: 'linear-gradient(135deg,#8b5cf6,#3b82f6)' }}>
+              🎬 Watch Movies
             </Link>
             <a
               href="https://github.com/TOOSII102/TOOSII-XD-ULTRA/archive/refs/heads/main.zip"
@@ -202,6 +202,91 @@ export default function Home() {
                 ))}
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Movies Spotlight ── */}
+      <section className="section movies-spotlight">
+        <div className="page-wrapper">
+          <div className="movies-spotlight-inner">
+
+            {/* Left — info */}
+            <div className="movies-spotlight-copy">
+              <p className="section-label" style={{ color: '#8b5cf6' }}>🎬 Now on Toosii Tech</p>
+              <h2 className="section-title" style={{ textAlign: 'left', marginBottom: '0.75rem' }}>
+                Stream & Download<br />
+                <span className="movies-gradient-text">Full Movies Free</span>
+              </h2>
+              <p style={{ color: '#94a3b8', lineHeight: 1.75, fontSize: '0.95rem', marginBottom: '1.5rem' }}>
+                Hollywood blockbusters, international films, and hit TV series — all in HD.
+                Multiple quality options from 360p to 1080p. One-click downloads. No subscription, no sign-up, no ads.
+              </p>
+
+              <ul className="movies-features">
+                {[
+                  ['🎞️', 'Full Movies & TV Series', 'Hollywood, African & international titles'],
+                  ['📺', 'Multiple Qualities', '360p · 480p · 720p · 1080p — your choice'],
+                  ['⬇️', 'Direct Downloads', 'Download any movie to your device instantly'],
+                  ['🔍', 'Smart Search', 'Find anything by title, actor, or genre'],
+                ].map(([icon, title, sub]) => (
+                  <li key={title} className="movies-feature-item">
+                    <span className="movies-feature-icon">{icon}</span>
+                    <span>
+                      <strong style={{ color: '#e2e8f0', display: 'block', fontSize: '0.88rem', fontWeight: 700 }}>{title}</strong>
+                      <span style={{ color: '#64748b', fontSize: '0.78rem' }}>{sub}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
+              <div style={{ display: 'flex', gap: '0.85rem', flexWrap: 'wrap', marginTop: '1.75rem' }}>
+                <Link
+                  href="/tools/movies"
+                  className="btn-primary"
+                  style={{ background: 'linear-gradient(135deg,#8b5cf6,#3b82f6)', fontSize: '0.95rem', padding: '0.9rem 1.8rem' }}
+                >
+                  ▶ Start Watching
+                </Link>
+                <Link href="/tools" className="btn-outline" style={{ fontSize: '0.88rem' }}>
+                  All Tools →
+                </Link>
+              </div>
+            </div>
+
+            {/* Right — visual card */}
+            <div className="movies-spotlight-card">
+              <div className="movies-spotlight-card-top" />
+              <div className="movies-card-icon">🎬</div>
+              <h3 className="movies-card-title">Toosii Movies</h3>
+              <p className="movies-card-sub">Free HD streaming by TOOSII</p>
+
+              <div className="movies-platforms">
+                {['Netflix', 'Prime Video', 'Disney+', 'Apple TV', 'Hulu', 'HBO Max'].map(p => (
+                  <span key={p} className="movies-platform-chip">{p}</span>
+                ))}
+              </div>
+
+              <div className="movies-quality-row">
+                {['360p', '480p', '720p', '1080p'].map(q => (
+                  <span key={q} className="movies-q-chip">{q}</span>
+                ))}
+              </div>
+
+              <Link
+                href="/tools/movies"
+                className="movies-card-btn"
+              >
+                Browse Now →
+              </Link>
+
+              <div className="movies-card-badges">
+                <span className="movies-badge">✅ Free</span>
+                <span className="movies-badge">✅ No Sign-up</span>
+                <span className="movies-badge">✅ HD</span>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
