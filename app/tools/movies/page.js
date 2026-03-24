@@ -1,0 +1,472 @@
+'use client'
+import Layout from '../../../components/Layout'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import '../tools.css'
+import './movies.css'
+
+export const dynamic = 'force-dynamic'
+
+/* ── Helpers ── */
+function fmtDur(secs) {
+  if (!secs) return null
+  const h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60)
+  return h > 0 ? `${h}h ${m}m` : `${m}m`
+}
+function fmtSize(bytes) {
+  if (!bytes) return ''
+  const mb = +bytes / (1024 * 1024)
+  return mb > 1000 ? `${(mb / 1024).toFixed(1)} GB` : `${mb.toFixed(0)} MB`
+}
+function fmtYear(date) { return date?.slice(0, 4) || '' }
+function coverUrl(m) { return m?.cover?.url || m?.cover || '' }
+
+/* ── Movie card ── */
+function MovieCard({ movie, onClick }) {
+  return (
+    <div className="mv-card" onClick={() => onClick(movie)}>
+      <div className="mv-poster-wrap">
+        <img
+          src={coverUrl(movie)}
+          alt={movie.title}
+          className="mv-poster"
+          loading="lazy"
+          onError={e => { e.target.src = 'https://placehold.co/300x450/0d0d1a/8b5cf6?text=🎬' }}
+        />
+        <div className="mv-poster-overlay">
+          <div className="mv-play-icon">▶</div>
+        </div>
+        {movie.imdbRatingValue && (
+          <span className="mv-rating-badge">⭐ {movie.imdbRatingValue}</span>
+        )}
+        <span className="mv-type-badge">{movie.subjectType === 2 ? '📺 Series' : '🎬 Movie'}</span>
+      </div>
+      <div className="mv-card-info">
+        <p className="mv-card-title">{movie.title}</p>
+        <div className="mv-card-meta">
+          <span className="mv-card-year">{fmtYear(movie.releaseDate)}</span>
+          {movie.genre && <span className="mv-card-genre">{movie.genre.split(',')[0].trim()}</span>}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SkeletonCard() {
+  return (
+    <div className="mv-card mv-card-skeleton">
+      <div className="mv-poster-wrap skeleton-img" />
+      <div className="mv-card-info">
+        <div className="skeleton-line" style={{ width: '80%', height: 11, marginBottom: 6 }} />
+        <div className="skeleton-line" style={{ width: '50%', height: 9 }} />
+      </div>
+    </div>
+  )
+}
+
+/* ── Detail modal ── */
+function DetailModal({ movie, onClose }) {
+  const [detail,   setDetail]   = useState(null)
+  const [streams,  setStreams]  = useState([])
+  const [recs,     setRecs]     = useState([])
+  const [loading,  setLoading]  = useState(true)
+  const [activeQ,  setActiveQ]  = useState(null)
+  const [playing,  setPlaying]  = useState(false)
+  const videoRef   = useRef(null)
+  const histRef    = useRef(false)
+
+  /* lock scroll + history */
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    window.history.pushState({ mvModal: true }, '')
+    histRef.current = true
+    const onPop = () => { histRef.current = false; onClose() }
+    window.addEventListener('popstate', onPop)
+    return () => {
+      document.body.style.overflow = ''
+      window.removeEventListener('popstate', onPop)
+    }
+  }, [onClose])
+
+  const close = useCallback(() => {
+    if (histRef.current) { histRef.current = false; window.history.back() }
+    else onClose()
+  }, [onClose])
+
+  /* fetch detail + streams + recs in parallel */
+  useEffect(() => {
+    setDetail(null); setStreams([]); setRecs([]); setLoading(true); setPlaying(false); setActiveQ(null)
+    const id = movie.subjectId
+    async function load() {
+      try {
+        const [dRes, pRes, rRes] = await Promise.all([
+          fetch(`/api/tools/movies?action=detail&id=${id}`),
+          fetch(`/api/tools/movies?action=play&id=${id}`),
+          fetch(`/api/tools/movies?action=recommend&id=${id}`),
+        ])
+        const [dData, pData, rData] = await Promise.all([dRes.json(), pRes.json(), rRes.json()])
+
+        setDetail(dData?.data || null)
+        const st = pData?.data?.streams || []
+        const sorted = [...st].sort((a, b) => (+b.resolutions) - (+a.resolutions))
+        setStreams(sorted)
+        if (sorted.length) setActiveQ(sorted[0])
+        setRecs((rData?.data?.subjectList || []).slice(0, 10))
+      } catch {}
+      setLoading(false)
+    }
+    load()
+  }, [movie.subjectId])
+
+  const cover = coverUrl(detail || movie)
+  const d = detail || movie
+
+  return (
+    <div className="mv-modal-backdrop" onClick={e => { if (e.target === e.currentTarget) close() }}>
+      <div className="mv-modal">
+        <button className="mv-modal-close" onClick={close} aria-label="Close">✕</button>
+
+        {/* ── Hero ── */}
+        <div className="mv-modal-hero">
+          <div className="mv-modal-hero-bg" style={{ backgroundImage: `url(${cover})` }} />
+          <div className="mv-modal-hero-grad" />
+          <div className="mv-modal-hero-inner">
+            <img src={cover} alt={d.title} className="mv-modal-poster"
+              onError={e => { e.target.src = 'https://placehold.co/260x390/0d0d1a/8b5cf6?text=🎬' }} />
+            <div className="mv-modal-info">
+              <div className="mv-modal-badges">
+                <span className="mv-modal-badge mv-badge-purple">
+                  {d.subjectType === 2 ? '📺 Series' : '🎬 Movie'}
+                </span>
+                {d.countryName && <span className="mv-modal-badge mv-badge-blue">📍 {d.countryName}</span>}
+                {streams.length > 0 && <span className="mv-modal-badge mv-badge-purple">▶ {streams.length} Qualities</span>}
+                {d.imdbRatingValue && <span className="mv-modal-badge mv-badge-amber">⭐ IMDB {d.imdbRatingValue}</span>}
+              </div>
+              <h2 className="mv-modal-title">{d.title}</h2>
+              <div className="mv-modal-meta">
+                {fmtYear(d.releaseDate) && <span>📅 {fmtYear(d.releaseDate)}</span>}
+                {fmtDur(d.duration)     && <span>⏱ {fmtDur(d.duration)}</span>}
+                {d.genre && d.genre.split(',').slice(0, 3).map(g => (
+                  <span key={g} style={{ color: '#a78bfa' }}>{g.trim()}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Body ── */}
+        <div className="mv-modal-body">
+          {loading ? (
+            <div className="mv-modal-spinner">
+              <div className="mv-spin" />
+              <p>Loading movie data…</p>
+            </div>
+          ) : (
+            <>
+              {/* Description */}
+              {d.description && <p className="mv-modal-desc">{d.description}</p>}
+
+              {/* Player */}
+              {streams.length > 0 ? (
+                <div className="mv-player-section">
+                  <div className="mv-player-head">
+                    <span className="mv-player-label">
+                      <span className="mv-player-dot" />
+                      Stream Now
+                    </span>
+                    <div className="mv-quality-tabs">
+                      {streams.map(s => (
+                        <button
+                          key={s.resolutions}
+                          className={`mv-quality-btn${activeQ?.resolutions === s.resolutions ? ' active' : ''}`}
+                          onClick={() => { setActiveQ(s); setPlaying(true) }}
+                        >
+                          {s.resolutions}p
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {playing && activeQ ? (
+                    <div className="mv-video-wrap">
+                      <video
+                        ref={videoRef}
+                        key={activeQ.resolutions + '_' + movie.subjectId}
+                        className="mv-video"
+                        controls
+                        autoPlay
+                        playsInline
+                        preload="metadata"
+                        src={activeQ.proxyUrl || activeQ.url}
+                      />
+                    </div>
+                  ) : (
+                    <div className="mv-video-wrap" style={{ cursor: 'pointer' }}
+                      onClick={() => setPlaying(true)}>
+                      <div className="mv-video-placeholder">
+                        <div style={{ position: 'relative', display: 'inline-block' }}>
+                          <img src={cover} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0, opacity: 0.3, borderRadius: 12 }} />
+                          <div className="mv-video-placeholder-icon">▶</div>
+                        </div>
+                        <p>Click to play — {activeQ?.resolutions}p available</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="mv-player-section">
+                  <div className="mv-video-placeholder" style={{ padding: '2.5rem', minHeight: 120 }}>
+                    <span className="mv-video-placeholder-icon">🔒</span>
+                    <p>Stream not available for this title.</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Downloads */}
+              {streams.length > 0 && (
+                <div className="mv-download-section">
+                  <div className="mv-download-head">
+                    ⬇ Download
+                  </div>
+                  <div className="mv-download-grid">
+                    {streams.map(s => (
+                      <a
+                        key={s.resolutions}
+                        href={s.downloadUrl || s.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mv-download-btn"
+                      >
+                        <span>⬇</span>
+                        <span>{s.resolutions}p</span>
+                        {s.size && <span className="mv-download-size">{fmtSize(s.size)}</span>}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Cast */}
+              {detail?.staffList?.length > 0 && (
+                <div className="mv-cast-section">
+                  <h4 className="mv-modal-sub">Cast & Crew</h4>
+                  <div className="mv-cast-list">
+                    {detail.staffList.slice(0, 12).map((s, i) => (
+                      <div key={i} className="mv-cast-chip">
+                        <strong>{s.name}</strong>
+                        {s.role && <> · {s.role}</>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Subtitles */}
+              {d.subtitles && (
+                <div style={{ marginBottom: '1.75rem' }}>
+                  <h4 className="mv-modal-sub">Subtitles</h4>
+                  <div className="mv-subs-list">
+                    {d.subtitles.split(',').slice(0, 10).map(s => (
+                      <span key={s} className="mv-sub-chip">{s.trim()}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Recommendations */}
+              {recs.length > 0 && (
+                <div>
+                  <h4 className="mv-modal-sub">You May Also Like</h4>
+                  <div className="mv-recommend-grid">
+                    {recs.map(r => (
+                      <MovieCard key={r.subjectId} movie={r} onClick={() => {
+                        close()
+                        setTimeout(() => window.dispatchEvent(
+                          new CustomEvent('mv-open', { detail: r })
+                        ), 220)
+                      }} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ══════════════════════
+   MAIN PAGE
+══════════════════════ */
+export default function MoviesPage() {
+  const [featured, setFeatured]   = useState(null)
+  const [trending, setTrending]   = useState([])
+  const [results,  setResults]    = useState([])
+  const [query,    setQuery]      = useState('')
+  const [type,     setType]       = useState('')
+  const [tab,      setTab]        = useState('trending') // 'trending' | 'search'
+  const [loading,  setLoading]    = useState(true)
+  const [srchLoad, setSrchLoad]   = useState(false)
+  const [selected, setSelected]   = useState(null)
+  const debRef     = useRef(null)
+  const inputRef   = useRef(null)
+
+  /* Load trending on mount */
+  useEffect(() => {
+    async function load() {
+      try {
+        const res  = await fetch('/api/tools/movies?action=trending')
+        const data = await res.json()
+        const list = data?.data?.subjectList || []
+        if (list.length) { setFeatured(list[0]); setTrending(list) }
+      } catch {}
+      setLoading(false)
+    }
+    load()
+  }, [])
+
+  /* Handle recommendation cross-open */
+  useEffect(() => {
+    const h = e => setSelected(e.detail)
+    window.addEventListener('mv-open', h)
+    return () => window.removeEventListener('mv-open', h)
+  }, [])
+
+  /* Debounced search */
+  const runSearch = useCallback(async (q, t) => {
+    if (!q.trim()) { setResults([]); setTab('trending'); return }
+    setSrchLoad(true); setTab('search')
+    try {
+      const res  = await fetch(`/api/tools/movies?action=search&q=${encodeURIComponent(q)}&type=${t}`)
+      const data = await res.json()
+      setResults(data?.data?.items || [])
+    } catch {}
+    setSrchLoad(false)
+  }, [])
+
+  const handleInput = (v) => {
+    setQuery(v)
+    clearTimeout(debRef.current)
+    if (!v.trim()) { setResults([]); setTab('trending'); return }
+    debRef.current = setTimeout(() => runSearch(v, type), 500)
+  }
+
+  const handleTypeChange = (v) => {
+    setType(v)
+    if (query.trim()) runSearch(query, v)
+  }
+
+  const movieList = tab === 'search' ? results : trending
+
+  return (
+    <Layout>
+      <div className="mv-page">
+
+        {/* ── Hero banner (featured movie) ── */}
+        {featured && (
+          <div className="mv-hero">
+            <div className="mv-hero-bg" style={{ backgroundImage: `url(${coverUrl(featured)})` }} />
+            <div className="mv-hero-gradient" />
+            <div className="mv-hero-content">
+              <span className="mv-hero-badge">🎬 Featured Today</span>
+              <h1 className="mv-hero-title">{featured.title}</h1>
+              <div className="mv-hero-meta">
+                {featured.imdbRatingValue && <span>⭐ {featured.imdbRatingValue} IMDB</span>}
+                {fmtDur(featured.duration) && <span>⏱ {fmtDur(featured.duration)}</span>}
+                {featured.genre && <span>🎭 {featured.genre.split(',').slice(0, 2).join(' · ')}</span>}
+                {featured.countryName && <span>📍 {featured.countryName}</span>}
+              </div>
+              {featured.description && (
+                <p className="mv-hero-desc">{featured.description}</p>
+              )}
+              <div className="mv-hero-btns">
+                <button className="mv-hero-play-btn" onClick={() => setSelected(featured)}>
+                  ▶ Watch Now
+                </button>
+                <button className="mv-hero-info-btn" onClick={() => setSelected(featured)}>
+                  ⓘ More Info
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Search bar ── */}
+        <div className="mv-search-wrap">
+          <div className="mv-search-row">
+            <span className="mv-search-icon">🔍</span>
+            <input
+              ref={inputRef}
+              className="mv-search-input"
+              type="text"
+              placeholder="Search movies, TV series, actors…"
+              value={query}
+              onChange={e => handleInput(e.target.value)}
+              autoComplete="off"
+            />
+            <select
+              className="mv-search-type"
+              value={type}
+              onChange={e => handleTypeChange(e.target.value)}
+            >
+              <option value="">All</option>
+              <option value="1">Movies</option>
+              <option value="2">TV Series</option>
+            </select>
+            <button className="mv-search-btn" onClick={() => runSearch(query, type)}>
+              Search
+            </button>
+          </div>
+        </div>
+
+        {/* ── Content section ── */}
+        <div className="mv-section">
+          <div className="mv-section-head">
+            <h2 className="mv-section-title">
+              <span className="mv-section-bar" />
+              {tab === 'search'
+                ? `Results for "${query}"`
+                : '🔥 Trending Now'}
+            </h2>
+            {movieList.length > 0 && (
+              <span className="mv-count">{movieList.length} title{movieList.length !== 1 ? 's' : ''}</span>
+            )}
+          </div>
+
+          <div className="mv-grid">
+            {(loading || srchLoad) ? (
+              Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} />)
+            ) : movieList.length === 0 ? (
+              <div className="mv-empty">
+                <span className="mv-empty-icon">{tab === 'search' ? '🔍' : '🎬'}</span>
+                {tab === 'search'
+                  ? `No results for "${query}" — try a different title.`
+                  : 'No movies loaded. Please refresh.'}
+              </div>
+            ) : (
+              movieList.map(m => (
+                <MovieCard key={m.subjectId} movie={m} onClick={setSelected} />
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* ── Attribution ── */}
+        <div className="mv-made-by">
+          Streams powered by <a href="https://movieapi.xcasper.space" target="_blank" rel="noopener noreferrer">XCASPER Movies API</a>
+          {' · '}Toosii Movies · Made by <a href="/">TOOSII</a> · Toosii Tech Kenya
+        </div>
+
+      </div>
+
+      {/* ── Detail modal ── */}
+      {selected && (
+        <DetailModal
+          movie={selected}
+          onClose={() => setSelected(null)}
+        />
+      )}
+    </Layout>
+  )
+}
