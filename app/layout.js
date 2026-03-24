@@ -9,6 +9,12 @@ export const metadata = {
   keywords: 'Toosii Tech, developer tools, AI tools, WhatsApp bot, session generator, video downloader, MP3 downloader, DramaBox, Nairobi Kenya',
 }
 
+/* Force every device to render the full desktop layout (1280 px wide) */
+export const viewport = {
+  width: 1280,
+  initialScale: 1,
+}
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
