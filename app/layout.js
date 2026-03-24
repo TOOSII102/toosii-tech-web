@@ -1,5 +1,6 @@
 import './globals.css'
 import AnimatedBackground from '../components/AnimatedBackground'
+import BuyCoffee from '../components/BuyCoffee'
 
 export const metadata = {
   title: 'Toosii Tech — AI Tools, Bots & Digital Experiences',
@@ -13,6 +14,7 @@ export default function RootLayout({ children }) {
       <body>
         <AnimatedBackground />
         {children}
+        <BuyCoffee />
       </body>
     </html>
   )
