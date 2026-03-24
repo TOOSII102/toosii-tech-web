@@ -307,17 +307,28 @@
 .tai-send-btn:hover:not(:disabled) { opacity: 0.85; transform: translateY(-1px); }
 .tai-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* Mobile adjustments */
+/* ── Mobile adjustments ── */
+
+@media (max-width: 640px) {
+  .tai-panel { width: 320px; max-height: 480px; }
+  .tai-send-btn { width: 44px; height: 44px; min-height: 44px; }
+}
+
 @media (max-width: 480px) {
-  .tai-fab {
-    bottom: 18px;
-    left: 16px;
+  /* FAB: tighter positioning */
+  .tai-fab  { bottom: 18px; left: 14px; padding: 0.55rem 1rem 0.55rem 0.7rem; }
+
+  /* Panel: full-width, clears FAB */
+  .tai-panel {
+    left: 10px; right: 10px;
+    width: auto;
+    bottom: 80px;
+    max-height: 420px;
   }
 
-  .tai-panel {
-    left: 16px;
-    right: 16px;
-    width: auto;
-    bottom: 82px;
-  }
+  /* iOS: prevent input zoom */
+  .tai-input { font-size: 16px; }
+
+  /* Touch-friendly send button */
+  .tai-send-btn { width: 44px; height: 44px; min-height: 44px; }
 }
