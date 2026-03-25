@@ -163,9 +163,12 @@
         {/* HEADER */}
         <header className="ad-header">
           <div className="ad-header-left">
-            <span className="ad-brand">⚡ Toosii Tech</span>
-            <span className="ad-badge">ADMIN</span>
-          </div>
+            <a href="/" className="ad-brand-link" title="View live site">
+                <img src="/logo.png" alt="Toosii Tech" className="ad-brand-logo" />
+                <span className="ad-brand">Toosii Tech</span>
+              </a>
+              <span className="ad-badge">ADMIN</span>
+            </div>
           <div className="ad-header-right">
             {lastRefresh && (
               <span className="ad-refresh-label">Updated {timeAgo(lastRefresh)}</span>
