@@ -370,8 +370,8 @@ function DetailModal({ movie, onClose }) {
                         {activeSeason && activeEpNum ? ` — S${activeSeason} E${activeEpNum}` : ''}
                       </span>
                     </h4>
-                    {seasons.map(s => (
-                      <div key={s.season} className="mv-season-group">
+                    {seasons.map((s, idx) => (
+                      <div key={s.season} className={`mv-season-group mv-sc-${idx % 7}`}>
                         {seasons.length > 1 && (
                           <div className="mv-season-label">Season {s.season}</div>
                         )}
