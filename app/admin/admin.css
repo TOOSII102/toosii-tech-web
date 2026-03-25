@@ -689,3 +689,62 @@
     width: 100%;
   }
   
+  /* ── Daily bar chart ───────────────────────────────── */
+  .ad-daily-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    height: 120px;
+    padding-top: 0.5rem;
+  }
+  .ad-daily-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    height: 100%;
+    justify-content: flex-end;
+  }
+  .ad-daily-bar-wrap {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+    background: rgba(255,255,255,0.04);
+    border-radius: 4px 4px 0 0;
+    overflow: hidden;
+    max-height: 80px;
+    min-height: 4px;
+  }
+  .ad-daily-bar {
+    width: 100%;
+    background: linear-gradient(180deg, #25d366, #3b82f6);
+    border-radius: 3px 3px 0 0;
+    min-height: 3px;
+    transition: height 0.5s ease;
+  }
+  .ad-daily-count {
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.5);
+    line-height: 1;
+  }
+  .ad-daily-label {
+    font-size: 0.68rem;
+    color: rgba(255,255,255,0.4);
+    line-height: 1;
+  }
+
+  /* ── Device icon in feed ───────────────────────────── */
+  .ad-vis-device {
+    font-size: 0.9rem;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  /* ── Refresh button ────────────────────────────────── */
+  .ad-vis-refresh {
+    margin-left: auto;
+    font-size: 0.75rem;
+  }
+  
