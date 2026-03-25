@@ -94,8 +94,10 @@ function SkeletonCard() {
 function DetailModal({ movie, onClose }) {
   const [detail,         setDetail]        = useState(null)
   const [streams,        setStreams]        = useState([])
-    const [episodes,       setEpisodes]      = useState([])
-    const [activeEp,       setActiveEp]      = useState(null)
+    const [seasons,        setSeasons]       = useState([])
+    const [activeSeason,   setActiveSeason]  = useState(1)
+    const [activeEpNum,    setActiveEpNum]   = useState(1)
+    const [proxyTemplate,  setProxyTemplate] = useState('')
   const [recs,           setRecs]          = useState([])
   const [loading,        setLoading]       = useState(true)
   const [activeQ,        setActiveQ]       = useState(null)
@@ -143,14 +145,12 @@ function DetailModal({ movie, onClose }) {
         setDetail(detailData)
         setTrailer(extractTrailer(detailData))
 
-          // Fetch episodes for series
-          if ((detailData?.subjectType ?? movie.subjectType) === 2) {
-            try {
-              const eRes  = await fetch('/api/tools/movies?action=episodes&id=' + id)
-              const eData = await eRes.json()
-              const epList = eData?.data?.episodeList || eData?.data?.episodes || []
-              setEpisodes(epList)
-            } catch {}
+          // Extract seasons + proxyUrl template for series
+          const seasonList = pData?.data?.seasons || []
+          if (seasonList.length > 0) {
+            setSeasons(seasonList)
+            const tmpl = pData?.data?.streams?.[0]?.proxyUrl || ''
+            setProxyTemplate(tmpl)
           }
 
           const st = pData?.data?.streams || []
@@ -169,21 +169,28 @@ function DetailModal({ movie, onClose }) {
 
   const ytSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent((d.title || '') + ' official trailer')}`
 
-  async function loadEpisodeStreams(ep) {
-      const epId = ep.episodeId || ep.id
-      if (!epId) return
-      setActiveEp(ep)
+  function selectEpisode(season, ep) {
+      if (!proxyTemplate) return
+      setActiveSeason(season)
+      setActiveEpNum(ep)
       setPlaying(false)
-      setStreams([])
-      setActiveQ(null)
-      try {
-        const res  = await fetch(`/api/tools/movies?action=play-ep&id=${epId}`)
-        const data = await res.json()
-        const st   = data?.data?.streams || []
-        const sorted = [...st].sort((a, b) => (+b.resolutions) - (+a.resolutions))
-        setStreams(sorted)
-        if (sorted.length) { setActiveQ(sorted[0]); setPlaying(true) }
-      } catch {}
+      // Build stream objects by swapping se/ep in the proxyUrl template
+      const resolutions = ['360', '480', '720', '1080']
+      const newStreams = resolutions.map(res => ({
+        resolutions: res,
+        proxyUrl: proxyTemplate
+          .replace(/se=\d+/, 'se=' + season)
+          .replace(/ep=\d+/, 'ep=' + ep)
+          .replace(/resolution=\d+/, 'resolution=' + res),
+        url: proxyTemplate
+          .replace(/se=\d+/, 'se=' + season)
+          .replace(/ep=\d+/, 'ep=' + ep)
+          .replace(/resolution=\d+/, 'resolution=' + res),
+      }))
+      setStreams(newStreams)
+      setActiveQ(newStreams[2] || newStreams[0]) // prefer 720p
+      setPlaying(true)
+      setTimeout(() => document.querySelector('.mv-player-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
     }
 
     function scrollToTrailer() {
@@ -354,33 +361,38 @@ function DetailModal({ movie, onClose }) {
                 </div>
               </div>
 
-              {/* ══ EPISODES (Series only) ══ */}
-                {episodes.length > 0 && (
+              {/* ══ SEASONS & EPISODES (Series only) ══ */}
+                {seasons.length > 0 && (
                   <div className="mv-episodes-section">
-                    <h4 className="mv-modal-sub">
-                      Episodes
-                      {activeEp && <span className="mv-ep-active-label"> — Ep {activeEp.number ?? activeEp.episodeNum ?? ''}: {activeEp.title || ''}</span>}
-                    </h4>
-                    <div className="mv-ep-grid">
-                      {episodes.map((ep, i) => {
-                        const epNum = ep.number ?? ep.episodeNum ?? i + 1
-                        const isActive = activeEp && (activeEp.episodeId || activeEp.id) === (ep.episodeId || ep.id)
-                        return (
-                          <button
-                            key={ep.episodeId || ep.id || i}
-                            className={`mv-ep-btn${isActive ? ' active' : ''}`}
-                            onClick={() => loadEpisodeStreams(ep)}
-                          >
-                            {ep.cover ? (
-                              <img src={ep.cover?.url || ep.cover} alt={ep.title} className="mv-ep-thumb"
-                                onError={e => { e.target.style.display='none' }} />
-                            ) : null}
-                            <span className="mv-ep-num">Ep {epNum}</span>
-                            {ep.title && <span className="mv-ep-title">{ep.title}</span>}
-                          </button>
-                        )
-                      })}
+                    <div className="mv-season-head">
+                      <h4 className="mv-modal-sub" style={{margin:0}}>Episodes</h4>
+                      {seasons.length > 1 && (
+                        <div className="mv-season-tabs">
+                          {seasons.map(s => (
+                            <button
+                              key={s.season}
+                              className={`mv-season-tab${activeSeason === s.season ? ' active' : ''}`}
+                              onClick={() => setActiveSeason(s.season)}
+                            >
+                              S{s.season}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
+                    {seasons.filter(s => s.season === activeSeason).map(s => (
+                      <div key={s.season} className="mv-ep-grid">
+                        {Array.from({ length: s.episodes }, (_, i) => i + 1).map(ep => (
+                          <button
+                            key={ep}
+                            className={`mv-ep-btn${activeSeason === s.season && activeEpNum === ep ? ' active' : ''}`}
+                            onClick={() => selectEpisode(s.season, ep)}
+                          >
+                            <span className="mv-ep-num">Ep {ep}</span>
+                          </button>
+                        ))}
+                      </div>
+                    ))}
                   </div>
                 )}
 
