@@ -173,41 +173,58 @@ export async function GET(req) {
   try {
     let url
     switch (action) {
-      case 'trending':
-        url = `${BASE}/api/trending`
-        break
-      case 'hot':
-        url = `${BASE}/api/hot`
-        break
-      case 'search':
-        url = `${BASE}/api/search?keyword=${encodeURIComponent(q)}&page=${page}&perPage=24${type ? `&subjectType=${type}` : ''}`
-        break
-      case 'detail':
-        url = `${BASE}/api/rich-detail?subjectId=${encodeURIComponent(id)}`
-        break
-      case 'play':
-        url = `${BASE}/api/play?subjectId=${encodeURIComponent(id)}`
-        break
-      case 'recommend':
-        url = `${BASE}/api/recommend?subjectId=${encodeURIComponent(id)}&page=1&perPage=12`
-        
-        break
+        case 'trending':
+          url = `${BASE}/api/trending`
+          break
+        case 'hot':
+          url = `${BASE}/api/hot`
+          break
+        case 'search':
+          url = `${BASE}/api/search?keyword=${encodeURIComponent(q)}&page=${page}&perPage=24${type ? `&subjectType=${type}` : ''}`
+          break
+        case 'detail':
+          url = `${BASE}/api/rich-detail?subjectId=${encodeURIComponent(id)}`
+          break
+        case 'play':
+          url = `${BASE}/api/play?subjectId=${encodeURIComponent(id)}`
+          break
+        case 'recommend':
+          url = `${BASE}/api/recommend?subjectId=${encodeURIComponent(id)}&page=1&perPage=12`
+          break
         case 'episodes':
           url = `${BASE}/api/episodes?subjectId=${encodeURIComponent(id)}`
           break
         case 'play-ep':
           url = `${BASE}/api/play?episodeId=${encodeURIComponent(id)}`
-  reak
-      default:
-        return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
-    }
+          break
+        case 'tvmaze': {
+          try {
+            const tvSearch = await fetch('https://api.tvmaze.com/search/shows?q=' + encodeURIComponent(q),
+              { headers: { 'User-Agent': 'ToosiiTech/1.0' } })
+            const tvShows  = await tvSearch.json()
+            if (!tvShows?.length) return NextResponse.json({ episodes: [] })
+            const tvId  = tvShows[0].show.id
+            const tvEps = await fetch('https://api.tvmaze.com/shows/' + tvId + '/episodes',
+              { headers: { 'User-Agent': 'ToosiiTech/1.0' } })
+            const epList   = await tvEps.json()
+            const episodes = Array.isArray(epList)
+              ? epList.map(e => ({ season: e.season, number: e.number, name: e.name }))
+              : []
+            return NextResponse.json({ episodes })
+          } catch {
+            return NextResponse.json({ episodes: [] })
+          }
+        }
+        default:
+          return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
+      }
 
-    const data = await up(url)
-    if (data.code && data.code !== 200) {
-      return NextResponse.json({ error: data.error || 'Upstream error' }, { status: 502 })
-    }
-    return NextResponse.json(data)
-  } catch (e) {
+      const data = await up(url)
+      if (data.code && data.code !== 200) {
+        return NextResponse.json({ error: data.error || 'Upstream error' }, { status: 502 })
+      }
+      return NextResponse.json(data)
+    } catch (e) {
     console.error('[movies]', e.message)
     return NextResponse.json({ error: 'Movies service unavailable. Please try again.' }, { status: 500 })
   }
