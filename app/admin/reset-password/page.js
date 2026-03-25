@@ -46,7 +46,7 @@
     return (
       <div className="al-root">
         <div className="al-card">
-          <div className="al-logo">🔑</div>
+         <div className="al-logo"><img src="/logo.png" alt="Toosii Tech" className="al-logo-img" /></div>
           <h1 className="al-title">Sign In via Link</h1>
           <p className="al-subtitle">One-click access to your dashboard</p>
 
