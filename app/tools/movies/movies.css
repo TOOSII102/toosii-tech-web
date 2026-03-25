@@ -676,29 +676,15 @@
     flex-direction: column;
     align-items: center;
     gap: 0.3rem;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.08);
+    border: 1px solid;
     border-radius: 8px;
     padding: 0.55rem 0.4rem;
     cursor: pointer;
-    transition: background 0.18s, border-color 0.18s, transform 0.15s;
-    color: #94a3b8;
-    font-size: 0.75rem;
+    transition: background 0.18s, border-color 0.18s, transform 0.15s, box-shadow 0.18s;
+    font-size: 0.78rem;
+    font-weight: 600;
     text-align: center;
     overflow: hidden;
-  }
-
-  .mv-ep-btn:hover {
-    background: rgba(139,92,246,0.15);
-    border-color: rgba(139,92,246,0.4);
-    color: #e2e8f0;
-    transform: translateY(-1px);
-  }
-
-  .mv-ep-btn.active {
-    background: rgba(139,92,246,0.25);
-    border-color: #8b5cf6;
-    color: #fff;
   }
 
   .mv-ep-thumb {
@@ -776,10 +762,193 @@
   .mv-season-label {
     font-size: 0.78rem;
     font-weight: 700;
-    color: #a78bfa;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    margin-bottom: 0.5rem;
-    padding-left: 2px;
+    margin-bottom: 0.65rem;
+    display: inline-block;
+  }
+  
+/* ══ Season colour palette ═══════════════════════════════════ */
+
+  .mv-sc-0 .mv-season-label {
+    background: hsla(231,80%,60%,.15);
+    border-left: 3px solid hsl(231,80%,60%);
+    color: hsl(231,90%,72%);
+    padding: .28rem .75rem;
+    border-radius: 0 6px 6px 0;
+  }
+  .mv-sc-0 .mv-ep-btn {
+    background: hsla(231,70%,55%,.1);
+    border-color: hsla(231,70%,55%,.28);
+    color: hsl(231,80%,72%);
+  }
+  .mv-sc-0 .mv-ep-btn:hover {
+    background: hsla(231,70%,55%,.24);
+    border-color: hsl(231,70%,60%);
+    color: hsl(231,100%,88%);
+    transform: translateY(-2px);
+  }
+  .mv-sc-0 .mv-ep-btn.active {
+    background: hsla(231,70%,55%,.4);
+    border-color: hsl(231,80%,62%);
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 0 0 2px hsla(231,80%,60%,.4);
+  }
+  
+  .mv-sc-1 .mv-season-label {
+    background: hsla(271,80%,60%,.15);
+    border-left: 3px solid hsl(271,80%,60%);
+    color: hsl(271,90%,72%);
+    padding: .28rem .75rem;
+    border-radius: 0 6px 6px 0;
+  }
+  .mv-sc-1 .mv-ep-btn {
+    background: hsla(271,70%,55%,.1);
+    border-color: hsla(271,70%,55%,.28);
+    color: hsl(271,80%,72%);
+  }
+  .mv-sc-1 .mv-ep-btn:hover {
+    background: hsla(271,70%,55%,.24);
+    border-color: hsl(271,70%,60%);
+    color: hsl(271,100%,88%);
+    transform: translateY(-2px);
+  }
+  .mv-sc-1 .mv-ep-btn.active {
+    background: hsla(271,70%,55%,.4);
+    border-color: hsl(271,80%,62%);
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 0 0 2px hsla(271,80%,60%,.4);
+  }
+  
+  .mv-sc-2 .mv-season-label {
+    background: hsla(186,80%,60%,.15);
+    border-left: 3px solid hsl(186,80%,60%);
+    color: hsl(186,90%,72%);
+    padding: .28rem .75rem;
+    border-radius: 0 6px 6px 0;
+  }
+  .mv-sc-2 .mv-ep-btn {
+    background: hsla(186,70%,55%,.1);
+    border-color: hsla(186,70%,55%,.28);
+    color: hsl(186,80%,72%);
+  }
+  .mv-sc-2 .mv-ep-btn:hover {
+    background: hsla(186,70%,55%,.24);
+    border-color: hsl(186,70%,60%);
+    color: hsl(186,100%,88%);
+    transform: translateY(-2px);
+  }
+  .mv-sc-2 .mv-ep-btn.active {
+    background: hsla(186,70%,55%,.4);
+    border-color: hsl(186,80%,62%);
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 0 0 2px hsla(186,80%,60%,.4);
+  }
+  
+  .mv-sc-3 .mv-season-label {
+    background: hsla(43,80%,60%,.15);
+    border-left: 3px solid hsl(43,80%,60%);
+    color: hsl(43,90%,72%);
+    padding: .28rem .75rem;
+    border-radius: 0 6px 6px 0;
+  }
+  .mv-sc-3 .mv-ep-btn {
+    background: hsla(43,70%,55%,.1);
+    border-color: hsla(43,70%,55%,.28);
+    color: hsl(43,80%,72%);
+  }
+  .mv-sc-3 .mv-ep-btn:hover {
+    background: hsla(43,70%,55%,.24);
+    border-color: hsl(43,70%,60%);
+    color: hsl(43,100%,88%);
+    transform: translateY(-2px);
+  }
+  .mv-sc-3 .mv-ep-btn.active {
+    background: hsla(43,70%,55%,.4);
+    border-color: hsl(43,80%,62%);
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 0 0 2px hsla(43,80%,60%,.4);
+  }
+  
+  .mv-sc-4 .mv-season-label {
+    background: hsla(355,80%,60%,.15);
+    border-left: 3px solid hsl(355,80%,60%);
+    color: hsl(355,90%,72%);
+    padding: .28rem .75rem;
+    border-radius: 0 6px 6px 0;
+  }
+  .mv-sc-4 .mv-ep-btn {
+    background: hsla(355,70%,55%,.1);
+    border-color: hsla(355,70%,55%,.28);
+    color: hsl(355,80%,72%);
+  }
+  .mv-sc-4 .mv-ep-btn:hover {
+    background: hsla(355,70%,55%,.24);
+    border-color: hsl(355,70%,60%);
+    color: hsl(355,100%,88%);
+    transform: translateY(-2px);
+  }
+  .mv-sc-4 .mv-ep-btn.active {
+    background: hsla(355,70%,55%,.4);
+    border-color: hsl(355,80%,62%);
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 0 0 2px hsla(355,80%,60%,.4);
+  }
+  
+  .mv-sc-5 .mv-season-label {
+    background: hsla(152,80%,60%,.15);
+    border-left: 3px solid hsl(152,80%,60%);
+    color: hsl(152,90%,72%);
+    padding: .28rem .75rem;
+    border-radius: 0 6px 6px 0;
+  }
+  .mv-sc-5 .mv-ep-btn {
+    background: hsla(152,70%,55%,.1);
+    border-color: hsla(152,70%,55%,.28);
+    color: hsl(152,80%,72%);
+  }
+  .mv-sc-5 .mv-ep-btn:hover {
+    background: hsla(152,70%,55%,.24);
+    border-color: hsl(152,70%,60%);
+    color: hsl(152,100%,88%);
+    transform: translateY(-2px);
+  }
+  .mv-sc-5 .mv-ep-btn.active {
+    background: hsla(152,70%,55%,.4);
+    border-color: hsl(152,80%,62%);
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 0 0 2px hsla(152,80%,60%,.4);
+  }
+  
+  .mv-sc-6 .mv-season-label {
+    background: hsla(24,80%,60%,.15);
+    border-left: 3px solid hsl(24,80%,60%);
+    color: hsl(24,90%,72%);
+    padding: .28rem .75rem;
+    border-radius: 0 6px 6px 0;
+  }
+  .mv-sc-6 .mv-ep-btn {
+    background: hsla(24,70%,55%,.1);
+    border-color: hsla(24,70%,55%,.28);
+    color: hsl(24,80%,72%);
+  }
+  .mv-sc-6 .mv-ep-btn:hover {
+    background: hsla(24,70%,55%,.24);
+    border-color: hsl(24,70%,60%);
+    color: hsl(24,100%,88%);
+    transform: translateY(-2px);
+  }
+  .mv-sc-6 .mv-ep-btn.active {
+    background: hsla(24,70%,55%,.4);
+    border-color: hsl(24,80%,62%);
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 0 0 2px hsla(24,80%,60%,.4);
   }
   
