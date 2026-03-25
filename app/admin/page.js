@@ -96,7 +96,19 @@
     const [checkingHealth, setCheckingHealth] = useState(false)
     const [activeTab,      setActiveTab]     = useState('overview')
 
-    const fetchStats = useCallback(async () => {
+    const [visitors, setVisitors] = useState(null)
+      const [visLoad,   setVisLoad]   = useState(false)
+
+      const fetchVisitors = useCallback(async () => {
+        setVisLoad(true)
+        try {
+          const r = await fetch('/api/admin/visitors')
+          if (r.ok) setVisitors(await r.json())
+        } catch {}
+        setVisLoad(false)
+      }, [])
+
+      const fetchStats = useCallback(async () => {
       try {
         const res = await fetch('/api/admin/stats')
         if (res.status === 401) { router.push('/admin/login'); return }
@@ -140,11 +152,15 @@
     }, [router])
 
     useEffect(() => {
-      fetchStats()
-      checkHealth()
-      const id = setInterval(fetchStats, 30_000)
-      return () => clearInterval(id)
-    }, [fetchStats, checkHealth])
+        fetchStats()
+        checkHealth()
+        const id = setInterval(fetchStats, 30_000)
+        return () => clearInterval(id)
+      }, [fetchStats, checkHealth])
+
+      useEffect(() => {
+        if (activeTab === 'visitors') fetchVisitors()
+      }, [activeTab, fetchVisitors])
 
     const healthOk  = Object.values(health).filter(h => h.ok).length
     const healthBad = Object.values(health).filter(h => !h.ok).length
@@ -180,7 +196,7 @@
 
         {/* NAV TABS */}
         <nav className="ad-tabs">
-          {['overview', 'health', 'pages', 'commits', 'server'].map(tab => (
+          {['overview', 'visitors', 'health', 'pages', 'commits', 'server'].map(tab => (
             <button
               key={tab}
               className={`ad-tab ${activeTab === tab ? 'ad-tab--active' : ''}`}
@@ -231,7 +247,75 @@
             </>
           )}
 
-          {/* ── HEALTH TAB ── */}
+          {/* ── VISITORS TAB ── */}
+            {activeTab === 'visitors' && (
+              <div className="ad-visitors">
+                <div className="ad-card ad-va-banner">
+                  <div className="ad-va-banner-left">
+                    <span className="ad-va-icon">📊</span>
+                    <div>
+                      <div className="ad-va-title">Vercel Analytics — Persistent Tracking Active</div>
+                      <div className="ad-va-sub">Every visitor is logged automatically. See full history, countries, devices and top pages on the Vercel dashboard.</div>
+                    </div>
+                  </div>
+                  <a href="https://vercel.com/jeshis-projects-0b108922/toosii-tech-web/analytics" target="_blank" rel="noopener noreferrer" className="ad-btn-green">
+                    Open Analytics ↗
+                  </a>
+                </div>
+
+                <div className="ad-card">
+                  <div className="ad-card-title">
+                    Current Session
+                    <button className="ad-btn-ghost ad-vis-refresh" onClick={fetchVisitors}>
+                      {visLoad ? '…' : '↻ Refresh'}
+                    </button>
+                  </div>
+                  {!visitors ? (
+                    <p className="ad-muted" style={{ padding: '1rem 0' }}>
+                      {visLoad ? 'Loading…' : <><button className="ad-btn-ghost" onClick={fetchVisitors}>Load session data</button></>}
+                    </p>
+                  ) : (
+                    <>
+                      <div className="ad-stat-grid" style={{ marginBottom: '1.5rem' }}>
+                        <StatCard icon="👁" label="Total Requests" value={visitors.totalRequests} accent="#25d366" />
+                        <StatCard icon="⏱" label="Uptime"         value={visitors.uptime + 's'}   accent="#3b82f6" />
+                        <StatCard icon="📄" label="Top Pages"      value={visitors.topPages?.length} accent="#8b5cf6" />
+                      </div>
+                      {visitors.topPages?.length > 0 && (
+                        <>
+                          <div className="ad-card-sub">Top Pages This Session</div>
+                          <div className="ad-vis-table">
+                            {visitors.topPages.map((p, i) => (
+                              <div key={p.path} className="ad-vis-row">
+                                <span className="ad-vis-rank">#{i + 1}</span>
+                                <span className="ad-vis-path">{p.path}</span>
+                                <span className="ad-vis-count">{p.count} hits</span>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                      {visitors.recent?.length > 0 && (
+                        <>
+                          <div className="ad-card-sub" style={{ marginTop: '1.5rem' }}>Live Feed</div>
+                          <div className="ad-vis-table">
+                            {visitors.recent.map((v, i) => (
+                              <div key={i} className="ad-vis-row">
+                                <span className="ad-vis-flag">{v.country || '🌐'}</span>
+                                <span className="ad-vis-path">{v.path}</span>
+                                <span className="ad-muted" style={{ fontSize: '0.72rem' }}>{new Date(v.ts).toLocaleTimeString()}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ── HEALTH TAB ── */}
           {activeTab === 'health' && (
             <div className="ad-card">
               <div className="ad-card-header">
