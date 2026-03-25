@@ -94,6 +94,8 @@ function SkeletonCard() {
 function DetailModal({ movie, onClose }) {
   const [detail,         setDetail]        = useState(null)
   const [streams,        setStreams]        = useState([])
+    const [episodes,       setEpisodes]      = useState([])
+    const [activeEp,       setActiveEp]      = useState(null)
   const [recs,           setRecs]          = useState([])
   const [loading,        setLoading]       = useState(true)
   const [activeQ,        setActiveQ]       = useState(null)
@@ -141,7 +143,17 @@ function DetailModal({ movie, onClose }) {
         setDetail(detailData)
         setTrailer(extractTrailer(detailData))
 
-        const st = pData?.data?.streams || []
+          // Fetch episodes for series
+          if ((detailData?.subjectType ?? movie.subjectType) === 2) {
+            try {
+              const eRes  = await fetch('/api/tools/movies?action=episodes&id=' + id)
+              const eData = await eRes.json()
+              const epList = eData?.data?.episodeList || eData?.data?.episodes || []
+              setEpisodes(epList)
+            } catch {}
+          }
+
+          const st = pData?.data?.streams || []
         const sorted = [...st].sort((a, b) => (+b.resolutions) - (+a.resolutions))
         setStreams(sorted)
         if (sorted.length) setActiveQ(sorted[0])
@@ -157,7 +169,24 @@ function DetailModal({ movie, onClose }) {
 
   const ytSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent((d.title || '') + ' official trailer')}`
 
-  function scrollToTrailer() {
+  async function loadEpisodeStreams(ep) {
+      const epId = ep.episodeId || ep.id
+      if (!epId) return
+      setActiveEp(ep)
+      setPlaying(false)
+      setStreams([])
+      setActiveQ(null)
+      try {
+        const res  = await fetch(`/api/tools/movies?action=play-ep&id=${epId}`)
+        const data = await res.json()
+        const st   = data?.data?.streams || []
+        const sorted = [...st].sort((a, b) => (+b.resolutions) - (+a.resolutions))
+        setStreams(sorted)
+        if (sorted.length) { setActiveQ(sorted[0]); setPlaying(true) }
+      } catch {}
+    }
+
+    function scrollToTrailer() {
     setTrailerPlaying(true)
     setTimeout(() => trailerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
   }
@@ -325,7 +354,37 @@ function DetailModal({ movie, onClose }) {
                 </div>
               </div>
 
-              {/* ══ FULL MOVIE PLAYER ══ */}
+              {/* ══ EPISODES (Series only) ══ */}
+                {episodes.length > 0 && (
+                  <div className="mv-episodes-section">
+                    <h4 className="mv-modal-sub">
+                      Episodes
+                      {activeEp && <span className="mv-ep-active-label"> — Ep {activeEp.number ?? activeEp.episodeNum ?? ''}: {activeEp.title || ''}</span>}
+                    </h4>
+                    <div className="mv-ep-grid">
+                      {episodes.map((ep, i) => {
+                        const epNum = ep.number ?? ep.episodeNum ?? i + 1
+                        const isActive = activeEp && (activeEp.episodeId || activeEp.id) === (ep.episodeId || ep.id)
+                        return (
+                          <button
+                            key={ep.episodeId || ep.id || i}
+                            className={`mv-ep-btn${isActive ? ' active' : ''}`}
+                            onClick={() => loadEpisodeStreams(ep)}
+                          >
+                            {ep.cover ? (
+                              <img src={ep.cover?.url || ep.cover} alt={ep.title} className="mv-ep-thumb"
+                                onError={e => { e.target.style.display='none' }} />
+                            ) : null}
+                            <span className="mv-ep-num">Ep {epNum}</span>
+                            {ep.title && <span className="mv-ep-title">{ep.title}</span>}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* ══ FULL MOVIE PLAYER ══ */}
               {streams.length > 0 ? (
                 <div className="mv-player-section">
                   <div className="mv-player-head">
