@@ -666,14 +666,10 @@
     grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
     gap: 0.6rem;
     margin-top: 0.75rem;
-    max-height: 320px;
-    overflow-y: auto;
-    padding-right: 4px;
+    /* no max-height — show all episodes */
   }
 
-  .mv-ep-grid::-webkit-scrollbar { width: 5px; }
-  .mv-ep-grid::-webkit-scrollbar-track { background: rgba(255,255,255,0.04); border-radius: 4px; }
-  .mv-ep-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+  
 
   .mv-ep-btn {
     display: flex;
@@ -769,5 +765,21 @@
     background: rgba(139,92,246,0.3);
     border-color: #8b5cf6;
     color: #fff;
+  }
+  
+
+  /* ── Season groups ── */
+  .mv-season-group {
+    margin-bottom: 1.25rem;
+  }
+
+  .mv-season-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #a78bfa;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.5rem;
+    padding-left: 2px;
   }
   
