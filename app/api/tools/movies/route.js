@@ -190,7 +190,14 @@ export async function GET(req) {
         break
       case 'recommend':
         url = `${BASE}/api/recommend?subjectId=${encodeURIComponent(id)}&page=1&perPage=12`
+        
         break
+        case 'episodes':
+          url = `${BASE}/api/episodes?subjectId=${encodeURIComponent(id)}`
+          break
+        case 'play-ep':
+          url = `${BASE}/api/play?episodeId=${encodeURIComponent(id)}`
+  reak
       default:
         return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
     }
