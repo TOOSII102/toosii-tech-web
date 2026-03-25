@@ -616,3 +616,76 @@
     text-align: center;
   }
   
+  /* ── Visitors bar chart ─────────────────────────────── */
+  .ad-vis-bar-wrap {
+    flex: 1;
+    height: 6px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 3px;
+    overflow: hidden;
+    min-width: 60px;
+  }
+  .ad-vis-bar {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, #25d366, #3b82f6);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+    min-width: 3px;
+  }
+
+  /* ── Setup card ─────────────────────────────────────── */
+  .ad-va-setup {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.85rem;
+    border-color: rgba(245,158,11,0.25) !important;
+    background: rgba(245,158,11,0.04) !important;
+  }
+  .ad-va-setup-icon { font-size: 2rem; }
+  .ad-va-setup-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+  }
+  .ad-va-setup-body {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.6);
+    line-height: 1.6;
+  }
+  .ad-va-setup-body code {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 4px;
+    padding: 0.1rem 0.4rem;
+    font-size: 0.8rem;
+    color: #25d366;
+  }
+  .ad-va-steps {
+    padding-left: 1.25rem;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.65);
+    line-height: 1.5;
+  }
+  .ad-va-steps strong { color: #fff; }
+  .ad-va-steps code {
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+    padding: 0.1rem 0.35rem;
+    font-size: 0.78rem;
+    color: #25d366;
+  }
+  .ad-va-setup-note {
+    font-size: 0.74rem;
+    color: rgba(245,158,11,0.7);
+    border: 1px solid rgba(245,158,11,0.2);
+    border-radius: 6px;
+    padding: 0.35rem 0.65rem;
+    width: 100%;
+  }
+  
