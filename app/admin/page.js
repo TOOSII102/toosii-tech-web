@@ -250,40 +250,104 @@
           {/* ── VISITORS TAB ── */}
             {activeTab === 'visitors' && (
               <div className="ad-visitors">
-                <div className="ad-card ad-va-banner">
-                  <div className="ad-va-banner-left">
-                    <span className="ad-va-icon">📊</span>
-                    <div>
-                      <div className="ad-va-title">Vercel Analytics — Persistent Tracking Active</div>
-                      <div className="ad-va-sub">Every visitor is logged automatically. See full history, countries, devices and top pages on the Vercel dashboard.</div>
-                    </div>
-                  </div>
-                  <a href="https://vercel.com/jeshis-projects-0b108922/toosii-tech-web/analytics" target="_blank" rel="noopener noreferrer" className="ad-btn-green">
-                    Open Analytics ↗
-                  </a>
-                </div>
 
+                {/* ── Vercel Analytics summary ── */}
+                {visitors?.vercel?.enabled ? (
+                  <>
+                    {/* Overview stats */}
+                    {visitors.vercel.stats?.data && (
+                      <div className="ad-card">
+                        <div className="ad-card-title">Last 7 Days — Vercel Analytics</div>
+                        <div className="ad-stat-grid">
+                          <StatCard icon="👥" label="Visitors"       value={visitors.vercel.stats.data.visitors?.value   ?? '—'} accent="#25d366" />
+                          <StatCard icon="👁" label="Page Views"     value={visitors.vercel.stats.data.pageViews?.value  ?? '—'} accent="#3b82f6" />
+                          <StatCard icon="📊" label="Sessions"       value={visitors.vercel.stats.data.sessions?.value   ?? '—'} accent="#8b5cf6" />
+                          <StatCard icon="⏱" label="Avg Duration"   value={visitors.vercel.stats.data.duration?.value   ? Math.round(visitors.vercel.stats.data.duration.value) + 's' : '—'} accent="#f59e0b" />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Top pages from Vercel */}
+                    {visitors.vercel.topPages?.data?.length > 0 && (
+                      <div className="ad-card">
+                        <div className="ad-card-title">Top Pages</div>
+                        <div className="ad-vis-table">
+                          {visitors.vercel.topPages.data.map((p, i) => (
+                            <div key={p.key} className="ad-vis-row">
+                              <span className="ad-vis-rank">#{i + 1}</span>
+                              <span className="ad-vis-path">{p.key}</span>
+                              <span className="ad-vis-bar-wrap">
+                                <span className="ad-vis-bar" style={{ width: `${Math.round((p.total / (visitors.vercel.topPages.data[0]?.total || 1)) * 100)}%` }} />
+                              </span>
+                              <span className="ad-vis-count">{p.total?.toLocaleString()} views</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Countries */}
+                    {visitors.vercel.countries?.data?.length > 0 && (
+                      <div className="ad-card">
+                        <div className="ad-card-title">Visitors by Country</div>
+                        <div className="ad-vis-table">
+                          {visitors.vercel.countries.data.slice(0, 10).map((c, i) => (
+                            <div key={c.key} className="ad-vis-row">
+                              <span className="ad-vis-rank">#{i + 1}</span>
+                              <span className="ad-vis-flag">{c.key ? String.fromCodePoint(...[...c.key.toUpperCase()].map(ch => 0x1F1E6 - 65 + ch.charCodeAt(0))) : '🌐'}</span>
+                              <span className="ad-vis-path">{c.key || 'Unknown'}</span>
+                              <span className="ad-vis-bar-wrap">
+                                <span className="ad-vis-bar" style={{ width: `${Math.round((c.total / (visitors.vercel.countries.data[0]?.total || 1)) * 100)}%` }} />
+                              </span>
+                              <span className="ad-vis-count">{c.total?.toLocaleString()}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  /* Setup required card */
+                  <div className="ad-card ad-va-setup">
+                    <div className="ad-va-setup-icon">🔑</div>
+                    <div className="ad-va-setup-title">One Step to Unlock Full Analytics</div>
+                    <div className="ad-va-setup-body">
+                      Add <code>VERCEL_TOKEN</code> to your Vercel environment variables and visitor data will appear here automatically — no external dashboard needed.
+                    </div>
+                    <ol className="ad-va-steps">
+                      <li>Go to <strong>vercel.com → Account → Tokens</strong> → create a token</li>
+                      <li>Go to your project → <strong>Settings → Environment Variables</strong></li>
+                      <li>Add <code>VERCEL_TOKEN</code> = your token</li>
+                      <li>Redeploy — data shows here instantly</li>
+                    </ol>
+                    {visitors?.vercel?.error && (
+                      <div className="ad-va-setup-note">Status: {visitors.vercel.error}</div>
+                    )}
+                  </div>
+                )}
+
+                {/* ── Session live feed (always shown) ── */}
                 <div className="ad-card">
                   <div className="ad-card-title">
-                    Current Session
+                    Live Session Feed
                     <button className="ad-btn-ghost ad-vis-refresh" onClick={fetchVisitors}>
                       {visLoad ? '…' : '↻ Refresh'}
                     </button>
                   </div>
                   {!visitors ? (
                     <p className="ad-muted" style={{ padding: '1rem 0' }}>
-                      {visLoad ? 'Loading…' : <><button className="ad-btn-ghost" onClick={fetchVisitors}>Load session data</button></>}
+                      {visLoad ? 'Loading…' : <button className="ad-btn-ghost" onClick={fetchVisitors}>Load now</button>}
                     </p>
                   ) : (
                     <>
                       <div className="ad-stat-grid" style={{ marginBottom: '1.5rem' }}>
-                        <StatCard icon="👁" label="Total Requests" value={visitors.totalRequests} accent="#25d366" />
-                        <StatCard icon="⏱" label="Uptime"         value={visitors.uptime + 's'}   accent="#3b82f6" />
-                        <StatCard icon="📄" label="Top Pages"      value={visitors.topPages?.length} accent="#8b5cf6" />
+                        <StatCard icon="📡" label="Requests (session)" value={visitors.totalRequests} accent="#25d366" />
+                        <StatCard icon="⏱" label="Server Uptime"      value={visitors.uptime + 's'}  accent="#3b82f6" />
                       </div>
+
                       {visitors.topPages?.length > 0 && (
                         <>
-                          <div className="ad-card-sub">Top Pages This Session</div>
+                          <div className="ad-card-sub">Top Paths This Session</div>
                           <div className="ad-vis-table">
                             {visitors.topPages.map((p, i) => (
                               <div key={p.path} className="ad-vis-row">
@@ -295,15 +359,16 @@
                           </div>
                         </>
                       )}
+
                       {visitors.recent?.length > 0 && (
                         <>
-                          <div className="ad-card-sub" style={{ marginTop: '1.5rem' }}>Live Feed</div>
+                          <div className="ad-card-sub" style={{ marginTop: '1.5rem' }}>Recent Hits</div>
                           <div className="ad-vis-table">
                             {visitors.recent.map((v, i) => (
                               <div key={i} className="ad-vis-row">
-                                <span className="ad-vis-flag">{v.country || '🌐'}</span>
+                                <span className="ad-vis-flag" title={v.country}>{v.country || '🌐'}</span>
                                 <span className="ad-vis-path">{v.path}</span>
-                                <span className="ad-muted" style={{ fontSize: '0.72rem' }}>{new Date(v.ts).toLocaleTimeString()}</span>
+                                <span className="ad-muted" style={{ fontSize: '0.72rem', whiteSpace: 'nowrap' }}>{new Date(v.ts).toLocaleTimeString()}</span>
                               </div>
                             ))}
                           </div>
@@ -312,6 +377,7 @@
                     </>
                   )}
                 </div>
+
               </div>
             )}
 
