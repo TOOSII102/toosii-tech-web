@@ -98,6 +98,7 @@ function DetailModal({ movie, onClose }) {
     const [activeSeason,   setActiveSeason]  = useState(1)
     const [activeEpNum,    setActiveEpNum]   = useState(1)
     const [proxyTemplate,  setProxyTemplate] = useState('')
+    const [epTitles,       setEpTitles]      = useState({})
   const [recs,           setRecs]          = useState([])
   const [loading,        setLoading]       = useState(true)
   const [activeQ,        setActiveQ]       = useState(null)
@@ -151,6 +152,17 @@ function DetailModal({ movie, onClose }) {
             setSeasons(seasonList)
             const tmpl = pData?.data?.streams?.[0]?.proxyUrl || ''
             setProxyTemplate(tmpl)
+            // Fetch episode titles from TVMaze
+            try {
+              const showTitle = dData?.data?.title || movie.title || ''
+              // Strip season suffix like "S1-S6" for cleaner search
+              const cleanTitle = showTitle.replace(/\s*S\d.*$/i, '').trim()
+              const tvRes  = await fetch('/api/tools/movies?action=tvmaze&q=' + encodeURIComponent(cleanTitle))
+              const tvData = await tvRes.json()
+              const titleMap = {}
+              ;(tvData.episodes || []).forEach(e => { titleMap[e.season + '-' + e.number] = e.name })
+              setEpTitles(titleMap)
+            } catch {}
           }
 
           const st = pData?.data?.streams || []
@@ -382,7 +394,10 @@ function DetailModal({ movie, onClose }) {
                               className={`mv-ep-btn${activeSeason === s.season && activeEpNum === ep ? ' active' : ''}`}
                               onClick={() => selectEpisode(s.season, ep)}
                             >
-                              <span className="mv-ep-num">Ep {ep}</span>
+                              <span className="mv-ep-num">E{ep}</span>
+                              {epTitles[s.season + '-' + ep] && (
+                                <span className="mv-ep-title">{epTitles[s.season + '-' + ep]}</span>
+                              )}
                             </button>
                           ))}
                         </div>
