@@ -525,3 +525,94 @@
     .ad-stat-grid { grid-template-columns: repeat(2, 1fr); }
   }
   
+
+  /* ── Visitors tab ──────────────────────────────────── */
+  .ad-visitors { display: flex; flex-direction: column; gap: 1.25rem; }
+
+  .ad-va-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    background: linear-gradient(135deg, rgba(37,211,102,0.08) 0%, rgba(59,130,246,0.06) 100%);
+    border-color: rgba(37,211,102,0.2) !important;
+  }
+  .ad-va-banner-left { display: flex; align-items: flex-start; gap: 1rem; }
+  .ad-va-icon { font-size: 2rem; }
+  .ad-va-title { font-weight: 700; font-size: 1rem; color: #fff; margin-bottom: 0.25rem; }
+  .ad-va-sub { font-size: 0.78rem; color: rgba(255,255,255,0.55); line-height: 1.5; max-width: 400px; }
+
+  .ad-btn-green {
+    padding: 0.5rem 1.1rem;
+    background: #25d366;
+    color: #07070e;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.82rem;
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: opacity 0.15s;
+    flex-shrink: 0;
+  }
+  .ad-btn-green:hover { opacity: 0.85; }
+
+  .ad-vis-refresh {
+    margin-left: 0.5rem;
+    font-size: 0.9rem;
+    padding: 0.1rem 0.45rem;
+  }
+
+  .ad-card-sub {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 0.6rem;
+  }
+
+  .ad-vis-table {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .ad-vis-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.45rem 0.65rem;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .ad-vis-rank {
+    font-weight: 700;
+    color: rgba(255,255,255,0.35);
+    min-width: 28px;
+    font-size: 0.72rem;
+  }
+  .ad-vis-path {
+    flex: 1;
+    color: #fff;
+    font-family: monospace;
+    font-size: 0.78rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ad-vis-count {
+    font-weight: 700;
+    color: #25d366;
+    font-size: 0.76rem;
+    white-space: nowrap;
+  }
+  .ad-vis-flag {
+    font-size: 1rem;
+    min-width: 24px;
+    text-align: center;
+  }
+  
