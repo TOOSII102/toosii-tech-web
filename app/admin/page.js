@@ -251,123 +251,158 @@
             {activeTab === 'visitors' && (
               <div className="ad-visitors">
 
-                {/* Overview */}
-                <div className="ad-card">
-                  <div className="ad-card-title">
-                    Overview
-                    <button className="ad-btn-ghost ad-vis-refresh" onClick={fetchVisitors}>{visLoad ? '…' : '↻ Refresh'}</button>
-                  </div>
-                  {visitors ? (
-                    <div className="ad-stat-grid">
-                      <StatCard icon="👁" label="Today"       value={visitors.todayViews}              accent="#25d366" />
-                      <StatCard icon="📅" label="This Week"   value={visitors.weekViews}               accent="#3b82f6" />
-                      <StatCard icon="📊" label="All Time"    value={visitors.totalViews}              accent="#8b5cf6" />
-                      <StatCard icon="📱" label="Mobile"      value={visitors.devices?.mobile  || 0}   accent="#f59e0b" />
-                      <StatCard icon="💻" label="Desktop"     value={visitors.devices?.desktop || 0}   accent="#ec4899" />
-                      <StatCard icon="⏱" label="Uptime"      value={(visitors.uptime || 0) + 's'}     accent="#14b8a6" />
-                    </div>
-                  ) : (
-                    <button className="ad-btn-ghost" onClick={fetchVisitors} style={{ margin: '0.75rem 0' }}>Load Analytics</button>
-                  )}
-                </div>
-
-                {/* Daily bar chart */}
-                {visitors?.daily?.length > 0 && (
-                  <div className="ad-card">
-                    <div className="ad-card-title">Views — Last 7 Days</div>
-                    <div className="ad-daily-chart">
-                      {(() => {
-                        const max = Math.max(...visitors.daily.map(d => d.count), 1)
-                        return visitors.daily.map((d, i) => (
-                          <div key={i} className="ad-daily-col">
-                            <div className="ad-daily-bar-wrap">
-                              <div className="ad-daily-bar" style={{ height: `${Math.round((d.count / max) * 100)}%` }} />
-                            </div>
-                            <div className="ad-daily-count">{d.count}</div>
-                            <div className="ad-daily-label">{d.label}</div>
-                          </div>
-                        ))
-                      })()}
-                    </div>
+                {/* Load button if not yet loaded */}
+                {!visitors && (
+                  <div className="ad-card" style={{ textAlign: 'center', padding: '2rem' }}>
+                    <button className="ad-btn" onClick={fetchVisitors} style={{ fontSize: '0.9rem' }}>
+                      {visLoad ? 'Loading…' : '📊 Load Analytics'}
+                    </button>
                   </div>
                 )}
 
-                {/* Top pages */}
-                {visitors?.topPages?.length > 0 && (
-                  <div className="ad-card">
-                    <div className="ad-card-title">Top Pages (7 days)</div>
-                    <div className="ad-vis-table">
-                      {visitors.topPages.map((p, i) => (
-                        <div key={p.page} className="ad-vis-row">
-                          <span className="ad-vis-rank">#{i + 1}</span>
-                          <span className="ad-vis-path">{p.page}</span>
-                          <span className="ad-vis-bar-wrap">
-                            <span className="ad-vis-bar" style={{ width: `${Math.round((p.views / (visitors.topPages[0]?.views || 1)) * 100)}%` }} />
-                          </span>
-                          <span className="ad-vis-count">{p.views}</span>
+                {visitors && (() => {
+                  const va        = visitors.vercel
+                  const vaStats   = va?.stats?.data
+                  const vaPages   = va?.pages?.data   || []
+                  const vaCountries = va?.countries?.data || []
+                  const hasVaData = vaStats && !vaStats.error
+
+                  return <>
+
+                    {/* ── Vercel Analytics: main stats ── */}
+                    {hasVaData ? (
+                      <div className="ad-card">
+                        <div className="ad-card-title">
+                          Last 7 Days — Vercel Analytics
+                          <button className="ad-btn-ghost ad-vis-refresh" onClick={fetchVisitors}>{visLoad ? '…' : '↻'}</button>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                        <div className="ad-stat-grid">
+                          <StatCard icon="👥" label="Visitors"    value={vaStats.visitors?.value   ?? '—'} accent="#25d366" />
+                          <StatCard icon="👁" label="Page Views"  value={vaStats.pageViews?.value  ?? '—'} accent="#3b82f6" />
+                          <StatCard icon="🔗" label="Sessions"    value={vaStats.sessions?.value   ?? '—'} accent="#8b5cf6" />
+                          <StatCard icon="⏱" label="Avg Duration" value={vaStats.duration?.value != null ? Math.round(vaStats.duration.value) + 's' : '—'} accent="#f59e0b" />
+                          <StatCard icon="📱" label="Bounce Rate" value={vaStats.bounceRate?.value != null ? Math.round(vaStats.bounceRate.value * 100) + '%' : '—'} accent="#ec4899" />
+                        </div>
+                      </div>
+                    ) : va?.enabled === false ? (
+                      <div className="ad-card ad-va-setup">
+                        <div className="ad-va-setup-icon">✅</div>
+                        <div className="ad-va-setup-title">VERCEL_TOKEN detected — waiting for first data</div>
+                        <div className="ad-va-setup-body">
+                          Make sure Vercel Analytics is enabled on your project: Vercel dashboard → your project → <strong>Analytics tab</strong> → Enable.
+                        </div>
+                        {va?.missing && <div className="ad-va-setup-note">Missing env var: <code>{va.missing}</code></div>}
+                      </div>
+                    ) : va?.debug && (va.debug.statsErr || va.debug.pagesErr) ? (
+                      <div className="ad-card ad-va-setup">
+                        <div className="ad-va-setup-icon">⚠️</div>
+                        <div className="ad-va-setup-title">Vercel Analytics returned an error</div>
+                        <div className="ad-va-setup-body">
+                          {va.debug.statsErr || va.debug.pagesErr}
+                        </div>
+                        <div className="ad-va-setup-note">projectId: {va.debug.projectId} · teamId: {va.debug.hasTeamId ? 'set' : 'not set'}</div>
+                      </div>
+                    ) : null}
 
-                {/* Countries */}
-                {visitors?.countries?.length > 0 && (
-                  <div className="ad-card">
-                    <div className="ad-card-title">Visitors by Country (7 days)</div>
-                    <div className="ad-vis-table">
-                      {visitors.countries.map((c, i) => {
-                        const flag = c.country.length === 2
-                          ? String.fromCodePoint(...[...c.country.toUpperCase()].map(ch => 0x1F1E6 - 65 + ch.charCodeAt(0)))
-                          : '🌐'
-                        return (
-                          <div key={c.country} className="ad-vis-row">
-                            <span className="ad-vis-rank">#{i + 1}</span>
-                            <span className="ad-vis-flag">{flag}</span>
-                            <span className="ad-vis-path">{c.country || 'Unknown'}</span>
-                            <span className="ad-vis-bar-wrap">
-                              <span className="ad-vis-bar" style={{ width: `${Math.round((c.visitors / (visitors.countries[0]?.visitors || 1)) * 100)}%` }} />
-                            </span>
-                            <span className="ad-vis-count">{c.visitors}</span>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
+                    {/* ── Vercel Analytics: top pages ── */}
+                    {vaPages.length > 0 && (
+                      <div className="ad-card">
+                        <div className="ad-card-title">Top Pages — Last 7 Days</div>
+                        <div className="ad-vis-table">
+                          {vaPages.slice(0, 10).map((p, i) => (
+                            <div key={p.key} className="ad-vis-row">
+                              <span className="ad-vis-rank">#{i + 1}</span>
+                              <span className="ad-vis-path">{p.key}</span>
+                              <span className="ad-vis-bar-wrap">
+                                <span className="ad-vis-bar" style={{ width: `${Math.round((p.total / (vaPages[0]?.total || 1)) * 100)}%` }} />
+                              </span>
+                              <span className="ad-vis-count">{p.total?.toLocaleString()}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
-                {/* Recent live feed */}
-                {visitors?.recent?.length > 0 && (
-                  <div className="ad-card">
-                    <div className="ad-card-title">Recent Hits</div>
-                    <div className="ad-vis-table">
-                      {visitors.recent.map((v, i) => {
-                        const flag = v.country?.length === 2
-                          ? String.fromCodePoint(...[...v.country.toUpperCase()].map(ch => 0x1F1E6 - 65 + ch.charCodeAt(0)))
-                          : '🌐'
-                        return (
-                          <div key={i} className="ad-vis-row">
-                            <span className="ad-vis-flag" title={v.country}>{flag}</span>
-                            <span className="ad-vis-device">{v.device === 'mobile' ? '📱' : '💻'}</span>
-                            <span className="ad-vis-path">{v.page}</span>
-                            <span className="ad-muted" style={{ fontSize: '0.72rem', whiteSpace: 'nowrap' }}>{new Date(v.ts).toLocaleTimeString()}</span>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
+                    {/* ── Vercel Analytics: countries ── */}
+                    {vaCountries.length > 0 && (
+                      <div className="ad-card">
+                        <div className="ad-card-title">Visitors by Country</div>
+                        <div className="ad-vis-table">
+                          {vaCountries.slice(0, 12).map((c, i) => {
+                            const flag = c.key?.length === 2
+                              ? String.fromCodePoint(...[...c.key.toUpperCase()].map(ch => 0x1F1E6 - 65 + ch.charCodeAt(0)))
+                              : '🌐'
+                            return (
+                              <div key={c.key || i} className="ad-vis-row">
+                                <span className="ad-vis-rank">#{i + 1}</span>
+                                <span className="ad-vis-flag">{flag}</span>
+                                <span className="ad-vis-path">{c.key || 'Unknown'}</span>
+                                <span className="ad-vis-bar-wrap">
+                                  <span className="ad-vis-bar" style={{ width: `${Math.round((c.total / (vaCountries[0]?.total || 1)) * 100)}%` }} />
+                                </span>
+                                <span className="ad-vis-count">{c.total?.toLocaleString()}</span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
 
-                {/* Empty state */}
-                {visitors && visitors.totalViews === 0 && (
-                  <div className="ad-card ad-va-setup">
-                    <div className="ad-va-setup-icon">📡</div>
-                    <div className="ad-va-setup-title">Waiting for first visitors…</div>
-                    <div className="ad-va-setup-body">
-                      Analytics are now tracking automatically. Visit any page on your site and refresh this tab to see the data.
-                    </div>
-                  </div>
-                )}
+                    {/* ── Daily chart (local tracker) ── */}
+                    {visitors.daily?.length > 0 && visitors.daily.some(d => d.count > 0) && (
+                      <div className="ad-card">
+                        <div className="ad-card-title">Session Hits — Last 7 Days</div>
+                        <div className="ad-daily-chart">
+                          {(() => {
+                            const max = Math.max(...visitors.daily.map(d => d.count), 1)
+                            return visitors.daily.map((d, i) => (
+                              <div key={i} className="ad-daily-col">
+                                <div className="ad-daily-bar-wrap">
+                                  <div className="ad-daily-bar" style={{ height: `${Math.round((d.count / max) * 100)}%` }} />
+                                </div>
+                                <div className="ad-daily-count">{d.count}</div>
+                                <div className="ad-daily-label">{d.label}</div>
+                              </div>
+                            ))
+                          })()}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── Recent live feed ── */}
+                    {visitors.recent?.length > 0 && (
+                      <div className="ad-card">
+                        <div className="ad-card-title">
+                          Live Feed
+                          <button className="ad-btn-ghost ad-vis-refresh" onClick={fetchVisitors}>{visLoad ? '…' : '↻ Refresh'}</button>
+                        </div>
+                        <div className="ad-vis-table">
+                          {visitors.recent.map((v, i) => {
+                            const flag = v.country?.length === 2
+                              ? String.fromCodePoint(...[...v.country.toUpperCase()].map(ch => 0x1F1E6 - 65 + ch.charCodeAt(0)))
+                              : '🌐'
+                            return (
+                              <div key={i} className="ad-vis-row">
+                                <span className="ad-vis-flag" title={v.country}>{flag}</span>
+                                <span className="ad-vis-device">{v.device === 'mobile' ? '📱' : '💻'}</span>
+                                <span className="ad-vis-path">{v.page}</span>
+                                <span className="ad-muted" style={{ fontSize: '0.72rem', whiteSpace: 'nowrap' }}>{new Date(v.ts).toLocaleTimeString()}</span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Empty state */}
+                    {!hasVaData && !visitors.recent?.length && (
+                      <div className="ad-card" style={{ textAlign: 'center', padding: '2rem', color: 'rgba(255,255,255,0.4)' }}>
+                        No data yet — visit a few pages then refresh.
+                      </div>
+                    )}
+
+                  </>
+                })()}
 
               </div>
             )}
