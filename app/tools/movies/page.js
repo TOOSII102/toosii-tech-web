@@ -364,33 +364,28 @@ function DetailModal({ movie, onClose }) {
               {/* ══ SEASONS & EPISODES (Series only) ══ */}
                 {seasons.length > 0 && (
                   <div className="mv-episodes-section">
-                    <div className="mv-season-head">
-                      <h4 className="mv-modal-sub" style={{margin:0}}>Episodes</h4>
-                      {seasons.length > 1 && (
-                        <div className="mv-season-tabs">
-                          {seasons.map(s => (
+                    <h4 className="mv-modal-sub">
+                      Episodes
+                      <span className="mv-ep-active-label">
+                        {activeSeason && activeEpNum ? ` — S${activeSeason} E${activeEpNum}` : ''}
+                      </span>
+                    </h4>
+                    {seasons.map(s => (
+                      <div key={s.season} className="mv-season-group">
+                        {seasons.length > 1 && (
+                          <div className="mv-season-label">Season {s.season}</div>
+                        )}
+                        <div className="mv-ep-grid">
+                          {Array.from({ length: s.episodes }, (_, i) => i + 1).map(ep => (
                             <button
-                              key={s.season}
-                              className={`mv-season-tab${activeSeason === s.season ? ' active' : ''}`}
-                              onClick={() => setActiveSeason(s.season)}
+                              key={ep}
+                              className={`mv-ep-btn${activeSeason === s.season && activeEpNum === ep ? ' active' : ''}`}
+                              onClick={() => selectEpisode(s.season, ep)}
                             >
-                              S{s.season}
+                              <span className="mv-ep-num">Ep {ep}</span>
                             </button>
                           ))}
                         </div>
-                      )}
-                    </div>
-                    {seasons.filter(s => s.season === activeSeason).map(s => (
-                      <div key={s.season} className="mv-ep-grid">
-                        {Array.from({ length: s.episodes }, (_, i) => i + 1).map(ep => (
-                          <button
-                            key={ep}
-                            className={`mv-ep-btn${activeSeason === s.season && activeEpNum === ep ? ' active' : ''}`}
-                            onClick={() => selectEpisode(s.season, ep)}
-                          >
-                            <span className="mv-ep-num">Ep {ep}</span>
-                          </button>
-                        ))}
                       </div>
                     ))}
                   </div>
