@@ -4,6 +4,7 @@ import './globals.css'
   import NavigationHistory from '../components/NavigationHistory'
   import { Analytics } from '@vercel/analytics/next'
   import { SpeedInsights } from '@vercel/speed-insights/next'
+import PageTracker from '../components/PageTracker'
 
   export const metadata = {
     title: 'Toosii Tech — Free Tools, WhatsApp Bot & Movie Streaming',
@@ -26,6 +27,7 @@ import './globals.css'
           <AnimatedBackground />
           {children}
           <BuyCoffee />
+          <PageTracker />
           <Analytics />
           <SpeedInsights />
         </body>
