@@ -17,7 +17,7 @@
   max-width: 1280px;
   margin: 0 auto;
   padding: 0 1.5rem;
-  height: 62px;
+  height: 70px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -32,18 +32,16 @@
   text-decoration: none;
   flex-shrink: 0;
 }
-.brand-icon {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #25d366, #1fa851);
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 900;
-  color: white;
+.brand-logo {
+  height: 54px;
+  width: auto;
+  object-fit: contain;
   flex-shrink: 0;
+  filter: drop-shadow(0 2px 10px rgba(37, 211, 102, 0.18));
+  transition: filter 0.2s;
+}
+.brand-link:hover .brand-logo {
+  filter: drop-shadow(0 3px 14px rgba(37, 211, 102, 0.35));
 }
 .brand-name {
   font-size: 1.05rem;
@@ -455,6 +453,7 @@
 
 @media (max-width: 480px) {
   .brand-name   { font-size: 0.95rem; }
-  .header-inner { padding: 0 1rem; height: 62px; }
-  .mobile-menu  { inset: 62px 0 0 0; }
+  .header-inner { padding: 0 1rem; height: 64px; }
+  .mobile-menu  { inset: 64px 0 0 0; }
+  .brand-logo   { height: 46px; }
 }
