@@ -52,13 +52,19 @@ export async function GET(req) {
     try {
       if (!id || !res) return NextResponse.json({ error: 'Missing id or res' }, { status: 400 })
 
+      const se = searchParams.get('se') || ''
+      const ep = searchParams.get('ep') || ''
+
       const data    = await up(`${BASE}/api/play?subjectId=${encodeURIComponent(id)}`)
       const streams = data?.data?.streams || []
       const stream  = streams.find(s => String(s.resolutions) === String(res)) || streams[0]
 
       if (!stream) return NextResponse.json({ error: 'Quality not available' }, { status: 404 })
 
-      const dlUrl  = stream.downloadUrl || stream.url
+            let dlUrl  = stream.downloadUrl || stream.url
+      if (se && ep && dlUrl) {
+        dlUrl = dlUrl.replace(/se=\d+/, 'se=' + se).replace(/ep=\d+/, 'ep=' + ep)
+      }
       const vidRes = await fetch(dlUrl, {
         headers: { 'User-Agent': HDRS['User-Agent'], 'Referer': HDRS['Referer'] },
         signal: AbortSignal.timeout(30000),
@@ -66,8 +72,9 @@ export async function GET(req) {
 
       if (!vidRes.ok) return NextResponse.json({ error: 'CDN unavailable' }, { status: 502 })
 
-      const safe     = title.replace(/[^a-zA-Z0-9 _-]/g, '').trim().replace(/\s+/g, '_') || 'movie'
-      const filename = `${safe}_${res}p.mp4`
+            const safe     = title.replace(/[^a-zA-Z0-9 _-]/g, '').trim().replace(/\s+/g, '_') || 'movie'
+      const epSuffix = (se && ep) ? `_S${se}_E${ep}` : ''
+      const filename = `${safe}${epSuffix}_${res}p.mp4`
 
       const outHeaders = new Headers()
       outHeaders.set('Content-Type',        vidRes.headers.get('content-type') || 'video/mp4')
