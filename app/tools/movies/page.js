@@ -470,22 +470,32 @@ function DetailModal({ movie, onClose }) {
               {streams.length > 0 && (
                 <div className="mv-download-section">
                   <div className="mv-download-head">
-                    ⬇ Download Full Movie
-                  </div>
-                  <div className="mv-download-grid">
-                    {streams.map(s => (
-                      <a
-                        key={s.resolutions}
-                        href={`/api/tools/movies?action=download&id=${movie.subjectId}&res=${s.resolutions}&title=${encodeURIComponent(d.title || 'movie')}`}
-                        download={`${(d.title || 'movie').replace(/[^a-zA-Z0-9 ]/g,'').trim()}_${s.resolutions}p.mp4`}
-                        className="mv-download-btn"
-                      >
-                        <span>⬇</span>
-                        <span>{s.resolutions}p</span>
-                        {s.size && <span className="mv-download-size">{fmtSize(s.size)}</span>}
-                      </a>
-                    ))}
-                  </div>
+                      {seasons.length > 0 ? `⬇ Download — S${activeSeason} E${activeEpNum}` : '⬇ Download Full Movie'}
+                    </div>
+                    <div className="mv-download-grid">
+                      {streams.map(s => {
+                        const isSeries  = seasons.length > 0
+                        const safeTitle = (d.title || 'movie').replace(/[^a-zA-Z0-9 ]/g,'').trim().replace(/\s+/g,'_')
+                        const filename  = isSeries
+                          ? `${safeTitle}_S${activeSeason}_E${activeEpNum}_${s.resolutions}p.mp4`
+                          : `${safeTitle}_${s.resolutions}p.mp4`
+                        const href = isSeries
+                          ? `/api/tools/movies?action=download&id=${movie.subjectId}&res=${s.resolutions}&title=${encodeURIComponent(d.title || 'movie')}&se=${activeSeason}&ep=${activeEpNum}`
+                          : `/api/tools/movies?action=download&id=${movie.subjectId}&res=${s.resolutions}&title=${encodeURIComponent(d.title || 'movie')}`
+                        return (
+                          <a
+                            key={s.resolutions}
+                            href={href}
+                            download={filename}
+                            className="mv-download-btn"
+                          >
+                            <span>⬇</span>
+                            <span>{s.resolutions}p</span>
+                            {s.size && <span className="mv-download-size">{fmtSize(s.size)}</span>}
+                          </a>
+                        )
+                      })}
+                    </div>
                 </div>
               )}
 
