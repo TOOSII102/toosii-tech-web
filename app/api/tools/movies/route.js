@@ -139,7 +139,9 @@ export async function GET(req) {
             const sbItem = await showboxSearch(mvTitle, 'movie')
             if (sbItem) {
               const files = await showboxMovieFiles(sbItem.id)
-              const match = files.find(f => String(f.resolutions) === String(res)) || files[0]
+              /* Only consider free (non-VIP) files with a real URL */
+              const free  = files.filter(f => !f.vip_only && f.url)
+              const match = free.find(f => String(f.resolutions) === String(res)) || free[0]
               if (match) dlUrl = match.url
             }
           }
@@ -157,7 +159,8 @@ export async function GET(req) {
 
       const safe     = title.replace(/[^a-zA-Z0-9 _-]/g, '').trim().replace(/\s+/g, '_') || 'movie'
       const epSuffix = (se && ep) ? `_S${se}_E${ep}` : ''
-      const filename = `${safe}${epSuffix}_${res}p.mp4`
+      const resLabel = Number(res) >= 2160 ? '4K' : `${res}p`
+      const filename = `${safe}${epSuffix}_${resLabel}.mp4`
 
       const outHeaders = new Headers()
       outHeaders.set('Content-Type',        vidRes.headers.get('content-type') || 'video/mp4')
