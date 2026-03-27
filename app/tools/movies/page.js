@@ -475,12 +475,11 @@ function DetailModal({ movie, onClose }) {
                       {seasons.length > 0 && imdbId ? (
                         <iframe
                           key={`vidsrc-${imdbId}-${activeSeason}-${activeEpNum}`}
-                          src={`https://vidsrc.me/embed/tv?imdb=${imdbId}&season=${activeSeason}&episode=${activeEpNum}`}
+                          src={`https://vidsrc.to/embed/tv/${imdbId}/${activeSeason}/${activeEpNum}`}
                           className="mv-video"
                           allowFullScreen
                           allow="autoplay; fullscreen; picture-in-picture"
-                          sandbox="allow-scripts allow-same-origin allow-forms allow-fullscreen allow-presentation allow-orientation-lock"
-                          referrerPolicy="no-referrer"
+                          sandbox="allow-scripts allow-same-origin allow-forms allow-fullscreen allow-presentation allow-orientation-lock allow-popups"
                           style={{ border: 'none' }}
                           title={`${d.title} S${activeSeason}E${activeEpNum}`}
                         />
