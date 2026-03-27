@@ -99,6 +99,8 @@ function DetailModal({ movie, onClose }) {
     const [activeEpNum,    setActiveEpNum]   = useState(1)
     const [proxyTemplate,  setProxyTemplate] = useState('')
     const [epTitles,       setEpTitles]      = useState({})
+    const [imdbId,         setImdbId]        = useState(null)
+    const [isShowbox,      setIsShowbox]     = useState(false)
   const [recs,           setRecs]          = useState([])
   const [loading,        setLoading]       = useState(true)
   const [activeQ,        setActiveQ]       = useState(null)
@@ -130,7 +132,7 @@ function DetailModal({ movie, onClose }) {
   /* fetch detail + streams + recs in parallel */
   useEffect(() => {
     setDetail(null); setStreams([]); setRecs([]); setLoading(true)
-    setPlaying(false); setActiveQ(null)
+    setPlaying(false); setActiveQ(null); setImdbId(null); setIsShowbox(false)
     setTrailer({ ytId: null, directUrl: null }); setTrailerPlaying(false)
     const id = movie.subjectId
     async function load() {
@@ -145,27 +147,51 @@ function DetailModal({ movie, onClose }) {
         const detailData = dData?.data || null
         setDetail(detailData)
         setTrailer(extractTrailer(detailData))
+        if (pData?.data?.isShowbox) setIsShowbox(true)
 
-          // Extract seasons + proxyUrl template for series
-          const seasonList = pData?.data?.seasons || []
-          if (seasonList.length > 0) {
-            setSeasons(seasonList)
-            const tmpl = pData?.data?.streams?.[0]?.proxyUrl || ''
-            setProxyTemplate(tmpl)
-            // Fetch episode titles from TVMaze
-            try {
-              const showTitle = dData?.data?.title || movie.title || ''
-              // Strip season suffix like "S1-S6" for cleaner search
-              const cleanTitle = showTitle.replace(/\s*S\d.*$/i, '').trim()
-              const tvRes  = await fetch('/api/tools/movies?action=tvmaze&q=' + encodeURIComponent(cleanTitle))
-              const tvData = await tvRes.json()
-              const titleMap = {}
-              ;(tvData.episodes || []).forEach(e => { titleMap[e.season + '-' + e.number] = e.name })
-              setEpTitles(titleMap)
-            } catch {}
+        // Extract seasons + proxyUrl template for series
+        const seasonList = pData?.data?.seasons || []
+        if (seasonList.length > 0) {
+          setSeasons(seasonList)
+          const tmpl = pData?.data?.streams?.[0]?.proxyUrl || ''
+          setProxyTemplate(tmpl)
+          // Fetch episode titles + imdbId + per-season episode counts from TVMaze
+          try {
+            const showTitle  = dData?.data?.title || movie.title || ''
+            const cleanTitle = showTitle.replace(/\s*S\d.*$/i, '').trim()
+            const tvRes  = await fetch('/api/tools/movies?action=tvmaze&q=' + encodeURIComponent(cleanTitle))
+            const tvData = await tvRes.json()
+            // Store IMDB ID for VidSrc embed player
+            if (tvData.imdbId) setImdbId(tvData.imdbId)
+            // Build episode title map
+            const titleMap = {}
+            ;(tvData.episodes || []).forEach(e => { titleMap[e.season + '-' + e.number] = e.name })
+            setEpTitles(titleMap)
+            // Update seasons with accurate episode counts from TVMaze
+            if (tvData.seasonCounts && Object.keys(tvData.seasonCounts).length) {
+              setSeasons(prev => prev.map(s => {
+                const sNum = s.season ?? s
+                const cnt  = tvData.seasonCounts[sNum]
+                return typeof s === 'object'
+                  ? { ...s, episodes: cnt || s.episodes || 50 }
+                  : { season: sNum, episodes: cnt || 50 }
+              }))
+            } else {
+              // Normalise plain-number seasons (ShowBox) to objects
+              setSeasons(prev => prev.map(s =>
+                typeof s === 'object' ? s : { season: s, episodes: 50 }
+              ))
+            }
+          } catch {
+            // Normalise plain-number seasons even if TVMaze fails
+            setSeasons(prev => prev.map(s =>
+              typeof s === 'object' ? s : { season: s, episodes: 50 }
+            ))
           }
+        }
 
-          const st = pData?.data?.streams || []
+        // Filter out ShowBox TV dummy placeholder streams
+        const st = (pData?.data?.streams || []).filter(s => !s.isEmbed)
         const sorted = [...st].sort((a, b) => (+b.resolutions) - (+a.resolutions))
         setStreams(sorted)
         if (sorted.length) setActiveQ(sorted[0])
@@ -182,26 +208,27 @@ function DetailModal({ movie, onClose }) {
   const ytSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent((d.title || '') + ' official trailer')}`
 
   function selectEpisode(season, ep) {
-      if (!proxyTemplate) return
       setActiveSeason(season)
       setActiveEpNum(ep)
-      setPlaying(false)
-      // Build stream objects by swapping se/ep in the proxyUrl template
-      const resolutions = ['360', '480', '720', '1080']
-      const newStreams = resolutions.map(res => ({
-        resolutions: res,
-        proxyUrl: proxyTemplate
-          .replace(/se=\d+/, 'se=' + season)
-          .replace(/ep=\d+/, 'ep=' + ep)
-          .replace(/resolution=\d+/, 'resolution=' + res),
-        url: proxyTemplate
-          .replace(/se=\d+/, 'se=' + season)
-          .replace(/ep=\d+/, 'ep=' + ep)
-          .replace(/resolution=\d+/, 'resolution=' + res),
-      }))
-      setStreams(newStreams)
-      setActiveQ(newStreams[2] || newStreams[0]) // prefer 720p
       setPlaying(true)
+      // If we have a proxy template (xcasper streams), rebuild stream list
+      if (proxyTemplate) {
+        const resolutions = ['360', '480', '720', '1080']
+        const newStreams = resolutions.map(res => ({
+          resolutions: res,
+          proxyUrl: proxyTemplate
+            .replace(/se=\d+/, 'se=' + season)
+            .replace(/ep=\d+/, 'ep=' + ep)
+            .replace(/resolution=\d+/, 'resolution=' + res),
+          url: proxyTemplate
+            .replace(/se=\d+/, 'se=' + season)
+            .replace(/ep=\d+/, 'ep=' + ep)
+            .replace(/resolution=\d+/, 'resolution=' + res),
+        }))
+        setStreams(newStreams)
+        setActiveQ(newStreams[2] || newStreams[0])
+      }
+      // VidSrc embed player updates automatically via key prop — no extra action needed
       setTimeout(() => document.querySelector('.mv-player-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
     }
 
@@ -228,7 +255,10 @@ function DetailModal({ movie, onClose }) {
                   {d.subjectType === 2 ? '📺 Series' : '🎬 Movie'}
                 </span>
                 {d.countryName && <span className="mv-modal-badge mv-badge-blue">📍 {d.countryName}</span>}
-                {streams.length > 0 && <span className="mv-modal-badge mv-badge-purple">▶ {streams.length} Qualities</span>}
+                {streams.length > 0
+                  ? <span className="mv-modal-badge mv-badge-purple">▶ {streams.length} Qualit{streams.length === 1 ? 'y' : 'ies'}</span>
+                  : (seasons.length > 0 && imdbId && <span className="mv-modal-badge mv-badge-purple">▶ Embed Stream</span>)
+                }
                 {d.imdbRatingValue && <span className="mv-modal-badge mv-badge-amber">⭐ IMDB {d.imdbRatingValue}</span>}
               </div>
               <h2 className="mv-modal-title">{d.title}</h2>
@@ -245,9 +275,9 @@ function DetailModal({ movie, onClose }) {
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
                   Watch Trailer
                 </button>
-                {streams.length > 0 && (
+                {(streams.length > 0 || (seasons.length > 0 && imdbId)) && (
                   <button className="mv-modal-watch-btn" onClick={() => { setPlaying(true); setTimeout(() => document.querySelector('.mv-player-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80) }}>
-                    ▶ Watch Movie
+                    ▶ {seasons.length > 0 ? 'Watch Episode 1' : 'Watch Movie'}
                   </button>
                 )}
               </div>
@@ -406,39 +436,55 @@ function DetailModal({ movie, onClose }) {
                   </div>
                 )}
 
-                {/* ══ FULL MOVIE PLAYER ══ */}
-              {streams.length > 0 ? (
+                {/* ══ FULL MOVIE / SERIES PLAYER ══ */}
+              {(streams.length > 0 || (seasons.length > 0 && imdbId)) ? (
                 <div className="mv-player-section">
                   <div className="mv-player-head">
                     <span className="mv-player-label">
                       <span className="mv-player-dot" />
-                      Full Movie — Stream Now
+                      {seasons.length > 0 ? `S${activeSeason} E${activeEpNum} — Stream Now` : 'Full Movie — Stream Now'}
                     </span>
-                    <div className="mv-quality-tabs">
-                      {streams.map(s => (
-                        <button
-                          key={s.resolutions}
-                          className={`mv-quality-btn${activeQ?.resolutions === s.resolutions ? ' active' : ''}`}
-                          onClick={() => { setActiveQ(s); setPlaying(true) }}
-                        >
-                          {s.resolutions}p
-                        </button>
-                      ))}
-                    </div>
+                    {/* Quality tabs only for direct-file streams */}
+                    {streams.length > 0 && (
+                      <div className="mv-quality-tabs">
+                        {streams.map(s => (
+                          <button
+                            key={s.resolutions}
+                            className={`mv-quality-btn${activeQ?.resolutions === s.resolutions ? ' active' : ''}`}
+                            onClick={() => { setActiveQ(s); setPlaying(true) }}
+                          >
+                            {s.resolutions}p
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
-                  {playing && activeQ ? (
+                  {playing ? (
                     <div className="mv-video-wrap">
-                      <video
-                        ref={videoRef}
-                        key={activeQ.resolutions + '_' + movie.subjectId}
-                        className="mv-video"
-                        controls
-                        autoPlay
-                        playsInline
-                        preload="metadata"
-                        src={activeQ.proxyUrl || activeQ.url}
-                      />
+                      {/* TV series: use VidSrc embed when IMDB ID is available */}
+                      {seasons.length > 0 && imdbId ? (
+                        <iframe
+                          key={`vidsrc-${imdbId}-${activeSeason}-${activeEpNum}`}
+                          src={`https://vidsrc.to/embed/tv/${imdbId}/${activeSeason}/${activeEpNum}`}
+                          className="mv-video"
+                          allowFullScreen
+                          allow="autoplay; fullscreen; picture-in-picture"
+                          style={{ border: 'none' }}
+                          title={`${d.title} S${activeSeason}E${activeEpNum}`}
+                        />
+                      ) : activeQ ? (
+                        <video
+                          ref={videoRef}
+                          key={activeQ.resolutions + '_' + movie.subjectId}
+                          className="mv-video"
+                          controls
+                          autoPlay
+                          playsInline
+                          preload="metadata"
+                          src={activeQ.proxyUrl || activeQ.url}
+                        />
+                      ) : null}
                     </div>
                   ) : (
                     <div className="mv-video-wrap" style={{ cursor: 'pointer' }}
@@ -450,7 +496,9 @@ function DetailModal({ movie, onClose }) {
                             <svg width="32" height="32" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
                           </div>
                           <span className="mv-trailer-play-label">
-                            Click to play — {activeQ?.resolutions}p available
+                            {seasons.length > 0
+                              ? `Click to stream — S${activeSeason} E${activeEpNum}`
+                              : `Click to play — ${activeQ?.resolutions}p available`}
                           </span>
                         </div>
                       </div>
@@ -461,7 +509,12 @@ function DetailModal({ movie, onClose }) {
                 <div className="mv-player-section">
                   <div className="mv-video-placeholder" style={{ padding: '2.5rem', minHeight: 120 }}>
                     <span className="mv-video-placeholder-icon">🔒</span>
-                    <p>Full movie stream not available for this title.</p>
+                    <p>Free stream not available for this title.</p>
+                    {seasons.length > 0 && !imdbId && (
+                      <p style={{ fontSize: '0.8rem', marginTop: '0.5rem', color: '#94a3b8' }}>
+                        This series may not be in our stream index. Try searching on YouTube or your streaming service.
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
