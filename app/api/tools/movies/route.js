@@ -91,10 +91,14 @@ async function showboxMovieFiles(sbId) {
 
 /* Get ShowBox TV season list */
 async function showboxTvSeasons(sbId) {
-  const res = await fetch(`${BASE}/api/showbox/tv?id=${sbId}&season=1&episode=1`, { headers: HDRS, signal: AbortSignal.timeout(12000) })
-  const data = await res.json()
-  const seasonNums = data?.data?.season || [1]
-  return seasonNums.map(n => ({ season: n, episodes: 50 }))
+  const res     = await fetch(`${BASE}/api/showbox/tv?id=${sbId}&season=1&episode=1`, { headers: HDRS, signal: AbortSignal.timeout(12000) })
+  const data    = await res.json()
+  const tv      = data?.data || {}
+  /* xcasper/ShowBox stores the IMDB ID on the TV object */
+  const imdbId     = tv.imdb_id || null
+  const seasonNums = Array.isArray(tv.season) ? tv.season : [1]
+  const seasons    = seasonNums.map(n => ({ season: n, episodes: tv.max_episode || 50 }))
+  return { seasons, imdbId }
 }
 
 export async function GET(req) {
@@ -204,11 +208,11 @@ export async function GET(req) {
       const sbId = sbItem.id
 
       if (isTV) {
-        /* For TV: return season list; client will use VidSrc embed player */
-        const seasons = await showboxTvSeasons(sbId)
+        /* For TV: return season list + IMDB ID (from xcasper/ShowBox); client uses VidSrc embed */
+        const { seasons, imdbId: sbImdbId } = await showboxTvSeasons(sbId)
         /* Return dummy stream objects so the UI knows it's a TV show with episodes */
         const streams = [{ resolutions: 0, url: '', proxyUrl: '', isEmbed: true }]
-        return NextResponse.json({ data: { streams, seasons, showboxId: sbId, isShowbox: true, isTV: true } })
+        return NextResponse.json({ data: { streams, seasons, showboxId: sbId, isShowbox: true, isTV: true, imdbId: sbImdbId } })
       } else {
         /* For movies: return free direct file URLs */
         const streams = await showboxMovieFiles(sbId)
