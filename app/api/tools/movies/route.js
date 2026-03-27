@@ -37,6 +37,44 @@ function getTrailerUrl(d) {
   return { directUrl, ytId }
 }
 
+/* Search ShowBox and return best matching item */
+async function showboxSearch(title, type) {
+  const clean = title.replace(/\s*S\d.*$/i, '').trim()
+  const url = `${BASE}/api/showbox/search?keyword=${encodeURIComponent(clean)}&type=${type}`
+  const res = await fetch(url, { headers: HDRS, signal: AbortSignal.timeout(12000) })
+  const data = await res.json()
+  return data?.data?.[0] || null
+}
+
+/* Get free direct mp4 stream files from ShowBox movie endpoint */
+async function showboxMovieFiles(sbId) {
+  const res = await fetch(`${BASE}/api/showbox/movie?id=${sbId}`, { headers: HDRS, signal: AbortSignal.timeout(12000) })
+  const data = await res.json()
+  const files = (data?.data?.file || []).filter(f => f.path && f.path.startsWith('http') && !f.vip_only)
+  /* Deduplicate by quality, keep highest count */
+  const best = {}
+  for (const f of files) {
+    const q = parseInt(f.quality) || 360
+    if (!best[q] || (f.count || 0) > (best[q].count || 0)) best[q] = f
+  }
+  return Object.values(best).map(f => ({
+    resolutions: parseInt(f.quality) || 360,
+    url: f.path,
+    proxyUrl: f.path,
+    size: f.size,
+    quality: f.quality,
+    vip_only: 0,
+  })).sort((a, b) => b.resolutions - a.resolutions)
+}
+
+/* Get ShowBox TV season list */
+async function showboxTvSeasons(sbId) {
+  const res = await fetch(`${BASE}/api/showbox/tv?id=${sbId}&season=1&episode=1`, { headers: HDRS, signal: AbortSignal.timeout(12000) })
+  const data = await res.json()
+  const seasonNums = data?.data?.season || [1]
+  return seasonNums.map(n => ({ season: n, episodes: 50 }))
+}
+
 export async function GET(req) {
   const { searchParams } = new URL(req.url)
   const action = searchParams.get('action') || 'trending'
@@ -55,16 +93,39 @@ export async function GET(req) {
       const se = searchParams.get('se') || ''
       const ep = searchParams.get('ep') || ''
 
-      const data    = await up(`${BASE}/api/play?subjectId=${encodeURIComponent(id)}`)
-      const streams = data?.data?.streams || []
-      const stream  = streams.find(s => String(s.resolutions) === String(res)) || streams[0]
+      /* Try xcasper /api/play first */
+      let dlUrl = null
+      try {
+        const data    = await up(`${BASE}/api/play?subjectId=${encodeURIComponent(id)}`)
+        const streams = data?.data?.streams || []
+        const stream  = streams.find(s => String(s.resolutions) === String(res)) || streams[0]
+        if (stream) {
+          dlUrl = stream.downloadUrl || stream.url
+          if (se && ep && dlUrl) {
+            dlUrl = dlUrl.replace(/se=\d+/, 'se=' + se).replace(/ep=\d+/, 'ep=' + ep)
+          }
+        }
+      } catch {}
 
-      if (!stream) return NextResponse.json({ error: 'Quality not available' }, { status: 404 })
-
-            let dlUrl  = stream.downloadUrl || stream.url
-      if (se && ep && dlUrl) {
-        dlUrl = dlUrl.replace(/se=\d+/, 'se=' + se).replace(/ep=\d+/, 'ep=' + ep)
+      /* ShowBox fallback for movies */
+      if (!dlUrl) {
+        try {
+          const detail = await up(`${BASE}/api/rich-detail?subjectId=${encodeURIComponent(id)}`)
+          const mvTitle = detail?.data?.title || title
+          const isTV = (detail?.data?.subjectType || 1) === 2
+          if (!isTV) {
+            const sbItem = await showboxSearch(mvTitle, 'movie')
+            if (sbItem) {
+              const files = await showboxMovieFiles(sbItem.id)
+              const match = files.find(f => String(f.resolutions) === String(res)) || files[0]
+              if (match) dlUrl = match.url
+            }
+          }
+        } catch {}
       }
+
+      if (!dlUrl) return NextResponse.json({ error: 'Stream not available for this title' }, { status: 404 })
+
       const vidRes = await fetch(dlUrl, {
         headers: { 'User-Agent': HDRS['User-Agent'], 'Referer': HDRS['Referer'] },
         signal: AbortSignal.timeout(30000),
@@ -72,7 +133,7 @@ export async function GET(req) {
 
       if (!vidRes.ok) return NextResponse.json({ error: 'CDN unavailable' }, { status: 502 })
 
-            const safe     = title.replace(/[^a-zA-Z0-9 _-]/g, '').trim().replace(/\s+/g, '_') || 'movie'
+      const safe     = title.replace(/[^a-zA-Z0-9 _-]/g, '').trim().replace(/\s+/g, '_') || 'movie'
       const epSuffix = (se && ep) ? `_S${se}_E${ep}` : ''
       const filename = `${safe}${epSuffix}_${res}p.mp4`
 
@@ -87,6 +148,53 @@ export async function GET(req) {
     } catch (e) {
       console.error('[movies:download]', e.message)
       return NextResponse.json({ error: 'Download failed. Try again.' }, { status: 500 })
+    }
+  }
+
+  /* ── Play / stream URLs with ShowBox fallback ── */
+  if (action === 'play') {
+    if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+
+    /* Try xcasper primary endpoint first */
+    try {
+      const data = await up(`${BASE}/api/play?subjectId=${encodeURIComponent(id)}`)
+      if (data?.data?.streams?.length) {
+        return NextResponse.json(data)
+      }
+    } catch {}
+
+    /* Fallback: ShowBox */
+    try {
+      const detail = await up(`${BASE}/api/rich-detail?subjectId=${encodeURIComponent(id)}`)
+      const mvTitle = detail?.data?.title || ''
+      const isTV    = (detail?.data?.subjectType || 1) === 2
+
+      const sbType  = isTV ? 'tv' : 'movie'
+      const sbItem  = await showboxSearch(mvTitle, sbType)
+
+      if (!sbItem) {
+        return NextResponse.json({ data: { streams: [], seasons: [], isShowbox: true } })
+      }
+
+      const sbId = sbItem.id
+
+      if (isTV) {
+        /* For TV: return season list; client will use VidSrc embed player */
+        const seasons = await showboxTvSeasons(sbId)
+        /* Return dummy stream objects so the UI knows it's a TV show with episodes */
+        const streams = [{ resolutions: 0, url: '', proxyUrl: '', isEmbed: true }]
+        return NextResponse.json({ data: { streams, seasons, showboxId: sbId, isShowbox: true, isTV: true } })
+      } else {
+        /* For movies: return free direct file URLs */
+        const streams = await showboxMovieFiles(sbId)
+        if (!streams.length) {
+          return NextResponse.json({ data: { streams: [], seasons: [], isShowbox: true, noFreeStream: true } })
+        }
+        return NextResponse.json({ data: { streams, seasons: [], showboxId: sbId, isShowbox: true } })
+      }
+    } catch (e) {
+      console.error('[movies:play:showbox]', e.message)
+      return NextResponse.json({ data: { streams: [], seasons: [] } })
     }
   }
 
@@ -192,9 +300,6 @@ export async function GET(req) {
         case 'detail':
           url = `${BASE}/api/rich-detail?subjectId=${encodeURIComponent(id)}`
           break
-        case 'play':
-          url = `${BASE}/api/play?subjectId=${encodeURIComponent(id)}`
-          break
         case 'recommend':
           url = `${BASE}/api/recommend?subjectId=${encodeURIComponent(id)}&page=1&perPage=12`
           break
@@ -209,17 +314,23 @@ export async function GET(req) {
             const tvSearch = await fetch('https://api.tvmaze.com/search/shows?q=' + encodeURIComponent(q),
               { headers: { 'User-Agent': 'ToosiiTech/1.0' } })
             const tvShows  = await tvSearch.json()
-            if (!tvShows?.length) return NextResponse.json({ episodes: [] })
-            const tvId  = tvShows[0].show.id
-            const tvEps = await fetch('https://api.tvmaze.com/shows/' + tvId + '/episodes',
+            if (!tvShows?.length) return NextResponse.json({ episodes: [], imdbId: null })
+            const tvId   = tvShows[0].show.id
+            const imdbId = tvShows[0].show?.externals?.imdb || null
+            const tvEps  = await fetch('https://api.tvmaze.com/shows/' + tvId + '/episodes',
               { headers: { 'User-Agent': 'ToosiiTech/1.0' } })
             const epList   = await tvEps.json()
+            /* Also compute per-season episode counts */
+            const seasonCounts = {}
             const episodes = Array.isArray(epList)
-              ? epList.map(e => ({ season: e.season, number: e.number, name: e.name }))
+              ? epList.map(e => {
+                  seasonCounts[e.season] = (seasonCounts[e.season] || 0) + 1
+                  return { season: e.season, number: e.number, name: e.name }
+                })
               : []
-            return NextResponse.json({ episodes })
+            return NextResponse.json({ episodes, imdbId, seasonCounts })
           } catch {
-            return NextResponse.json({ episodes: [] })
+            return NextResponse.json({ episodes: [], imdbId: null, seasonCounts: {} })
           }
         }
         default:
