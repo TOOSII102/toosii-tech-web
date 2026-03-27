@@ -155,19 +155,21 @@ function DetailModal({ movie, onClose }) {
           setSeasons(seasonList)
           const tmpl = pData?.data?.streams?.[0]?.proxyUrl || ''
           setProxyTemplate(tmpl)
-          // Fetch episode titles + imdbId + per-season episode counts from TVMaze
+          // xcasper/ShowBox already provides the IMDB ID — set it immediately
+          if (pData?.data?.imdbId) setImdbId(pData.data.imdbId)
+          // TVMaze: used only for per-season episode counts + episode titles (secondary)
           try {
             const showTitle  = dData?.data?.title || movie.title || ''
             const cleanTitle = showTitle.replace(/\s*S\d.*$/i, '').trim()
             const tvRes  = await fetch('/api/tools/movies?action=tvmaze&q=' + encodeURIComponent(cleanTitle))
             const tvData = await tvRes.json()
-            // Store IMDB ID for VidSrc embed player
-            if (tvData.imdbId) setImdbId(tvData.imdbId)
+            // Use TVMaze IMDB only as a fallback if xcasper didn't provide one
+            if (!pData?.data?.imdbId && tvData.imdbId) setImdbId(tvData.imdbId)
             // Build episode title map
             const titleMap = {}
             ;(tvData.episodes || []).forEach(e => { titleMap[e.season + '-' + e.number] = e.name })
             setEpTitles(titleMap)
-            // Update seasons with accurate episode counts from TVMaze
+            // Update seasons with accurate per-season episode counts from TVMaze
             if (tvData.seasonCounts && Object.keys(tvData.seasonCounts).length) {
               setSeasons(prev => prev.map(s => {
                 const sNum = s.season ?? s
@@ -177,13 +179,11 @@ function DetailModal({ movie, onClose }) {
                   : { season: sNum, episodes: cnt || 50 }
               }))
             } else {
-              // Normalise plain-number seasons (ShowBox) to objects
               setSeasons(prev => prev.map(s =>
                 typeof s === 'object' ? s : { season: s, episodes: 50 }
               ))
             }
           } catch {
-            // Normalise plain-number seasons even if TVMaze fails
             setSeasons(prev => prev.map(s =>
               typeof s === 'object' ? s : { season: s, episodes: 50 }
             ))
