@@ -46,25 +46,47 @@ async function showboxSearch(title, type) {
   return data?.data?.[0] || null
 }
 
-/* Get free direct mp4 stream files from ShowBox movie endpoint */
+/* Parse ShowBox quality string → numeric resolution */
+function parseQuality(q) {
+  if (!q) return 0
+  if (q === '4K' || q === '2160p') return 2160
+  const n = parseInt(q)
+  return isNaN(n) || n <= 0 ? 0 : n
+}
+
+/* Get ShowBox movie files — includes free AND VIP entries (VIP shown as locked in UI) */
 async function showboxMovieFiles(sbId) {
-  const res = await fetch(`${BASE}/api/showbox/movie?id=${sbId}`, { headers: HDRS, signal: AbortSignal.timeout(12000) })
+  const res  = await fetch(`${BASE}/api/showbox/movie?id=${sbId}`, { headers: HDRS, signal: AbortSignal.timeout(12000) })
   const data = await res.json()
-  const files = (data?.data?.file || []).filter(f => f.path && f.path.startsWith('http') && !f.vip_only)
-  /* Deduplicate by quality, keep highest count */
+  const files = (data?.data?.file || []).filter(f => parseQuality(f.quality) > 0)
+  /* Deduplicate by resolution — prefer free file over VIP, then highest count */
   const best = {}
   for (const f of files) {
-    const q = parseInt(f.quality) || 360
-    if (!best[q] || (f.count || 0) > (best[q].count || 0)) best[q] = f
+    const q   = parseQuality(f.quality)
+    const cur = best[q]
+    if (!cur) { best[q] = f; continue }
+    /* Free beats VIP; same vip status → higher count wins */
+    const fFree   = !f.vip_only && f.path?.startsWith('http')
+    const curFree = !cur.vip_only && cur.path?.startsWith('http')
+    if (fFree && !curFree) { best[q] = f; continue }
+    if (!fFree && curFree) continue
+    if ((f.count || 0) > (cur.count || 0)) best[q] = f
   }
-  return Object.values(best).map(f => ({
-    resolutions: parseInt(f.quality) || 360,
-    url: f.path,
-    proxyUrl: f.path,
-    size: f.size,
-    quality: f.quality,
-    vip_only: 0,
-  })).sort((a, b) => b.resolutions - a.resolutions)
+  return Object.values(best)
+    .map(f => {
+      const q    = parseQuality(f.quality)
+      const free = !f.vip_only && f.path?.startsWith('http')
+      return {
+        resolutions: q,
+        url:         free ? f.path : '',
+        proxyUrl:    free ? f.path : '',
+        size:        f.size || '',
+        quality:     f.quality,
+        vip_only:    free ? 0 : 1,
+      }
+    })
+    .filter(s => s.resolutions > 0)
+    .sort((a, b) => b.resolutions - a.resolutions)
 }
 
 /* Get ShowBox TV season list */
