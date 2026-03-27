@@ -190,11 +190,13 @@ function DetailModal({ movie, onClose }) {
           }
         }
 
-        // Filter out ShowBox TV dummy placeholder streams
-        const st = (pData?.data?.streams || []).filter(s => !s.isEmbed)
+        // Filter out dummy/broken streams; keep valid resolutions only
+        const st = (pData?.data?.streams || []).filter(s => !s.isEmbed && (+s.resolutions) > 0)
         const sorted = [...st].sort((a, b) => (+b.resolutions) - (+a.resolutions))
         setStreams(sorted)
-        if (sorted.length) setActiveQ(sorted[0])
+        // Default active quality = first free (non-VIP) stream
+        const firstFree = sorted.find(s => !s.vip_only) || sorted[0] || null
+        if (firstFree) setActiveQ(firstFree)
         setRecs((rData?.data?.subjectList || []).slice(0, 10))
       } catch {}
       setLoading(false)
@@ -447,15 +449,22 @@ function DetailModal({ movie, onClose }) {
                     {/* Quality tabs only for direct-file streams */}
                     {streams.length > 0 && (
                       <div className="mv-quality-tabs">
-                        {streams.map(s => (
-                          <button
-                            key={s.resolutions}
-                            className={`mv-quality-btn${activeQ?.resolutions === s.resolutions ? ' active' : ''}`}
-                            onClick={() => { setActiveQ(s); setPlaying(true) }}
-                          >
-                            {s.resolutions}p
-                          </button>
-                        ))}
+                        {streams.map(s => {
+                          const label = s.resolutions >= 2160 ? '4K' : `${s.resolutions}p`
+                          const isVip = !!s.vip_only
+                          const isActive = activeQ?.resolutions === s.resolutions
+                          return (
+                            <button
+                              key={s.resolutions}
+                              className={`mv-quality-btn${isActive ? ' active' : ''}${isVip ? ' mv-quality-vip' : ''}`}
+                              onClick={() => { if (!isVip) { setActiveQ(s); setPlaying(true) } }}
+                              title={isVip ? `${label} — VIP only` : `Play in ${label}`}
+                              style={isVip ? { opacity: 0.45, cursor: 'not-allowed' } : {}}
+                            >
+                              {label}{isVip ? ' 🔒' : ''}
+                            </button>
+                          )
+                        })}
                       </div>
                     )}
                   </div>
@@ -498,7 +507,7 @@ function DetailModal({ movie, onClose }) {
                           <span className="mv-trailer-play-label">
                             {seasons.length > 0
                               ? `Click to stream — S${activeSeason} E${activeEpNum}`
-                              : `Click to play — ${activeQ?.resolutions}p available`}
+                              : `Click to play — ${activeQ?.resolutions >= 2160 ? '4K' : `${activeQ?.resolutions}p`} available`}
                           </span>
                         </div>
                       </div>
@@ -519,19 +528,20 @@ function DetailModal({ movie, onClose }) {
                 </div>
               )}
 
-              {/* ══ DOWNLOADS ══ */}
-              {streams.length > 0 && (
+              {/* ══ DOWNLOADS (free streams only) ══ */}
+              {streams.filter(s => !s.vip_only && s.url).length > 0 && (
                 <div className="mv-download-section">
                   <div className="mv-download-head">
                       {seasons.length > 0 ? `⬇ Download — S${activeSeason} E${activeEpNum}` : '⬇ Download Full Movie'}
                     </div>
                     <div className="mv-download-grid">
-                      {streams.map(s => {
+                      {streams.filter(s => !s.vip_only && s.url).map(s => {
                         const isSeries  = seasons.length > 0
+                        const resLabel  = s.resolutions >= 2160 ? '4K' : `${s.resolutions}p`
                         const safeTitle = (d.title || 'movie').replace(/[^a-zA-Z0-9 ]/g,'').trim().replace(/\s+/g,'_')
                         const filename  = isSeries
-                          ? `${safeTitle}_S${activeSeason}_E${activeEpNum}_${s.resolutions}p.mp4`
-                          : `${safeTitle}_${s.resolutions}p.mp4`
+                          ? `${safeTitle}_S${activeSeason}_E${activeEpNum}_${resLabel}.mp4`
+                          : `${safeTitle}_${resLabel}.mp4`
                         const href = isSeries
                           ? `/api/tools/movies?action=download&id=${movie.subjectId}&res=${s.resolutions}&title=${encodeURIComponent(d.title || 'movie')}&se=${activeSeason}&ep=${activeEpNum}`
                           : `/api/tools/movies?action=download&id=${movie.subjectId}&res=${s.resolutions}&title=${encodeURIComponent(d.title || 'movie')}`
@@ -543,8 +553,8 @@ function DetailModal({ movie, onClose }) {
                             className="mv-download-btn"
                           >
                             <span>⬇</span>
-                            <span>{s.resolutions}p</span>
-                            {s.size && <span className="mv-download-size">{fmtSize(s.size)}</span>}
+                            <span>{resLabel}</span>
+                            {s.size && <span className="mv-download-size">{s.size}</span>}
                           </a>
                         )
                       })}
