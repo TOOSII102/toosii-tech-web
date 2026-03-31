@@ -13,11 +13,32 @@
   const dur    = s => { if (!s) return ''; const h = Math.floor(s/3600), m = Math.floor((s%3600)/60); return h ? h+'h '+m+'m' : m+'m' }
   const isTV   = m => (m?.subjectType || 1) === 2
 
-  /* Build VidSrc embed URL */
-  function vidsrcUrl(imdbId, se, ep) {
+  /* VidSrc server list — each uses different scrapers/sources */
+  const VS_SERVERS = [
+    {
+      id:    'vs1',
+      label: 'Server 1',
+      movie: id        => 'https://vidsrc.to/embed/movie/' + id,
+      tv:    (id,s,e)  => 'https://vidsrc.to/embed/tv/' + id + '/' + s + '/' + e,
+    },
+    {
+      id:    'vs2',
+      label: 'Server 2',
+      movie: id        => 'https://vidsrc.xyz/embed/movie/' + id,
+      tv:    (id,s,e)  => 'https://vidsrc.xyz/embed/tv/' + id + '?season=' + s + '&episode=' + e,
+    },
+    {
+      id:    'vs3',
+      label: 'Server 3',
+      movie: id        => 'https://vidsrc.me/embed/movie/' + id,
+      tv:    (id,s,e)  => 'https://vidsrc.me/embed/tv/' + id + '?s=' + s + '&e=' + e,
+    },
+  ]
+
+  function embedUrl(serverId, imdbId, se, ep) {
     if (!imdbId) return ''
-    if (se && ep) return 'https://vidsrc.to/embed/tv/' + imdbId + '/' + se + '/' + ep
-    return 'https://vidsrc.to/embed/movie/' + imdbId
+    const srv = VS_SERVERS.find(s => s.id === serverId) || VS_SERVERS[0]
+    return (se && ep) ? srv.tv(imdbId, se, ep) : srv.movie(imdbId)
   }
 
   /* Build xcasper direct URL (Option A — no-referrer) */
@@ -81,7 +102,7 @@
     const [ep,       setEp]       = useState(1)
     const [res,      setRes]      = useState(720)
     const [playing,  setPlaying]  = useState(false)
-    const [player,   setPlayer]   = useState('vidsrc') /* 'vidsrc' | 'direct' | 'proxy' */
+    const [player,   setPlayer]   = useState('vs1') /* 'vs1'|'vs2'|'vs3' | 'direct' | 'proxy' */
     const histRef = useRef(false)
 
     /* scroll lock + back button */
@@ -132,18 +153,18 @@
     }
 
     function watchEp(s, e) {
-      setSe(s); setEp(e); setPlaying(true); setPlayer('vidsrc')
+      setSe(s); setEp(e); setPlaying(true); setPlayer('vs1')
       scrollToPlayer()
     }
 
     function watchNow() {
-      setPlaying(true); setPlayer('vidsrc')
+      setPlaying(true); setPlayer('vs1')
       scrollToPlayer()
     }
 
     /* derive current player src */
-    const imdbId = playData?.imdbId || null
-    const vsSrc  = imdbId ? vidsrcUrl(imdbId, tv ? se : null, tv ? ep : null) : null
+    const imdbId  = playData?.imdbId || null
+    const vsSrc   = imdbId ? embedUrl(player, imdbId, tv ? se : null, tv ? ep : null) : null
     const xcSrc  = xcUrl(movie.subjectId, res, tv ? se : '', tv ? ep : '')
     const pxSrc  = xcProxy(movie.subjectId, res, tv ? se : '', tv ? ep : '')
 
@@ -242,14 +263,15 @@
                   {/* Player source tabs */}
                   <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.9rem', flexWrap: 'wrap', alignItems: 'center' }}>
                     <span style={{ fontSize: '0.72rem', color: '#475569', marginRight: '0.25rem' }}>Source:</span>
-                    {imdbId && (
-                      <button onClick={() => { setPlayer('vidsrc'); if (!playing) setPlaying(true) }}
+                    {imdbId && VS_SERVERS.map(srv => (
+                      <button key={srv.id}
+                        onClick={() => { setPlayer(srv.id); if (!playing) setPlaying(true) }}
                         style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.3rem 0.7rem', borderRadius: '8px', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                          background: player === 'vidsrc' ? 'linear-gradient(135deg,#8b5cf6,#6d28d9)' : 'rgba(139,92,246,0.1)',
-                          color: player === 'vidsrc' ? '#fff' : '#a78bfa' }}>
-                        ▶ VidSrc
+                          background: player === srv.id ? 'linear-gradient(135deg,#8b5cf6,#6d28d9)' : 'rgba(139,92,246,0.1)',
+                          color: player === srv.id ? '#fff' : '#a78bfa' }}>
+                        ▶ {srv.label}
                       </button>
-                    )}
+                    ))}
                     <button onClick={() => { setPlayer('direct'); if (!playing) setPlaying(true) }}
                       style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.3rem 0.7rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', fontFamily: 'inherit',
                         background: player === 'direct' ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.04)',
@@ -276,8 +298,8 @@
 
                   {playing ? (
                     <div className="mv-video-wrap">
-                      {/* VidSrc embed iframe */}
-                      {player === 'vidsrc' && vsSrc && (
+                      {/* VidSrc embed iframes (Server 1/2/3) */}
+                      {VS_SERVERS.some(s => s.id === player) && vsSrc && (
                         <iframe
                           key={vsSrc}
                           src={vsSrc}
@@ -288,7 +310,7 @@
                           style={{ border: 'none' }}
                         />
                       )}
-                      {player === 'vidsrc' && !vsSrc && (
+                      {VS_SERVERS.some(s => s.id === player) && !vsSrc && (
                         <div className="mv-video-placeholder">
                           <span className="mv-video-placeholder-icon">⚠️</span>
                           <p style={{ color: '#94a3b8', margin: '0.5rem 0 0' }}>IMDB ID not found for this title</p>
@@ -330,7 +352,7 @@
                   <p style={{ fontSize: '0.72rem', color: '#334155', margin: '0.6rem 0 0', padding: '0 0.25rem' }}>
                     {player === 'vidsrc' ? '▶ VidSrc stream' : player === 'direct' ? '⚡ Direct xcasper · ' + res + 'p (no-referrer)' : '🔀 Proxy xcasper · ' + res + 'p'}
                     {tv ? ' · S' + se + ' E' + ep : ''}
-                    {player === 'vidsrc' && !imdbId && ' · IMDB ID unavailable for this title'}
+                    {VS_SERVERS.some(s => s.id === player) && !imdbId && ' · IMDB ID unavailable for this title'}
                   </p>
                 </div>
 
