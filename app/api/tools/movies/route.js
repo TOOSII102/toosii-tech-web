@@ -21,7 +21,7 @@ import { NextResponse } from 'next/server'
     const se     = searchParams.get('se')     || ''
     const ep     = searchParams.get('ep')     || ''
 
-    /* ─── Option B: Range-aware server proxy ─── */
+    /* ── Option B: Range-aware stream proxy ── */
     if (action === 'stream') {
       if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
       let url = BASE + '/api/bff/stream?subjectId=' + encodeURIComponent(id) + '&resolution=' + res
@@ -44,7 +44,41 @@ import { NextResponse } from 'next/server'
       }
     }
 
-    /* ─── Regular xcasper API actions ─── */
+    /* ── Play: resolve imdb_id via ShowBox + return stream info ── */
+    if (action === 'play') {
+      if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+      try {
+        const detail = await xc('/api/rich-detail?subjectId=' + encodeURIComponent(id))
+        const d      = detail?.data || {}
+        const isTV   = (d.subjectType || 1) === 2
+        const title  = (d.title || '').replace(/\s*S\d.*/i, '').trim()
+        const sbType = isTV ? 'tv' : 'movie'
+
+        const sbSearch = await fetch(
+          BASE + '/api/showbox/search?keyword=' + encodeURIComponent(title) + '&type=' + sbType,
+          { headers: HDRS, signal: AbortSignal.timeout(10000) }
+        ).then(r => r.json())
+        const sbItem = sbSearch?.data?.[0]
+
+        let imdbId = null, seasons = []
+        if (sbItem) {
+          if (!isTV) {
+            const m = await fetch(BASE + '/api/showbox/movie?id=' + sbItem.id, { headers: HDRS, signal: AbortSignal.timeout(10000) }).then(r => r.json())
+            imdbId = m?.data?.imdb_id || null
+          } else {
+            const t = await fetch(BASE + '/api/showbox/tv?id=' + sbItem.id + '&season=1&episode=1', { headers: HDRS, signal: AbortSignal.timeout(10000) }).then(r => r.json())
+            imdbId  = t?.data?.imdb_id || null
+            seasons = Array.isArray(t?.data?.season) ? t.data.season : [1]
+          }
+        }
+
+        return NextResponse.json({ data: { isTV, imdbId, seasons } })
+      } catch (e) {
+        return NextResponse.json({ error: e.message }, { status: 502 })
+      }
+    }
+
+    /* ── Standard xcasper API actions ── */
     try {
       switch (action) {
         case 'trending':  return NextResponse.json(await xc('/api/trending'))
