@@ -215,12 +215,18 @@ export async function GET(req) {
         const streams = [{ resolutions: 0, url: '', proxyUrl: '', isEmbed: true }]
         return NextResponse.json({ data: { streams, seasons, showboxId: sbId, isShowbox: true, isTV: true, imdbId: sbImdbId } })
       } else {
-        /* For movies: return free direct file URLs */
+        /* For movies: get ShowBox files + extract imdb_id for VidSrc embed */
+        let sbMovieImdbId = null
+        try {
+          const sbMovieRes = await fetch(`${BASE}/api/showbox/movie?id=${sbId}`, { headers: HDRS })
+          const sbMovieData = await sbMovieRes.json()
+          sbMovieImdbId = sbMovieData?.data?.imdb_id || null
+        } catch {}
         const streams = await showboxMovieFiles(sbId)
-        if (!streams.length) {
+        if (!streams.length && !sbMovieImdbId) {
           return NextResponse.json({ data: { streams: [], seasons: [], isShowbox: true, noFreeStream: true } })
         }
-        return NextResponse.json({ data: { streams, seasons: [], showboxId: sbId, isShowbox: true } })
+        return NextResponse.json({ data: { streams, seasons: [], showboxId: sbId, isShowbox: true, imdbId: sbMovieImdbId } })
       }
     } catch (e) {
       console.error('[movies:play:showbox]', e.message)
