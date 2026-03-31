@@ -225,15 +225,18 @@ function DetailModal({ movie, onClose }) {
     setActiveSeason(season)
     setActiveEpNum(ep)
     setPlaying(true)
-    // Build bff-stream URLs for this episode (no-referrer direct, or proxied fallback)
-    const epStreams = [360, 480, 720, 1080].map(res => ({
-      resolutions: res,
-      url: `https://movieapi.xcasper.space/api/bff/stream?subjectId=${movie.subjectId}&resolution=${res}&se=${season}&ep=${ep}`,
-      proxyUrl: `/api/tools/movies?action=bff-stream&id=${encodeURIComponent(movie.subjectId)}&res=${res}&se=${season}&ep=${ep}`,
-      vip_only: 0,
-    }))
-    setStreams(epStreams)
-    setActiveQ(epStreams.find(s => s.resolutions === 720) || epStreams[0])
+    // Only rebuild streams for bff-stream fallback (when no VidSrc imdbId)
+    if (!imdbId) {
+      // Build bff-stream URLs for this episode (no-referrer direct, or proxied fallback)
+      const epStreams = [360, 480, 720, 1080].map(res => ({
+        resolutions: res,
+        url: `https://movieapi.xcasper.space/api/bff/stream?subjectId=${movie.subjectId}&resolution=${res}&se=${season}&ep=${ep}`,
+        proxyUrl: `/api/tools/movies?action=bff-stream&id=${encodeURIComponent(movie.subjectId)}&res=${res}&se=${season}&ep=${ep}`,
+        vip_only: 0,
+      }))
+      setStreams(epStreams)
+      setActiveQ(epStreams.find(s => s.resolutions === 720) || epStreams[0])
+    }
     setTimeout(() => document.querySelector('.mv-player-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
   }
 
@@ -450,7 +453,7 @@ function DetailModal({ movie, onClose }) {
                       {seasons.length > 0 ? `S${activeSeason} E${activeEpNum} — Stream Now` : 'Full Movie — Stream Now'}
                     </span>
                     {/* Quality tabs only for direct-file streams */}
-                    {streams.length > 0 && (
+                    {!imdbId && streams.length > 0 && (
                       <div className="mv-quality-tabs">
                         {streams.map(s => {
                           const label = s.resolutions >= 2160 ? '4K' : `${s.resolutions}p`
