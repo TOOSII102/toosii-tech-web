@@ -198,7 +198,7 @@ function DetailModal({ movie, onClose }) {
           // Build direct bff-stream quality options (proxied server-side for xcasper.space Referer)
           finalStreams = [360, 480, 720, 1080].map(res => ({
             resolutions: res,
-            url: '',
+            url: `https://movieapi.xcasper.space/api/bff/stream?subjectId=${id}&resolution=${res}`,
             proxyUrl: `/api/tools/movies?action=bff-stream&id=${encodeURIComponent(id)}&res=${res}`,
             vip_only: 0,
           }))
@@ -222,29 +222,20 @@ function DetailModal({ movie, onClose }) {
   const ytSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent((d.title || '') + ' official trailer')}`
 
   function selectEpisode(season, ep) {
-      setActiveSeason(season)
-      setActiveEpNum(ep)
-      setPlaying(true)
-      // If we have a proxy template (xcasper streams), rebuild stream list
-      if (proxyTemplate) {
-        const resolutions = ['360', '480', '720', '1080']
-        const newStreams = resolutions.map(res => ({
-          resolutions: res,
-          proxyUrl: proxyTemplate
-            .replace(/se=\d+/, 'se=' + season)
-            .replace(/ep=\d+/, 'ep=' + ep)
-            .replace(/resolution=\d+/, 'resolution=' + res),
-          url: proxyTemplate
-            .replace(/se=\d+/, 'se=' + season)
-            .replace(/ep=\d+/, 'ep=' + ep)
-            .replace(/resolution=\d+/, 'resolution=' + res),
-        }))
-        setStreams(newStreams)
-        setActiveQ(newStreams[2] || newStreams[0])
-      }
-      // VidSrc embed player updates automatically via key prop — no extra action needed
-      setTimeout(() => document.querySelector('.mv-player-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
-    }
+    setActiveSeason(season)
+    setActiveEpNum(ep)
+    setPlaying(true)
+    // Build bff-stream URLs for this episode (no-referrer direct, or proxied fallback)
+    const epStreams = [360, 480, 720, 1080].map(res => ({
+      resolutions: res,
+      url: `https://movieapi.xcasper.space/api/bff/stream?subjectId=${movie.subjectId}&resolution=${res}&se=${season}&ep=${ep}`,
+      proxyUrl: `/api/tools/movies?action=bff-stream&id=${encodeURIComponent(movie.subjectId)}&res=${res}&se=${season}&ep=${ep}`,
+      vip_only: 0,
+    }))
+    setStreams(epStreams)
+    setActiveQ(epStreams.find(s => s.resolutions === 720) || epStreams[0])
+    setTimeout(() => document.querySelector('.mv-player-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
+  }
 
     function scrollToTrailer() {
     setTrailerPlaying(true)
@@ -484,18 +475,7 @@ function DetailModal({ movie, onClose }) {
                   {playing ? (
                     <div className="mv-video-wrap">
                       {/* TV series: use VidSrc embed when IMDB ID is available */}
-                      {seasons.length > 0 && imdbId ? (
-                        <iframe
-                          key={`vidsrc-${imdbId}-${activeSeason}-${activeEpNum}`}
-                          src={`https://vidsrc.to/embed/tv/${imdbId}/${activeSeason}/${activeEpNum}`}
-                          className="mv-video"
-                          allowFullScreen
-                          allow="autoplay; fullscreen; picture-in-picture"
-                          sandbox="allow-scripts allow-same-origin allow-forms allow-fullscreen allow-presentation allow-orientation-lock allow-popups"
-                          style={{ border: 'none' }}
-                          title={`${d.title} S${activeSeason}E${activeEpNum}`}
-                        />
-                      ) : activeQ ? (
+                      {activeQ ? (
                         <video
                           ref={videoRef}
                           key={activeQ.resolutions + '_' + movie.subjectId}
@@ -504,7 +484,8 @@ function DetailModal({ movie, onClose }) {
                           autoPlay
                           playsInline
                           preload="metadata"
-                          src={activeQ.proxyUrl || activeQ.url}
+                          referrerPolicy="no-referrer"
+                          src={activeQ.url || activeQ.proxyUrl}
                         />
                       ) : null}
                     </div>
