@@ -4,7 +4,7 @@
   import './movies.css'
 
   const API  = '/api/tools/movies'
-  const XCDN = 'https://movieapi.xcasper.space/api/bff/stream'
+  const XCSP = 'https://movieapi.xcasper.space/api/bff/stream'
   const RESS = [1080, 720, 480, 360]
 
   /* ── utils ── */
@@ -13,23 +13,23 @@
   const dur    = s => { if (!s) return ''; const h = Math.floor(s/3600), m = Math.floor((s%3600)/60); return h ? h+'h '+m+'m' : m+'m' }
   const isTV   = m => (m?.subjectType || 1) === 2
 
-  /* Parse "S1-S2" or "S3" or "(Season 4)" from title → max season number */
-  function parseMaxSeason(title) {
-    if (!title) return 1
-    const nums = [...(title.matchAll(/[Ss](\d+)/g))].map(m => +m[1])
-    return nums.length ? Math.max(...nums) : 1
+  /* Build VidSrc embed URL */
+  function vidsrcUrl(imdbId, se, ep) {
+    if (!imdbId) return ''
+    if (se && ep) return 'https://vidsrc.to/embed/tv/' + imdbId + '/' + se + '/' + ep
+    return 'https://vidsrc.to/embed/movie/' + imdbId
   }
 
-  /* Build direct stream URL (Option A — browser hits xcasper with no-referrer) */
-  function streamUrl(id, res, se, ep) {
-    let u = XCDN + '?subjectId=' + encodeURIComponent(id) + '&resolution=' + res
+  /* Build xcasper direct URL (Option A — no-referrer) */
+  function xcUrl(subjectId, res, se, ep) {
+    let u = XCSP + '?subjectId=' + encodeURIComponent(subjectId) + '&resolution=' + res
     if (se && ep) u += '&se=' + se + '&ep=' + ep
     return u
   }
 
-  /* Build proxy URL (Option B — server adds Referer/Range) */
-  function proxyUrl(id, res, se, ep) {
-    let u = API + '?action=stream&id=' + encodeURIComponent(id) + '&res=' + res
+  /* Build xcasper proxy URL (Option B) */
+  function xcProxy(subjectId, res, se, ep) {
+    let u = API + '?action=stream&id=' + encodeURIComponent(subjectId) + '&res=' + res
     if (se && ep) u += '&se=' + se + '&ep=' + ep
     return u
   }
@@ -69,18 +69,19 @@
     )
   }
 
-  /* ── Detail modal ── */
+  /* ── Detail + Player modal ── */
   function Modal({ movie, onClose, onSelect }) {
-    const [detail,  setDetail]  = useState(null)
-    const [loading, setLoading] = useState(true)
-    const [recs,    setRecs]    = useState([])
+    const [detail,   setDetail]   = useState(null)
+    const [loadInfo, setLoadInfo] = useState(true)
+    const [playData, setPlayData] = useState(null)  /* { imdbId, seasons, isTV } */
+    const [recs,     setRecs]     = useState([])
 
-    /* player state */
-    const [res,     setRes]     = useState(720)
-    const [season,  setSeason]  = useState(1)
-    const [ep,      setEp]      = useState(1)
-    const [playing, setPlaying] = useState(false)
-    const [useProxy, setUseProxy] = useState(false)
+    /* player */
+    const [se,       setSe]       = useState(1)
+    const [ep,       setEp]       = useState(1)
+    const [res,      setRes]      = useState(720)
+    const [playing,  setPlaying]  = useState(false)
+    const [player,   setPlayer]   = useState('vidsrc') /* 'vidsrc' | 'direct' | 'proxy' */
     const histRef = useRef(false)
 
     /* scroll lock + back button */
@@ -98,47 +99,53 @@
       else onClose()
     }, [onClose])
 
-    /* fetch detail + recommendations in parallel */
+    /* fetch detail + play data in parallel */
     useEffect(() => {
-      setDetail(null); setLoading(true); setPlaying(false); setUseProxy(false)
+      setDetail(null); setPlayData(null); setLoadInfo(true); setPlaying(false)
+      const sid = movie.subjectId
       ;(async () => {
         try {
-          const [dR, rR] = await Promise.all([
-            fetch(API + '?action=detail&id=' + movie.subjectId),
-            fetch(API + '?action=recommend&id=' + movie.subjectId),
+          const [dR, pR, rR] = await Promise.all([
+            fetch(API + '?action=detail&id='    + sid),
+            fetch(API + '?action=play&id='      + sid),
+            fetch(API + '?action=recommend&id=' + sid),
           ])
-          const [dD, rD] = await Promise.all([dR.json(), rR.json()])
+          const [dD, pD, rD] = await Promise.all([dR.json(), pR.json(), rR.json()])
           setDetail(dD?.data || null)
+          setPlayData(pD?.data || null)
           setRecs((rD?.data?.subjectList || rD?.data?.items || []).slice(0, 12))
         } catch {}
-        setLoading(false)
+        setLoadInfo(false)
       })()
     }, [movie.subjectId])
 
     const d      = detail || movie
     const tv     = isTV(d)
-    const maxSe  = parseMaxSeason(d?.title)
     const poster = cover(d)
 
-    /* pick how many episodes per season to show (default 24, cap reasonable) */
-    const epCount = 24
+    /* season list: from ShowBox if available, else [1] */
+    const seasons = playData?.seasons?.length ? playData.seasons : (tv ? [1] : [])
+    const EP_PER  = 24  /* show 24 episode buttons per season */
 
     function scrollToPlayer() {
-      setTimeout(() => document.querySelector('.mv-video-wrap')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
+      setTimeout(() => document.querySelector('.mv-player-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
     }
 
-    function play(s, e) {
-      setSeason(s); setEp(e); setPlaying(true); setUseProxy(false)
+    function watchEp(s, e) {
+      setSe(s); setEp(e); setPlaying(true); setPlayer('vidsrc')
       scrollToPlayer()
     }
 
-    function toggleProxy() {
-      setUseProxy(p => !p)
+    function watchNow() {
+      setPlaying(true); setPlayer('vidsrc')
+      scrollToPlayer()
     }
 
-    const src = useProxy
-      ? proxyUrl(movie.subjectId, res, tv ? season : '', tv ? ep : '')
-      : streamUrl(movie.subjectId, res, tv ? season : '', tv ? ep : '')
+    /* derive current player src */
+    const imdbId = playData?.imdbId || null
+    const vsSrc  = imdbId ? vidsrcUrl(imdbId, tv ? se : null, tv ? ep : null) : null
+    const xcSrc  = xcUrl(movie.subjectId, res, tv ? se : '', tv ? ep : '')
+    const pxSrc  = xcProxy(movie.subjectId, res, tv ? se : '', tv ? ep : '')
 
     return (
       <div className="mv-modal-backdrop" onClick={e => { if (e.target === e.currentTarget) close() }}>
@@ -162,15 +169,16 @@
                 <div className="mv-modal-meta">
                   {year(d) && <span>📅 {year(d)}</span>}
                   {dur(d.duration) && <span>⏱ {dur(d.duration)}</span>}
-                  {(d.genre || '').split(',').slice(0,3).filter(Boolean).map(g => (
+                  {(d.genre || '').split(',').slice(0, 3).filter(Boolean).map(g => (
                     <span key={g} style={{ color: '#a78bfa' }}>{g.trim()}</span>
                   ))}
                 </div>
                 <div style={{ marginTop: '1.1rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                  <button className="mv-hero-play-btn"
-                    onClick={() => { setPlaying(true); scrollToPlayer() }}>
-                    ▶ {tv ? 'Watch Now' : 'Watch Movie'}
-                  </button>
+                  {!loadInfo && (
+                    <button className="mv-hero-play-btn" onClick={watchNow}>
+                      ▶ {tv ? 'Watch S' + se + ' E' + ep : 'Watch Movie'}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -178,40 +186,42 @@
 
           {/* ── Body ── */}
           <div className="mv-modal-body">
-            {loading && (
-              <div className="mv-spinner"><div className="mv-spin" /><p style={{ color:'#64748b', margin:'0.75rem 0 0', fontSize:'0.85rem' }}>Loading…</p></div>
+            {loadInfo && (
+              <div className="mv-spinner">
+                <div className="mv-spin" />
+                <p style={{ color: '#64748b', margin: '0.75rem 0 0', fontSize: '0.85rem' }}>Loading…</p>
+              </div>
             )}
 
-            {!loading && (
+            {!loadInfo && (
               <>
                 {d.description && <p className="mv-modal-desc">{d.description}</p>}
 
-                {/* ── Episode picker (TV only) ── */}
-                {tv && (
+                {/* ── Episode picker (TV) ── */}
+                {tv && seasons.length > 0 && (
                   <div className="mv-episodes-section">
                     <div className="mv-season-head">
                       <h4 className="mv-modal-sub" style={{ margin: 0 }}>
-                        Episodes — S{season} E{ep}
+                        Episodes{playing ? ' — S' + se + ' E' + ep : ''}
                       </h4>
-                      {maxSe > 1 && (
+                      {seasons.length > 1 && (
                         <div className="mv-season-tabs">
-                          {Array.from({ length: maxSe }, (_, i) => i + 1).map(s => (
+                          {seasons.map(s => (
                             <button key={s}
-                              className={'mv-season-tab' + (season === s ? ' active' : '')}
-                              onClick={() => { setSeason(s); setEp(1) }}>
+                              className={'mv-season-tab' + (se === s ? ' active' : '')}
+                              onClick={() => { setSe(s); setEp(1) }}>
                               S{s}
                             </button>
                           ))}
                         </div>
                       )}
                     </div>
-
-                    <div className={'mv-season-group mv-sc-' + ((season - 1) % 7)}>
+                    <div className={'mv-season-group mv-sc-' + ((se - 1) % 7)}>
                       <div className="mv-ep-grid">
-                        {Array.from({ length: epCount }, (_, i) => i + 1).map(e => (
+                        {Array.from({ length: EP_PER }, (_, i) => i + 1).map(e => (
                           <button key={e}
-                            className={'mv-ep-btn' + (season === season && ep === e && playing ? ' active' : '')}
-                            onClick={() => play(season, e)}>
+                            className={'mv-ep-btn' + (playing && se === se && ep === e ? ' active' : '')}
+                            onClick={() => watchEp(se, e)}>
                             <span className="mv-ep-num">E{e}</span>
                           </button>
                         ))}
@@ -225,69 +235,108 @@
                   <div className="mv-player-head">
                     <span className="mv-player-label">
                       <span className="mv-player-dot" />
-                      {tv ? 'S' + season + ' E' + ep + ' — Stream Now' : 'Full Movie — Stream Now'}
+                      {tv ? 'S' + se + ' E' + ep + ' — Stream Now' : 'Full Movie — Stream Now'}
                     </span>
-                    <div className="mv-quality-tabs">
-                      {RESS.map(r => (
-                        <button key={r}
-                          className={'mv-quality-btn' + (res === r ? ' active' : '')}
-                          onClick={() => { setRes(r); if (playing) setPlaying(false); setTimeout(() => setPlaying(true), 10) }}>
-                          {r}p
-                        </button>
-                      ))}
-                    </div>
+                  </div>
+
+                  {/* Player source tabs */}
+                  <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.9rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.72rem', color: '#475569', marginRight: '0.25rem' }}>Source:</span>
+                    {imdbId && (
+                      <button onClick={() => { setPlayer('vidsrc'); if (!playing) setPlaying(true) }}
+                        style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.3rem 0.7rem', borderRadius: '8px', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                          background: player === 'vidsrc' ? 'linear-gradient(135deg,#8b5cf6,#6d28d9)' : 'rgba(139,92,246,0.1)',
+                          color: player === 'vidsrc' ? '#fff' : '#a78bfa' }}>
+                        ▶ VidSrc
+                      </button>
+                    )}
+                    <button onClick={() => { setPlayer('direct'); if (!playing) setPlaying(true) }}
+                      style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.3rem 0.7rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', fontFamily: 'inherit',
+                        background: player === 'direct' ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.04)',
+                        color: player === 'direct' ? '#fff' : '#64748b' }}>
+                      ⚡ Direct
+                    </button>
+                    <button onClick={() => { setPlayer('proxy'); if (!playing) setPlaying(true) }}
+                      style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.3rem 0.7rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', fontFamily: 'inherit',
+                        background: player === 'proxy' ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.04)',
+                        color: player === 'proxy' ? '#fff' : '#64748b' }}>
+                      🔀 Proxy
+                    </button>
+                    {(player === 'direct' || player === 'proxy') && (
+                      <div className="mv-quality-tabs" style={{ marginLeft: '0.5rem' }}>
+                        {RESS.map(r => (
+                          <button key={r} className={'mv-quality-btn' + (res === r ? ' active' : '')}
+                            onClick={() => setRes(r)}>
+                            {r}p
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {playing ? (
                     <div className="mv-video-wrap">
-                      {/* ── Option A: direct URL, browser sends no Referer ── */}
-                      {!useProxy && (
-                        <video key={src}
+                      {/* VidSrc embed iframe */}
+                      {player === 'vidsrc' && vsSrc && (
+                        <iframe
+                          key={vsSrc}
+                          src={vsSrc}
                           className="mv-video"
-                          src={src}
+                          allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                          allowFullScreen
+                          referrerPolicy="origin"
+                          style={{ border: 'none' }}
+                        />
+                      )}
+                      {player === 'vidsrc' && !vsSrc && (
+                        <div className="mv-video-placeholder">
+                          <span className="mv-video-placeholder-icon">⚠️</span>
+                          <p style={{ color: '#94a3b8', margin: '0.5rem 0 0' }}>IMDB ID not found for this title</p>
+                        </div>
+                      )}
+                      {/* xcasper direct — Option A, no-referrer */}
+                      {player === 'direct' && (
+                        <video key={xcSrc}
+                          className="mv-video"
+                          src={xcSrc}
                           referrerPolicy="no-referrer"
                           controls autoPlay playsInline preload="metadata"
                         />
                       )}
-                      {/* ── Option B: server proxy with Referer + Range ── */}
-                      {useProxy && (
-                        <video key={src + '-proxy'}
+                      {/* xcasper proxy — Option B, Range-aware */}
+                      {player === 'proxy' && (
+                        <video key={pxSrc}
                           className="mv-video"
-                          src={src}
+                          src={pxSrc}
                           controls autoPlay playsInline preload="metadata"
                         />
                       )}
                     </div>
                   ) : (
-                    <div className="mv-video-wrap mv-video-placeholder"
-                      onClick={() => { setPlaying(true); scrollToPlayer() }}>
-                      <img src={poster} alt="" style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', opacity:0.15 }} />
-                      <div style={{ position:'relative', zIndex:2, textAlign:'center' }}>
-                        <div style={{ width:64, height:64, borderRadius:'50%', background:'rgba(139,92,246,0.85)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 1rem', boxShadow:'0 8px 32px rgba(139,92,246,0.5)' }}>
+                    <div className="mv-video-wrap mv-video-placeholder" onClick={watchNow}
+                      style={{ cursor: 'pointer' }}>
+                      <img src={poster} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.12 }} />
+                      <div style={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
+                        <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(139,92,246,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', boxShadow: '0 8px 32px rgba(139,92,246,0.5)' }}>
                           <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
                         </div>
-                        <span className="mv-video-placeholder-icon" style={{ fontSize:'0.95rem', color:'#94a3b8', display:'block' }}>
-                          {tv ? 'Select an episode or click to play S' + season + 'E' + ep : 'Click to stream in ' + res + 'p'}
+                        <span style={{ fontSize: '0.9rem', color: '#94a3b8' }}>
+                          {tv ? 'Select an episode or click to play S' + se + 'E' + ep : 'Click to stream'}
                         </span>
                       </div>
                     </div>
                   )}
 
-                  {/* Stream info + proxy toggle */}
-                  <div style={{ marginTop:'0.75rem', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:'0.5rem', padding:'0 0.25rem' }}>
-                    <span style={{ fontSize:'0.75rem', color:'#475569' }}>
-                      🔗 xcasper.space · {res}p{tv ? ' · S'+season+' E'+ep : ''} · {useProxy ? 'server proxy' : 'direct stream'}
-                    </span>
-                    <button onClick={toggleProxy}
-                      style={{ fontSize:'0.72rem', color: useProxy ? '#4ade80' : '#a78bfa', background:'rgba(139,92,246,0.08)', border:'1px solid rgba(139,92,246,0.2)', borderRadius:'7px', padding:'0.28rem 0.65rem', cursor:'pointer', fontFamily:'inherit' }}>
-                      {useProxy ? '✓ Using proxy' : 'Not loading? Try proxy'}
-                    </button>
-                  </div>
+                  <p style={{ fontSize: '0.72rem', color: '#334155', margin: '0.6rem 0 0', padding: '0 0.25rem' }}>
+                    {player === 'vidsrc' ? '▶ VidSrc stream' : player === 'direct' ? '⚡ Direct xcasper · ' + res + 'p (no-referrer)' : '🔀 Proxy xcasper · ' + res + 'p'}
+                    {tv ? ' · S' + se + ' E' + ep : ''}
+                    {player === 'vidsrc' && !imdbId && ' · IMDB ID unavailable for this title'}
+                  </p>
                 </div>
 
                 {/* ── Recommendations ── */}
                 {recs.length > 0 && (
-                  <div style={{ marginTop:'2.5rem' }}>
+                  <div style={{ marginTop: '2.5rem' }}>
                     <h4 className="mv-modal-sub">You May Also Like</h4>
                     <div className="mv-grid">
                       {recs.map(r => (
@@ -317,7 +366,6 @@
     const [type,      setType]      = useState('')
     const [selected,  setSelected]  = useState(null)
 
-    /* load trending on mount */
     useEffect(() => {
       (async () => {
         try {
@@ -343,15 +391,15 @@
       setSearching(false)
     }, [query, type])
 
-    const display   = results.length > 0 ? results : trending
-    const isSearch  = results.length > 0
+    const display  = results.length > 0 ? results : trending
+    const isSearch = results.length > 0
 
     return (
       <div className="mv-page">
         {/* ── Hero ── */}
         {hero && (
-          <div className="mv-hero" style={{ cursor:'pointer' }} onClick={() => setSelected(hero)}>
-            <div className="mv-hero-bg" style={{ backgroundImage:'url(' + cover(hero) + ')' }} />
+          <div className="mv-hero" style={{ cursor: 'pointer' }} onClick={() => setSelected(hero)}>
+            <div className="mv-hero-bg" style={{ backgroundImage: 'url(' + cover(hero) + ')' }} />
             <div className="mv-hero-gradient" />
             <div className="mv-hero-content">
               <div className="mv-hero-badge">🔥 Trending Now</div>
@@ -393,10 +441,10 @@
               <span className="mv-section-bar" />
               {isSearch ? 'Results for "' + query + '"' : '🔥 Trending'}
             </h2>
-            <div style={{ display:'flex', gap:'0.5rem', alignItems:'center' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
               {isSearch && (
                 <button onClick={() => { setResults([]); setQuery('') }}
-                  style={{ fontSize:'0.8rem', color:'#a78bfa', background:'none', border:'1px solid rgba(139,92,246,0.3)', borderRadius:'7px', padding:'0.3rem 0.7rem', cursor:'pointer' }}>
+                  style={{ fontSize: '0.8rem', color: '#a78bfa', background: 'none', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '7px', padding: '0.3rem 0.7rem', cursor: 'pointer' }}>
                   ✕ Clear
                 </button>
               )}
