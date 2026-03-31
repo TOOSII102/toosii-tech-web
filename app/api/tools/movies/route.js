@@ -315,26 +315,35 @@ export async function GET(req) {
   }
 
 
-    /* ── BFF stream proxy (xcasper /api/bff/stream) ── */
+    /* ── BFF stream proxy (xcasper /api/bff/stream) — Range-aware ── */
     if (action === 'bff-stream') {
       if (!id || !res) return NextResponse.json({ error: 'Missing id or res' }, { status: 400 })
       try {
-        const streamUrl = `${BASE}/api/bff/stream?subjectId=${encodeURIComponent(id)}&resolution=${encodeURIComponent(res)}`
+        const se = searchParams.get('se') || ''
+        const ep = searchParams.get('ep') || ''
+        let streamUrl = `${BASE}/api/bff/stream?subjectId=${encodeURIComponent(id)}&resolution=${encodeURIComponent(res)}`
+        if (se && ep) streamUrl += `&se=${se}&ep=${ep}`
+
+        const rangeHeader = req.headers.get('range') || ''
         const vidRes = await fetch(streamUrl, {
-          headers: { ...HDRS, 'Accept': '*/*' },
-          signal: AbortSignal.timeout(30000),
+          headers: {
+            'User-Agent': HDRS['User-Agent'],
+            'Referer':    SITE + '/',
+            'Origin':     SITE,
+            'Accept':     '*/*',
+            ...(rangeHeader ? { 'Range': rangeHeader } : {}),
+          },
         })
         if (!vidRes.ok) return NextResponse.json({ error: `Stream returned ${vidRes.status}` }, { status: vidRes.status })
 
-        const ct  = vidRes.headers.get('content-type') || 'video/mp4'
-        const cl  = vidRes.headers.get('content-length')
-        const cr  = vidRes.headers.get('content-range')
         const outH = new Headers()
-        outH.set('Content-Type', ct)
-        outH.set('Cache-Control', 'no-store')
         outH.set('Access-Control-Allow-Origin', '*')
-        if (cl) outH.set('Content-Length', cl)
-        if (cr) outH.set('Content-Range', cr)
+        outH.set('Cache-Control', 'no-store')
+        for (const h of ['content-type', 'content-length', 'content-range', 'accept-ranges']) {
+          const v = vidRes.headers.get(h)
+          if (v) outH.set(h, v)
+        }
+        // Stream body — do NOT buffer into memory
         return new Response(vidRes.body, { status: vidRes.status, headers: outH })
       } catch (e) {
         console.error('[movies:bff-stream]', e.message)
