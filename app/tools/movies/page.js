@@ -280,7 +280,7 @@ function DetailModal({ movie, onClose }) {
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
                   Watch Trailer
                 </button>
-                {(streams.length > 0 || (seasons.length > 0 && imdbId)) && (
+                {(streams.length > 0 || imdbId) && (
                   <button className="mv-modal-watch-btn" onClick={() => { setPlaying(true); setTimeout(() => document.querySelector('.mv-player-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80) }}>
                     ▶ {seasons.length > 0 ? 'Watch Episode 1' : 'Watch Movie'}
                   </button>
@@ -475,7 +475,23 @@ function DetailModal({ movie, onClose }) {
                   {playing ? (
                     <div className="mv-video-wrap">
                       {/* TV series: use VidSrc embed when IMDB ID is available */}
-                      {activeQ ? (
+                      {/* VidSrc embed when imdbId available (movies + TV), else bff-stream direct */}
+                      {imdbId ? (
+                        <iframe
+                          key={seasons.length > 0
+                            ? `vidsrc-tv-${imdbId}-${activeSeason}-${activeEpNum}`
+                            : `vidsrc-mv-${imdbId}`}
+                          src={seasons.length > 0
+                            ? `https://vidsrc.to/embed/tv/${imdbId}/${activeSeason}/${activeEpNum}`
+                            : `https://vidsrc.to/embed/movie/${imdbId}`}
+                          className="mv-video"
+                          allowFullScreen
+                          allow="autoplay; fullscreen; picture-in-picture"
+                          sandbox="allow-scripts allow-same-origin allow-forms allow-fullscreen allow-presentation allow-orientation-lock allow-popups"
+                          style={{ border: 'none' }}
+                          title={d.title}
+                        />
+                      ) : activeQ ? (
                         <video
                           ref={videoRef}
                           key={activeQ.resolutions + '_' + movie.subjectId}
