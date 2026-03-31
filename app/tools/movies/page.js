@@ -191,11 +191,23 @@ function DetailModal({ movie, onClose }) {
         }
 
         // Filter out dummy/broken streams; keep valid resolutions only
-        const st = (pData?.data?.streams || []).filter(s => !s.isEmbed && (+s.resolutions) > 0)
-        const sorted = [...st].sort((a, b) => (+b.resolutions) - (+a.resolutions))
-        setStreams(sorted)
-        // Default active quality = first free (non-VIP) stream
-        const firstFree = sorted.find(s => !s.vip_only) || sorted[0] || null
+        // For movies: use bff-stream endpoint directly; for series: keep existing logic
+        const isTvSeries = seasonList.length > 0
+        let finalStreams = []
+        if (!isTvSeries) {
+          // Build direct bff-stream quality options (proxied server-side for xcasper.space Referer)
+          finalStreams = [360, 480, 720, 1080].map(res => ({
+            resolutions: res,
+            url: '',
+            proxyUrl: `/api/tools/movies?action=bff-stream&id=${encodeURIComponent(id)}&res=${res}`,
+            vip_only: 0,
+          }))
+        } else {
+          const st = (pData?.data?.streams || []).filter(s => !s.isEmbed && (+s.resolutions) > 0)
+          finalStreams = [...st].sort((a, b) => (+b.resolutions) - (+a.resolutions))
+        }
+        setStreams(finalStreams)
+        const firstFree = finalStreams.find(s => !s.vip_only) || finalStreams[0] || null
         if (firstFree) setActiveQ(firstFree)
         setRecs((rData?.data?.subjectList || []).slice(0, 10))
       } catch {}
