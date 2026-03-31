@@ -2,10 +2,11 @@ import { NextResponse } from 'next/server'
 
 const BASE = Buffer.from('aHR0cHM6Ly9tb3ZpZWFwaS54Y2FzcGVyLnNwYWNl', 'base64').toString()
 
+const SITE = 'https://xcasper.space'
 const HDRS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36',
-  'Origin':  BASE,
-  'Referer': BASE + '/',
+  'Origin':  SITE,
+  'Referer': SITE + '/',
   'Accept':  'application/json',
 }
 
@@ -313,7 +314,35 @@ export async function GET(req) {
     }
   }
 
-  /* ── Regular actions ── */
+
+    /* ── BFF stream proxy (xcasper /api/bff/stream) ── */
+    if (action === 'bff-stream') {
+      if (!id || !res) return NextResponse.json({ error: 'Missing id or res' }, { status: 400 })
+      try {
+        const streamUrl = `${BASE}/api/bff/stream?subjectId=${encodeURIComponent(id)}&resolution=${encodeURIComponent(res)}`
+        const vidRes = await fetch(streamUrl, {
+          headers: { ...HDRS, 'Accept': '*/*' },
+          signal: AbortSignal.timeout(30000),
+        })
+        if (!vidRes.ok) return NextResponse.json({ error: `Stream returned ${vidRes.status}` }, { status: vidRes.status })
+
+        const ct  = vidRes.headers.get('content-type') || 'video/mp4'
+        const cl  = vidRes.headers.get('content-length')
+        const cr  = vidRes.headers.get('content-range')
+        const outH = new Headers()
+        outH.set('Content-Type', ct)
+        outH.set('Cache-Control', 'no-store')
+        outH.set('Access-Control-Allow-Origin', '*')
+        if (cl) outH.set('Content-Length', cl)
+        if (cr) outH.set('Content-Range', cr)
+        return new Response(vidRes.body, { status: vidRes.status, headers: outH })
+      } catch (e) {
+        console.error('[movies:bff-stream]', e.message)
+        return NextResponse.json({ error: 'Stream unavailable' }, { status: 502 })
+      }
+    }
+
+    /* ── Regular actions ── */
   try {
     let url
     switch (action) {
