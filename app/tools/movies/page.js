@@ -530,8 +530,8 @@
  
 /* ── Browser-side download: fetches directly from xcasper so no server proxy needed ── */
 function DlButton({ xcSrc, res }) {
-  const [dlState, setDlState] = React.useState('idle') // 'idle' | 'loading' | 'error'
-  const [pct, setPct] = React.useState(0)
+  const [dlState, setDlState] = useState('idle') // 'idle' | 'loading' | 'error'
+  const [pct, setPct] = useState(0)
 
   async function handleDownload() {
     setDlState('loading'); setPct(0)
