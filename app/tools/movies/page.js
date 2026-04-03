@@ -297,15 +297,10 @@
                           <p style={{ color: '#94a3b8', margin: '0.5rem 0 0' }}>IMDB ID not found for this title</p>
                         </div>
                       )}
-                      {/* xcasper direct — Option A, no-referrer */}
-                      {player === 'direct' && (
-                        <video key={xcSrc}
-                          className="mv-video"
-                          src={xcSrc}
-                          referrerPolicy="no-referrer"
-                          controls autoPlay playsInline preload="metadata"
-                        />
-                      )}
+                      {/* xcasper direct — auto-retry on stall/error */}
+                       {player === 'direct' && (
+                         <StableVideo key={xcSrc} src={xcSrc} />
+                       )}
                       {/* xcasper proxy — Option B, Range-aware */}
                       {player === 'proxy' && (
                         <video key={pxSrc}
