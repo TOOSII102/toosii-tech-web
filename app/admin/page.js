@@ -305,9 +305,7 @@
                               Analytics is not yet enabled for this project. Follow these steps:
                             </div>
                             <ol className="ad-va-steps">
-                              <li>Open your <a href="https://vercel.com/dashboard" target="_blank" rel="noopener" className="ad-va-link">Vercel Dashboard</a></li>
-                              <li>Select project <strong>toosii-tech-web</strong></li>
-                              <li>Click the <strong>Analytics</strong> tab in the top nav</li>
+                              <li><a href="https://vercel.com/toosii102/toosii-tech-web/analytics" target="_blank" rel="noopener" className="ad-va-link">Open the Analytics tab ↗</a> on your Vercel project</li>
                               <li>Click <strong>Enable</strong> and confirm</li>
                               <li>Come back here and click <strong>↻ refresh</strong></li>
                             </ol>
