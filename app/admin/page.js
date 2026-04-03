@@ -304,11 +304,19 @@
                             <div className="ad-va-setup-body">
                               Analytics is not yet enabled for this project. Follow these steps:
                             </div>
-                            <ol className="ad-va-steps">
-                              <li><a href="https://vercel.com/toosii102/toosii-tech-web/analytics" target="_blank" rel="noopener" className="ad-va-link">Open the Analytics tab ↗</a> on your Vercel project</li>
-                              <li>Click <strong>Enable</strong> and confirm</li>
-                              <li>Come back here and click <strong>↻ refresh</strong></li>
-                            </ol>
+                            <div style={{ margin: '0.9rem 0 0.5rem' }}>
+                              <a
+                                href="https://vercel.com/toosii102/toosii-tech-web/analytics"
+                                target="_blank"
+                                rel="noopener"
+                                className="ad-va-enable-btn"
+                              >
+                                Enable Vercel Analytics ↗
+                              </a>
+                            </div>
+                            <div className="ad-va-setup-note" style={{ marginTop: '0.6rem' }}>
+                              Click Enable on that page, then come back and hit ↻ refresh.
+                            </div>
                             {!va.debug.hasTeamId && (
                               <div className="ad-va-setup-note">
                                 💡 If your project is under a Vercel team, also add <code>VERCEL_TEAM_ID</code> to environment variables (found in Vercel team settings → General → Team ID).
