@@ -295,12 +295,34 @@
                       </div>
                     ) : va?.debug && (va.debug.statsErr || va.debug.pagesErr) ? (
                       <div className="ad-card ad-va-setup">
-                        <div className="ad-va-setup-icon">⚠️</div>
-                        <div className="ad-va-setup-title">Vercel Analytics returned an error</div>
-                        <div className="ad-va-setup-body">
-                          {va.debug.statsErr || va.debug.pagesErr}
+                        <div className="ad-va-setup-icon">{va.debug.notEnabled ? '📊' : '⚠️'}</div>
+                        <div className="ad-va-setup-title">
+                          {va.debug.notEnabled ? 'Enable Vercel Analytics to see visitor data' : 'Vercel Analytics error'}
                         </div>
-                        <div className="ad-va-setup-note">projectId: {va.debug.projectId} · teamId: {va.debug.hasTeamId ? 'set' : 'not set'}</div>
+                        {va.debug.notEnabled ? (
+                          <>
+                            <div className="ad-va-setup-body">
+                              Analytics is not yet enabled for this project. Follow these steps:
+                            </div>
+                            <ol className="ad-va-steps">
+                              <li>Open your <a href="https://vercel.com/dashboard" target="_blank" rel="noopener" className="ad-va-link">Vercel Dashboard</a></li>
+                              <li>Select project <strong>toosii-tech-web</strong></li>
+                              <li>Click the <strong>Analytics</strong> tab in the top nav</li>
+                              <li>Click <strong>Enable</strong> and confirm</li>
+                              <li>Come back here and click <strong>↻ refresh</strong></li>
+                            </ol>
+                            {!va.debug.hasTeamId && (
+                              <div className="ad-va-setup-note">
+                                💡 If your project is under a Vercel team, also add <code>VERCEL_TEAM_ID</code> to environment variables (found in Vercel team settings → General → Team ID).
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <div className="ad-va-setup-body">{va.debug.statsErr || va.debug.pagesErr}</div>
+                            <div className="ad-va-setup-note">projectId: {va.debug.projectId} · teamId: {va.debug.hasTeamId ? 'set' : 'not set'}</div>
+                          </>
+                        )}
                       </div>
                     ) : null}
 
