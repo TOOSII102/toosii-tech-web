@@ -55,6 +55,13 @@
     return u
   }
 
+  /* Build xcasper download URL */
+  function xcDownload(subjectId, res, se, ep) {
+    let u = API + '?action=download&id=' + encodeURIComponent(subjectId) + '&res=' + res
+    if (se && ep) u += '&se=' + se + '&ep=' + ep
+    return u
+  }
+
   /* ── Skeleton ── */
   function Skeleton() {
     return (
@@ -102,7 +109,7 @@
     const [ep,       setEp]       = useState(1)
     const [res,      setRes]      = useState(720)
     const [playing,  setPlaying]  = useState(false)
-    const [player,   setPlayer]   = useState('vs1') /* 'vs1'|'vs2'|'vs3' | 'direct' | 'proxy' */
+    const [player,   setPlayer]   = useState('proxy') /* 'proxy' | 'direct' | 'vs1'|'vs2'|'vs3' */
     const histRef = useRef(false)
 
     /* scroll lock + back button */
@@ -153,12 +160,12 @@
     }
 
     function watchEp(s, e) {
-      setSe(s); setEp(e); setPlaying(true); setPlayer('vs1')
+      setSe(s); setEp(e); setPlaying(true); setPlayer('proxy')
       scrollToPlayer()
     }
 
     function watchNow() {
-      setPlaying(true); setPlayer('vs1')
+      setPlaying(true); setPlayer('proxy')
       scrollToPlayer()
     }
 
@@ -167,6 +174,7 @@
     const vsSrc   = imdbId ? embedUrl(player, imdbId, tv ? se : null, tv ? ep : null) : null
     const xcSrc  = xcUrl(movie.subjectId, res, tv ? se : '', tv ? ep : '')
     const pxSrc  = xcProxy(movie.subjectId, res, tv ? se : '', tv ? ep : '')
+    const dlSrc  = xcDownload(movie.subjectId, res, tv ? se : '', tv ? ep : '')
 
     return (
       <div className="mv-modal-backdrop" onClick={e => { if (e.target === e.currentTarget) close() }}>
@@ -261,39 +269,47 @@
                   </div>
 
                   {/* Player source tabs */}
-                  <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.9rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.72rem', color: '#475569', marginRight: '0.25rem' }}>Source:</span>
-                    {imdbId && VS_SERVERS.map(srv => (
-                      <button key={srv.id}
-                        onClick={() => { setPlayer(srv.id); if (!playing) setPlaying(true) }}
-                        style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.3rem 0.7rem', borderRadius: '8px', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                          background: player === srv.id ? 'linear-gradient(135deg,#8b5cf6,#6d28d9)' : 'rgba(139,92,246,0.1)',
-                          color: player === srv.id ? '#fff' : '#a78bfa' }}>
-                        ▶ {srv.label}
+                  <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.72rem', color: '#475569', marginRight: '0.25rem' }}>Player:</span>
+                    {[
+                      { id: 'proxy',  label: '▶ Stream',  title: 'Ad-free native player (recommended)' },
+                      { id: 'direct', label: '⚡ Direct',  title: 'Direct xcasper stream' },
+                    ].map(opt => (
+                      <button key={opt.id} title={opt.title}
+                        onClick={() => { setPlayer(opt.id); if (!playing) setPlaying(true) }}
+                        style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.3rem 0.75rem', borderRadius: '8px', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                          background: player === opt.id ? 'linear-gradient(135deg,#25d366,#16a34a)' : 'rgba(37,211,102,0.08)',
+                          color: player === opt.id ? '#fff' : '#4ade80' }}>
+                        {opt.label}
                       </button>
                     ))}
-                    <button onClick={() => { setPlayer('direct'); if (!playing) setPlaying(true) }}
-                      style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.3rem 0.7rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', fontFamily: 'inherit',
-                        background: player === 'direct' ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.04)',
-                        color: player === 'direct' ? '#fff' : '#64748b' }}>
-                      ⚡ Direct
-                    </button>
-                    <button onClick={() => { setPlayer('proxy'); if (!playing) setPlaying(true) }}
-                      style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.3rem 0.7rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', fontFamily: 'inherit',
-                        background: player === 'proxy' ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.04)',
-                        color: player === 'proxy' ? '#fff' : '#64748b' }}>
-                      🔀 Proxy
-                    </button>
-                    {(player === 'direct' || player === 'proxy') && (
-                      <div className="mv-quality-tabs" style={{ marginLeft: '0.5rem' }}>
-                        {RESS.map(r => (
-                          <button key={r} className={'mv-quality-btn' + (res === r ? ' active' : '')}
-                            onClick={() => setRes(r)}>
-                            {r}p
-                          </button>
-                        ))}
-                      </div>
+                    {imdbId && (
+                      <span style={{ fontSize: '0.72rem', color: '#475569', marginLeft: '0.25rem' }}>Backup:</span>
                     )}
+                    {imdbId && VS_SERVERS.map(srv => (
+                      <button key={srv.id} title="Embedded player (may have ads)"
+                        onClick={() => { setPlayer(srv.id); if (!playing) setPlaying(true) }}
+                        style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.3rem 0.7rem', borderRadius: '8px', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                          background: player === srv.id ? 'rgba(139,92,246,0.8)' : 'rgba(139,92,246,0.08)',
+                          color: player === srv.id ? '#fff' : '#a78bfa' }}>
+                        {srv.label}
+                      </button>
+                    ))}
+                  </div>
+                  {/* Quality + Download row */}
+                  <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.9rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.72rem', color: '#475569', marginRight: '0.25rem' }}>Quality:</span>
+                    {RESS.map(r => (
+                      <button key={r} className={'mv-quality-btn' + (res === r ? ' active' : '')}
+                        onClick={() => setRes(r)}>
+                        {r}p
+                      </button>
+                    ))}
+                    <a href={dlSrc} download
+                      style={{ marginLeft: 'auto', fontSize: '0.75rem', fontWeight: 700, padding: '0.3rem 0.85rem', borderRadius: '8px', border: '1px solid rgba(37,211,102,0.3)', cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                        background: 'rgba(37,211,102,0.08)', color: '#4ade80' }}>
+                      ⬇ Download {res}p
+                    </a>
                   </div>
 
                   {playing ? (
