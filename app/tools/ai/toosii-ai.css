@@ -738,3 +738,8 @@
   white-space: nowrap;
   max-width: 200px;
 }
+
+
+/* ── Hide global floating BuyCoffee button on AI page ── */
+body:has(.tai) .bc-fab,
+body:has(.tai) .bc-overlay { display: none !important; }
