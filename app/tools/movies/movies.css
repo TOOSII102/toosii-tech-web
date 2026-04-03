@@ -962,3 +962,151 @@
     box-shadow: 0 0 0 2px hsla(24,80%,60%,.4);
   }
   
+
+/* ── Episode Panel (below player) ─────────────────────────────────── */
+.mv-eps-panel {
+  margin-top: 1.75rem;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.mv-eps-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-wrap: wrap;
+}
+
+.mv-eps-title {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.mv-eps-seasons {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.mv-eps-season-btn {
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.mv-eps-season-btn.active {
+  background: rgba(37,211,102,0.15);
+  border-color: rgba(37,211,102,0.4);
+  color: #4ade80;
+}
+.mv-eps-season-btn:hover:not(.active) {
+  border-color: rgba(255,255,255,0.2);
+  color: #94a3b8;
+}
+
+.mv-eps-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.mv-eps-now {
+  font-size: 0.72rem;
+  color: #475569;
+  font-weight: 600;
+  margin-right: 0.2rem;
+  font-family: monospace;
+}
+
+.mv-eps-nav-btn {
+  padding: 0.3rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.mv-eps-nav-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  border-color: rgba(255,255,255,0.2);
+}
+.mv-eps-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.mv-eps-next {
+  background: rgba(37,211,102,0.12);
+  border-color: rgba(37,211,102,0.25);
+  color: #4ade80;
+}
+.mv-eps-next:hover:not(:disabled) {
+  background: rgba(37,211,102,0.22);
+  border-color: rgba(37,211,102,0.5);
+  color: #fff;
+}
+
+/* Horizontal scrollable episode strip */
+.mv-eps-strip {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.08) transparent;
+  padding: 0.5rem 0.75rem 0.65rem;
+}
+.mv-eps-strip::-webkit-scrollbar { height: 3px; }
+.mv-eps-strip::-webkit-scrollbar-track { background: transparent; }
+.mv-eps-strip::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 99px; }
+
+.mv-eps-ep {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  min-width: 64px;
+  padding: 0.55rem 0.5rem;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.mv-eps-ep:hover { background: rgba(255,255,255,0.05); }
+.mv-eps-ep.active {
+  background: rgba(37,211,102,0.12);
+}
+.mv-eps-ep.active .mv-eps-ep-num {
+  color: #4ade80;
+}
+
+.mv-eps-ep-num {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #e2e8f0;
+  line-height: 1;
+}
+.mv-eps-ep-label {
+  font-size: 0.62rem;
+  color: #475569;
+  white-space: nowrap;
+}
