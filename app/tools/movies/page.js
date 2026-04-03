@@ -274,11 +274,19 @@
                         {r}p
                       </button>
                     ))}
-                    <a href={dlSrc} download={`movie-${res}p.mp4`}
-                      style={{ marginLeft: 'auto', fontSize: '0.75rem', fontWeight: 700, padding: '0.3rem 0.85rem', borderRadius: '8px', border: '1px solid rgba(37,211,102,0.3)', cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-                        background: 'rgba(37,211,102,0.08)', color: '#4ade80' }}>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const check = await fetch(dlSrc, { method: 'HEAD' })
+                          if (!check.ok) { alert('Download unavailable — stream source is currently down. Try again later.'); return }
+                        } catch { alert('Download unavailable — stream source is currently down. Try again later.'); return }
+                        const a = document.createElement('a')
+                        a.href = dlSrc; a.download = `movie-${res}p.mp4`
+                        document.body.appendChild(a); a.click(); document.body.removeChild(a)
+                      }}
+                      style={{ marginLeft: 'auto', fontSize: '0.75rem', fontWeight: 700, padding: '0.3rem 0.85rem', borderRadius: '8px', border: '1px solid rgba(37,211,102,0.3)', cursor: 'pointer', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(37,211,102,0.08)', color: '#4ade80' }}>
                       ⬇ Download {res}p
-                    </a>
+                    </button>
                   </div>
 
                   {playing ? (
