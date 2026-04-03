@@ -226,38 +226,7 @@
               <>
                 {d.description && <p className="mv-modal-desc">{d.description}</p>}
 
-                {/* ── Episode picker (TV) ── */}
-                {tv && seasons.length > 0 && (
-                  <div className="mv-episodes-section">
-                    <div className="mv-season-head">
-                      <h4 className="mv-modal-sub" style={{ margin: 0 }}>
-                        Episodes{playing ? ' — S' + se + ' E' + ep : ''}
-                      </h4>
-                      {seasons.length > 1 && (
-                        <div className="mv-season-tabs">
-                          {seasons.map(s => (
-                            <button key={s}
-                              className={'mv-season-tab' + (se === s ? ' active' : '')}
-                              onClick={() => { setSe(s); setEp(1) }}>
-                              S{s}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div className={'mv-season-group mv-sc-' + ((se - 1) % 7)}>
-                      <div className="mv-ep-grid">
-                        {Array.from({ length: EP_PER }, (_, i) => i + 1).map(e => (
-                          <button key={e}
-                            className={'mv-ep-btn' + (playing && se === se && ep === e ? ' active' : '')}
-                            onClick={() => watchEp(se, e)}>
-                            <span className="mv-ep-num">E{e}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
+
 
                 {/* ── Player ── */}
                 <div className="mv-player-section">
@@ -371,6 +340,57 @@
                     {VS_SERVERS.some(s => s.id === player) && !imdbId && ' · IMDB ID unavailable for this title'}
                   </p>
                 </div>
+
+                {/* ── Episodes (below player) ── */}
+                {tv && seasons.length > 0 && (
+                  <div className="mv-eps-panel">
+                    {/* Header row: title + season tabs + prev/next */}
+                    <div className="mv-eps-head">
+                      <div className="mv-eps-title">
+                        <span className="mv-player-dot" />
+                        Season
+                        <div className="mv-eps-seasons">
+                          {seasons.map(s => (
+                            <button key={s}
+                              className={'mv-eps-season-btn' + (se === s ? ' active' : '')}
+                              onClick={() => { setSe(s); setEp(1) }}>
+                              S{s}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="mv-eps-nav">
+                        <span className="mv-eps-now">S{se} · E{ep}</span>
+                        <button className="mv-eps-nav-btn"
+                          disabled={ep <= 1 && se <= seasons[0]}
+                          onClick={() => {
+                            if (ep > 1) { const next = ep - 1; setEp(next); watchEp(se, next) }
+                            else if (se > seasons[0]) { const ps = seasons[seasons.indexOf(se) - 1]; setSe(ps); setEp(EP_PER); watchEp(ps, EP_PER) }
+                          }}>
+                          ← Prev
+                        </button>
+                        <button className="mv-eps-nav-btn mv-eps-next"
+                          onClick={() => {
+                            if (ep < EP_PER) { const next = ep + 1; setEp(next); watchEp(se, next) }
+                            else { const idx = seasons.indexOf(se); if (idx < seasons.length - 1) { const ns = seasons[idx + 1]; setSe(ns); setEp(1); watchEp(ns, 1) } }
+                          }}>
+                          Next →
+                        </button>
+                      </div>
+                    </div>
+                    {/* Scrollable episode strip */}
+                    <div className="mv-eps-strip">
+                      {Array.from({ length: EP_PER }, (_, i) => i + 1).map(e => (
+                        <button key={e}
+                          className={'mv-eps-ep' + (ep === e && playing ? ' active' : '')}
+                          onClick={() => watchEp(se, e)}>
+                          <span className="mv-eps-ep-num">E{e}</span>
+                          <span className="mv-eps-ep-label">Episode {e}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* ── Recommendations ── */}
                 {recs.length > 0 && (
