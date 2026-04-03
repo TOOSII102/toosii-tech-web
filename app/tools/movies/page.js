@@ -272,8 +272,8 @@
                   <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
                     <span style={{ fontSize: '0.72rem', color: '#475569', marginRight: '0.25rem' }}>Player:</span>
                     {[
-                      { id: 'proxy',  label: '▶ Stream',  title: 'Ad-free native player (recommended)' },
                       { id: 'direct', label: '⚡ Direct',  title: 'Direct xcasper stream' },
+                      { id: 'proxy',  label: '▶ Stream',  title: 'Ad-free native player (recommended)' },
                     ].map(opt => (
                       <button key={opt.id} title={opt.title}
                         onClick={() => { setPlayer(opt.id); if (!playing) setPlaying(true) }}
