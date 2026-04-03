@@ -109,7 +109,7 @@
     const [ep,       setEp]       = useState(1)
     const [res,      setRes]      = useState(720)
     const [playing,  setPlaying]  = useState(false)
-    const [player,   setPlayer]   = useState('proxy') /* 'proxy' | 'direct' | 'vs1'|'vs2'|'vs3' */
+    const [player,   setPlayer]   = useState('direct') /* 'direct' | 'proxy' | 'vs1'|'vs2'|'vs3' */
     const histRef = useRef(false)
 
     /* scroll lock + back button */
@@ -160,12 +160,12 @@
     }
 
     function watchEp(s, e) {
-      setSe(s); setEp(e); setPlaying(true); setPlayer('proxy')
+      setSe(s); setEp(e); setPlaying(true); setPlayer('direct')
       scrollToPlayer()
     }
 
     function watchNow() {
-      setPlaying(true); setPlayer('proxy')
+      setPlaying(true); setPlayer('direct')
       scrollToPlayer()
     }
 
@@ -174,7 +174,6 @@
     const vsSrc   = imdbId ? embedUrl(player, imdbId, tv ? se : null, tv ? ep : null) : null
     const xcSrc  = xcUrl(movie.subjectId, res, tv ? se : '', tv ? ep : '')
     const pxSrc  = xcProxy(movie.subjectId, res, tv ? se : '', tv ? ep : '')
-    const dlSrc  = xcDownload(movie.subjectId, res, tv ? se : '', tv ? ep : '')
 
     return (
       <div className="mv-modal-backdrop" onClick={e => { if (e.target === e.currentTarget) close() }}>
@@ -274,7 +273,7 @@
                         {r}p
                       </button>
                     ))}
-                    <a href={dlSrc} download
+                    <a href={xcSrc} target="_blank" rel="noopener noreferrer"
                       style={{ marginLeft: 'auto', fontSize: '0.75rem', fontWeight: 700, padding: '0.3rem 0.85rem', borderRadius: '8px', border: '1px solid rgba(37,211,102,0.3)', cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
                         background: 'rgba(37,211,102,0.08)', color: '#4ade80' }}>
                       ⬇ Download {res}p
