@@ -528,6 +528,65 @@
     )
   }
  
+/* ── StableVideo: auto-resumes xcasper stream on stall or error ── */
+function StableVideo({ src }) {
+  const videoRef = useRef(null)
+  const retryRef = useRef(null)
+  const stallRef = useRef(null)
+  const retryCount = useRef(0)
+
+  function scheduleRetry(delay = 2000) {
+    clearTimeout(retryRef.current)
+    retryRef.current = setTimeout(() => {
+      const v = videoRef.current
+      if (!v) return
+      const t = v.currentTime
+      v.load()
+      v.currentTime = t
+      v.play().catch(() => {})
+      retryCount.current++
+    }, delay)
+  }
+
+  function handleStall() {
+    clearTimeout(stallRef.current)
+    stallRef.current = setTimeout(() => {
+      const v = videoRef.current
+      if (!v || v.paused) return
+      scheduleRetry(1500)
+    }, 5000) // wait 5s of stall before retry
+  }
+
+  function handleError() {
+    if (retryCount.current < 5) scheduleRetry(2000)
+  }
+
+  function handlePlaying() {
+    retryCount.current = 0
+    clearTimeout(retryRef.current)
+    clearTimeout(stallRef.current)
+  }
+
+  useEffect(() => () => {
+    clearTimeout(retryRef.current); clearTimeout(stallRef.current)
+  }, [src])
+
+  return (
+    <video
+      ref={videoRef}
+      className="mv-video"
+      src={src}
+      referrerPolicy="no-referrer"
+      controls autoPlay playsInline preload="auto"
+      onError={handleError}
+      onStalled={handleStall}
+      onWaiting={handleStall}
+      onPlaying={handlePlaying}
+    />
+  )
+}
+
+
 /* ── Browser-side download: fetches directly from xcasper so no server proxy needed ── */
 function DlButton({ xcSrc, res }) {
   const [dlState, setDlState] = useState('idle') // 'idle' | 'loading' | 'error'
