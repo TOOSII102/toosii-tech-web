@@ -293,28 +293,21 @@
                         </div>
                         {va?.missing && <div className="ad-va-setup-note">Missing env var: <code>{va.missing}</code></div>}
                       </div>
-                    ) : va?.debug && (va.debug.statsErr || va.debug.pagesErr) ? (
+                    ) : va?.debug && !va.debug.notEnabled && (va.debug.statsErr || va.debug.pagesErr) ? (
                       <div className="ad-card ad-va-setup">
                         {va.debug.tokenMismatch ? (
                           <>
                             <div className="ad-va-setup-icon">🔑</div>
                             <div className="ad-va-setup-title">VERCEL_TOKEN doesn't match this project</div>
                             <div className="ad-va-setup-body">
-                              The token in your environment variables belongs to a different Vercel account than the one that owns this project (<code>{va.debug.projectId}</code>).
+                              The token belongs to a different Vercel account than this project (<code>{va.debug.projectId}</code>).
                             </div>
                             <ol className="ad-va-steps">
                               <li>Go to <a href="https://vercel.com/account/tokens" target="_blank" rel="noopener" className="ad-va-link">vercel.com/account/tokens ↗</a></li>
-                              <li>Create a new token while logged in as the account that owns the project</li>
+                              <li>Create a new token logged in as the project owner</li>
                               <li>Update <code>VERCEL_TOKEN</code> in Vercel → Project Settings → Environment Variables</li>
-                              <li>Redeploy, then refresh this page</li>
+                              <li>Redeploy, then refresh</li>
                             </ol>
-                          </>
-                        ) : va.debug.notEnabled ? (
-                          <>
-                            <div className="ad-va-setup-icon">📊</div>
-                            <div className="ad-va-setup-title">Enable Vercel Analytics to see visitor data</div>
-                            <div className="ad-va-setup-body">Analytics is enabled in your dashboard but the API still returns not found. Wait 1–2 minutes for it to activate, then hit ↻ refresh.</div>
-                            <div className="ad-va-setup-note" style={{ marginTop:'0.5rem' }}>projectId: <code>{va.debug.projectId}</code> · teamId: {va.debug.hasTeamId ? 'set' : 'not set'}</div>
                           </>
                         ) : (
                           <>
