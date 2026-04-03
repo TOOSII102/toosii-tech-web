@@ -274,19 +274,7 @@
                         {r}p
                       </button>
                     ))}
-                    <button
-                      onClick={async () => {
-                        try {
-                          const check = await fetch(dlSrc, { method: 'HEAD' })
-                          if (!check.ok) { alert('Download unavailable — stream source is currently down. Try again later.'); return }
-                        } catch { alert('Download unavailable — stream source is currently down. Try again later.'); return }
-                        const a = document.createElement('a')
-                        a.href = dlSrc; a.download = `movie-${res}p.mp4`
-                        document.body.appendChild(a); a.click(); document.body.removeChild(a)
-                      }}
-                      style={{ marginLeft: 'auto', fontSize: '0.75rem', fontWeight: 700, padding: '0.3rem 0.85rem', borderRadius: '8px', border: '1px solid rgba(37,211,102,0.3)', cursor: 'pointer', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(37,211,102,0.08)', color: '#4ade80' }}>
-                      ⬇ Download {res}p
-                    </button>
+                    <DlButton xcSrc={xcSrc} res={res} />
                   </div>
 
                   {playing ? (
@@ -539,4 +527,69 @@
       </div>
     )
   }
-  
+ 
+/* ── Browser-side download: fetches directly from xcasper so no server proxy needed ── */
+function DlButton({ xcSrc, res }) {
+  const [dlState, setDlState] = React.useState('idle') // 'idle' | 'loading' | 'error'
+  const [pct, setPct] = React.useState(0)
+
+  async function handleDownload() {
+    setDlState('loading'); setPct(0)
+    try {
+      const resp = await fetch(xcSrc, {
+        headers: { Accept: 'video/mp4,video/*,*/*', 'Referer': 'https://xcasper.space/' },
+      })
+      if (!resp.ok) throw new Error('Source returned ' + resp.status + '. It may be temporarily down.')
+
+      const contentType = resp.headers.get('content-type') || ''
+      if (!contentType.includes('video') && !contentType.includes('octet-stream')) {
+        throw new Error('Stream provider is currently down. Try again later.')
+      }
+
+      const total = parseInt(resp.headers.get('content-length') || '0', 10)
+      const reader = resp.body.getReader()
+      const chunks = []
+      let loaded = 0
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        chunks.push(value)
+        loaded += value.length
+        if (total) setPct(Math.round((loaded / total) * 100))
+      }
+      const blob = new Blob(chunks, { type: 'video/mp4' })
+      const url  = URL.createObjectURL(blob)
+      const a    = document.createElement('a')
+      a.href = url; a.download = `movie-${res}p.mp4`
+      document.body.appendChild(a); a.click()
+      document.body.removeChild(a)
+      setTimeout(() => URL.revokeObjectURL(url), 10000)
+      setDlState('idle'); setPct(0)
+    } catch (err) {
+      setDlState('error')
+      setTimeout(() => setDlState('idle'), 4000)
+    }
+  }
+
+  const label = dlState === 'loading'
+    ? (pct > 0 ? `⬇ ${pct}%` : '⬇ …')
+    : dlState === 'error'
+    ? '✕ Unavailable'
+    : `⬇ Download ${res}p`
+
+  const borderColor = dlState === 'error' ? 'rgba(239,68,68,0.4)' : 'rgba(37,211,102,0.3)'
+  const bgColor     = dlState === 'error' ? 'rgba(239,68,68,0.1)' : 'rgba(37,211,102,0.08)'
+  const txtColor    = dlState === 'error' ? '#f87171' : '#4ade80'
+
+  return (
+    <button onClick={handleDownload} disabled={dlState === 'loading'}
+      style={{ marginLeft: 'auto', fontSize: '0.75rem', fontWeight: 700, padding: '0.3rem 0.85rem',
+        borderRadius: '8px', border: '1px solid ' + borderColor, cursor: dlState === 'loading' ? 'wait' : 'pointer',
+        fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+        background: bgColor, color: txtColor, transition: 'all 0.2s', minWidth: '7rem', justifyContent: 'center' }}>
+      {label}
+    </button>
+  )
+}
+
+ 
