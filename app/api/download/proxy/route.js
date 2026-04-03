@@ -9,6 +9,7 @@ export async function GET(request) {
     return NextResponse.json({ error: 'Missing url' }, { status: 400 })
   }
 
+  try {
     const isXcasper = fileUrl.includes('xcasper.space')
     const xcasperHdrs = isXcasper ? { 'Referer': 'https://xcasper.space/', 'Origin': 'https://xcasper.space' } : {}
     const res = await fetch(fileUrl, {
