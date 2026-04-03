@@ -748,3 +748,21 @@
     font-size: 0.75rem;
   }
   
+
+
+  .ad-va-steps {
+    margin: 0.75rem 0 0.5rem 1.1rem;
+    padding: 0;
+    color: var(--text);
+    font-size: 0.85rem;
+    line-height: 1.7;
+  }
+  .ad-va-steps li { margin-bottom: 0.15rem; }
+  .ad-va-steps strong { color: #fff; }
+
+  .ad-va-link {
+    color: var(--green);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .ad-va-link:hover { text-decoration: underline; }
