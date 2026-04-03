@@ -54,18 +54,34 @@ import { NextResponse } from 'next/server'
           headers: { 'User-Agent': UA, 'Referer': SITE + '/', 'Origin': SITE, 'Accept': '*/*' },
           signal: AbortSignal.timeout(60000),
         })
+        // Guard: make sure xcasper returned a real video, not an error page
+        if (!upstream.ok) {
+          return NextResponse.json(
+            { error: 'Stream source is currently unavailable (status ' + upstream.status + '). Please try again later.' },
+            { status: 502 }
+          )
+        }
+        const ct = upstream.headers.get('content-type') || ''
+        if (!ct.includes('video') && !ct.includes('octet-stream') && !ct.includes('mp4')) {
+          return NextResponse.json(
+            { error: 'Source did not return a video file. The stream provider may be temporarily down.' },
+            { status: 502 }
+          )
+        }
         const filename = 'movie-' + res + 'p.mp4'
         const out = new Headers({
           'Content-Disposition': 'attachment; filename="' + filename + '"',
-          'Content-Type':        upstream.headers.get('content-type') || 'video/mp4',
+          'Content-Type':        ct || 'video/mp4',
           'Cache-Control':       'no-store',
         })
         const cl = upstream.headers.get('content-length')
         if (cl) out.set('Content-Length', cl)
-        // Stream body directly — data flows immediately, no buffering
         return new Response(upstream.body, { status: 200, headers: out })
       } catch (e) {
-        return NextResponse.json({ error: e.message }, { status: 502 })
+        return NextResponse.json(
+          { error: 'Download failed: ' + e.message + '. The stream provider may be temporarily down.' },
+          { status: 502 }
+        )
       }
     }
 
