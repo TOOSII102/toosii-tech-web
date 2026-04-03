@@ -274,6 +274,13 @@
                         {r}p
                       </button>
                     ))}
+                    <a href={xcSrc} target="_blank" rel="noopener noreferrer"
+                      style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.3rem 0.85rem',
+                        borderRadius: '8px', border: '1px solid rgba(255,255,255,0.12)', cursor: 'pointer',
+                        fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                        background: 'rgba(255,255,255,0.05)', color: '#94a3b8', textDecoration: 'none' }}>
+                      ↗ Open in browser
+                    </a>
                     <DlButton xcSrc={xcSrc} res={res} />
                   </div>
 
