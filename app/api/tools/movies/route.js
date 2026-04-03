@@ -44,13 +44,29 @@ import { NextResponse } from 'next/server'
       }
     }
 
-    /* ── Download: redirect browser directly to xcasper (no Vercel proxy timeout) ── */
+    /* ── Download: stream proxy with Content-Disposition so browser saves file ── */
     if (action === 'download') {
       if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
       let url = BASE + '/api/bff/stream?subjectId=' + encodeURIComponent(id) + '&resolution=' + res
       if (se && ep) url += '&se=' + se + '&ep=' + ep
-      // 302 redirect — browser fetches file directly from xcasper, page stays open
-      return NextResponse.redirect(url, { status: 302 })
+      try {
+        const upstream = await fetch(url, {
+          headers: { 'User-Agent': UA, 'Referer': SITE + '/', 'Origin': SITE, 'Accept': '*/*' },
+          signal: AbortSignal.timeout(60000),
+        })
+        const filename = 'movie-' + res + 'p.mp4'
+        const out = new Headers({
+          'Content-Disposition': 'attachment; filename="' + filename + '"',
+          'Content-Type':        upstream.headers.get('content-type') || 'video/mp4',
+          'Cache-Control':       'no-store',
+        })
+        const cl = upstream.headers.get('content-length')
+        if (cl) out.set('Content-Length', cl)
+        // Stream body directly — data flows immediately, no buffering
+        return new Response(upstream.body, { status: 200, headers: out })
+      } catch (e) {
+        return NextResponse.json({ error: e.message }, { status: 502 })
+      }
     }
 
     /* ── Play: resolve imdb_id via ShowBox + return stream info ── */
