@@ -295,36 +295,31 @@
                       </div>
                     ) : va?.debug && (va.debug.statsErr || va.debug.pagesErr) ? (
                       <div className="ad-card ad-va-setup">
-                        <div className="ad-va-setup-icon">{va.debug.notEnabled ? '📊' : '⚠️'}</div>
-                        <div className="ad-va-setup-title">
-                          {va.debug.notEnabled ? 'Enable Vercel Analytics to see visitor data' : 'Vercel Analytics error'}
-                        </div>
-                        {va.debug.notEnabled ? (
+                        {va.debug.tokenMismatch ? (
                           <>
+                            <div className="ad-va-setup-icon">🔑</div>
+                            <div className="ad-va-setup-title">VERCEL_TOKEN doesn't match this project</div>
                             <div className="ad-va-setup-body">
-                              Analytics is not yet enabled for this project. Follow these steps:
+                              The token in your environment variables belongs to a different Vercel account than the one that owns this project (<code>{va.debug.projectId}</code>).
                             </div>
-                            <div style={{ margin: '0.9rem 0 0.5rem' }}>
-                              <a
-                                href="https://vercel.com/toosii102/toosii-tech-web/analytics"
-                                target="_blank"
-                                rel="noopener"
-                                className="ad-va-enable-btn"
-                              >
-                                Enable Vercel Analytics ↗
-                              </a>
-                            </div>
-                            <div className="ad-va-setup-note" style={{ marginTop: '0.6rem' }}>
-                              Click Enable on that page, then come back and hit ↻ refresh.
-                            </div>
-                            {!va.debug.hasTeamId && (
-                              <div className="ad-va-setup-note">
-                                💡 If your project is under a Vercel team, also add <code>VERCEL_TEAM_ID</code> to environment variables (found in Vercel team settings → General → Team ID).
-                              </div>
-                            )}
+                            <ol className="ad-va-steps">
+                              <li>Go to <a href="https://vercel.com/account/tokens" target="_blank" rel="noopener" className="ad-va-link">vercel.com/account/tokens ↗</a></li>
+                              <li>Create a new token while logged in as the account that owns the project</li>
+                              <li>Update <code>VERCEL_TOKEN</code> in Vercel → Project Settings → Environment Variables</li>
+                              <li>Redeploy, then refresh this page</li>
+                            </ol>
+                          </>
+                        ) : va.debug.notEnabled ? (
+                          <>
+                            <div className="ad-va-setup-icon">📊</div>
+                            <div className="ad-va-setup-title">Enable Vercel Analytics to see visitor data</div>
+                            <div className="ad-va-setup-body">Analytics is enabled in your dashboard but the API still returns not found. Wait 1–2 minutes for it to activate, then hit ↻ refresh.</div>
+                            <div className="ad-va-setup-note" style={{ marginTop:'0.5rem' }}>projectId: <code>{va.debug.projectId}</code> · teamId: {va.debug.hasTeamId ? 'set' : 'not set'}</div>
                           </>
                         ) : (
                           <>
+                            <div className="ad-va-setup-icon">⚠️</div>
+                            <div className="ad-va-setup-title">Vercel Analytics error</div>
                             <div className="ad-va-setup-body">{va.debug.statsErr || va.debug.pagesErr}</div>
                             <div className="ad-va-setup-note">projectId: {va.debug.projectId} · teamId: {va.debug.hasTeamId ? 'set' : 'not set'}</div>
                           </>
