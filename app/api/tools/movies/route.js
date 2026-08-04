@@ -3,23 +3,29 @@ import { NextResponse } from 'next/server'
 const BASE = 'https://movieapi.xcasper.space'
 const SITE = 'https://xcasper.space'
 
-/* Full browser headers — mirrors StreamVault proxy pattern to bypass bot detection */
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+
 const BROWSER_HDRS = {
-  'User-Agent':        UA,
-  'Referer':           SITE + '/',
-  'Origin':            SITE,
-  'Accept-Language':   'en-US,en;q=0.9',
-  'Accept-Encoding':   'identity',
-  'Connection':        'keep-alive',
-  'Sec-Fetch-Dest':    'video',
-  'Sec-Fetch-Mode':    'no-cors',
-  'Sec-Fetch-Site':    'same-origin',
-  'Sec-Ch-Ua':         '"Not_A Brand";v="8", "Chromium";v="122", "Google Chrome";v="122"',
-  'Sec-Ch-Ua-Mobile':  '?0',
-  'Sec-Ch-Ua-Platform':'"Windows"',
+  'User-Agent':         UA,
+  'Referer':            SITE + '/',
+  'Origin':             SITE,
+  'Accept-Language':    'en-US,en;q=0.9',
+  'Accept-Encoding':    'identity',
+  'Connection':         'keep-alive',
+  'Sec-Fetch-Dest':     'video',
+  'Sec-Fetch-Mode':     'no-cors',
+  'Sec-Fetch-Site':     'same-origin',
+  'Sec-Ch-Ua':          '"Not_A Brand";v="8", "Chromium";v="122", "Google Chrome";v="122"',
+  'Sec-Ch-Ua-Mobile':   '?0',
+  'Sec-Ch-Ua-Platform': '"Windows"',
 }
-const JSON_HDRS = { ...BROWSER_HDRS, 'Accept': 'application/json', 'Sec-Fetch-Dest': 'empty', 'Sec-Fetch-Mode': 'cors' }
+
+const JSON_HDRS = {
+  ...BROWSER_HDRS,
+  'Accept':         'application/json',
+  'Sec-Fetch-Dest': 'empty',
+  'Sec-Fetch-Mode': 'cors',
+}
 
 async function xc(path) {
   const r = await fetch(BASE + path, { headers: JSON_HDRS, signal: AbortSignal.timeout(12000) })
@@ -61,7 +67,7 @@ export async function GET(req) {
         'Access-Control-Allow-Origin': '*',
         'Cache-Control': 'public, max-age=3600',
       })
-      for (const h of ['content-type','content-length','content-range','accept-ranges']) {
+      for (const h of ['content-type', 'content-length', 'content-range', 'accept-ranges']) {
         const v = upstream.headers.get(h)
         if (v) out.set(h, v)
       }
@@ -102,10 +108,7 @@ export async function GET(req) {
       if (cl) out.set('Content-Length', cl)
       return new Response(upstream.body, { status: 200, headers: out })
     } catch (e) {
-      return NextResponse.json(
-        { error: 'Download failed: ' + e.message },
-        { status: 502 }
-      )
+      return NextResponse.json({ error: 'Download failed: ' + e.message }, { status: 502 })
     }
   }
 
@@ -118,22 +121,32 @@ export async function GET(req) {
       const isTV   = (d.subjectType || 1) === 2
       const title  = (d.title || '').replace(/\s*S\d.*/i, '').trim()
       const sbType = isTV ? 'tv' : 'movie'
+
       const sbSearch = await fetch(
         BASE + '/api/showbox/search?keyword=' + encodeURIComponent(title) + '&type=' + sbType,
         { headers: JSON_HDRS, signal: AbortSignal.timeout(10000) }
       ).then(r => r.json())
+
       const sbItem = sbSearch?.data?.[0]
       let imdbId = null, seasons = []
+
       if (sbItem) {
         if (!isTV) {
-          const m = await fetch(BASE + '/api/showbox/movie?id=' + sbItem.id, { headers: JSON_HDRS, signal: AbortSignal.timeout(10000) }).then(r => r.json())
+          const m = await fetch(
+            BASE + '/api/showbox/movie?id=' + sbItem.id,
+            { headers: JSON_HDRS, signal: AbortSignal.timeout(10000) }
+          ).then(r => r.json())
           imdbId = m?.data?.imdb_id || null
         } else {
-          const t = await fetch(BASE + '/api/showbox/tv?id=' + sbItem.id + '&season=1&episode=1', { headers: JSON_HDRS, signal: AbortSignal.timeout(10000) }).then(r => r.json())
+          const t = await fetch(
+            BASE + '/api/showbox/tv?id=' + sbItem.id + '&season=1&episode=1',
+            { headers: JSON_HDRS, signal: AbortSignal.timeout(10000) }
+          ).then(r => r.json())
           imdbId  = t?.data?.imdb_id || null
           seasons = Array.isArray(t?.data?.season) ? t.data.season : [1]
         }
       }
+
       return NextResponse.json({ data: { isTV, imdbId, seasons } })
     } catch (e) {
       return NextResponse.json({ error: e.message }, { status: 502 })
@@ -148,7 +161,7 @@ export async function GET(req) {
       case 'search':    return NextResponse.json(await xc('/api/search?keyword=' + encodeURIComponent(q) + (type ? '&type=' + type : '')))
       case 'detail':    return NextResponse.json(await xc('/api/rich-detail?subjectId=' + encodeURIComponent(id)))
       case 'recommend': return NextResponse.json(await xc('/api/recommend?subjectId=' + encodeURIComponent(id) + '&page=1&perPage=12'))
-      default: return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
+      default:          return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
     }
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 502 })
