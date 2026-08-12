@@ -262,7 +262,10 @@ export default function ApiPortal() {
             <div className="api-workspace">
               <aside className="api-sidebar" aria-label="Endpoint navigation">
                 <div className="api-sidebar-top">
-                  <div className="api-sidebar-title">Endpoint catalogue</div>
+                  <div className="api-sidebar-title-row">
+                    <div className="api-sidebar-title">Endpoint catalogue</div>
+                    <span>{visibleEndpoints.length} routes</span>
+                  </div>
                   <label className="api-endpoint-filter">
                     <span className="sr-only">Filter endpoints</span>
                     <input
@@ -274,6 +277,12 @@ export default function ApiPortal() {
                     />
                     {filter && <button type="button" onClick={() => setFilter('')} aria-label="Clear endpoint filter">×</button>}
                   </label>
+                  <div className="api-base-control">
+                    <span>Base URL</span>
+                    <code>/api/v1</code>
+                    <button type="button" onClick={() => copy('/api/v1', 'Base URL copied')}>Copy</button>
+                  </div>
+                  <p className="api-sidebar-status" role="status">{copied || 'No key required'}</p>
                 </div>
                 <div className="api-nav-groups">
                   {categories.map(category => {
@@ -289,9 +298,15 @@ export default function ApiPortal() {
                               key={endpoint.id}
                               onClick={() => selectEndpoint(endpoint)}
                               className={`api-endpoint-nav${active.id === endpoint.id ? ' active' : ''}`}
+                              aria-pressed={active.id === endpoint.id}
                             >
-                              <span>GET</span>
-                              <span>{endpoint.title}</span>
+                              <span className="api-endpoint-card-top">
+                                <span className="api-method-badge">GET</span>
+                                <strong>{endpoint.title}</strong>
+                              </span>
+                              <code>{endpoint.path}</code>
+                              <p>{endpoint.description}</p>
+                              <span className="api-endpoint-card-action">Preview &amp; test <span aria-hidden="true">→</span></span>
                             </button>
                           ))}
                         </div>
