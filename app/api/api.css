@@ -597,26 +597,55 @@
   font-weight: 800;
 }
 
+.api-card-controls {
+  display: grid;
+  align-content: center;
+  gap: 0.34rem;
+  padding: 0.55rem 0.58rem 0.55rem 0;
+}
+
+.api-card-copy-btn,
+.api-card-preview-btn,
 .api-card-run-btn {
-  align-self: center;
   min-width: 82px;
-  margin-right: 0.58rem;
-  padding: 0.56rem 0.44rem;
-  border: 1px solid rgba(56, 189, 248, 0.34);
+  min-height: 28px;
+  padding: 0.42rem 0.44rem;
   border-radius: 7px;
-  color: #ecfeff;
-  background: linear-gradient(135deg, #0284c7, #4f46e5);
-  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.16);
   font: inherit;
-  font-size: 0.63rem;
+  font-size: 0.62rem;
   font-weight: 900;
   line-height: 1.05;
   white-space: nowrap;
   cursor: pointer;
-  transition: filter 0.16s ease, transform 0.16s ease, opacity 0.16s ease;
+  transition: border-color 0.16s ease, background 0.16s ease, filter 0.16s ease, transform 0.16s ease, opacity 0.16s ease;
 }
 
-.api-card-run-btn:hover:not(:disabled) { filter: brightness(1.14); transform: translateY(-1px); }
+.api-card-copy-btn {
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  color: #cbd5e1;
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.api-card-preview-btn {
+  border: 1px solid rgba(167, 139, 250, 0.28);
+  color: #ddd6fe;
+  background: rgba(124, 58, 237, 0.12);
+}
+
+.api-card-run-btn {
+  border: 1px solid rgba(56, 189, 248, 0.34);
+  color: #ecfeff;
+  background: linear-gradient(135deg, #0284c7, #4f46e5);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.16);
+}
+
+.api-card-copy-btn:hover,
+.api-card-preview-btn:hover,
+.api-card-run-btn:hover:not(:disabled) {
+  filter: brightness(1.14);
+  transform: translateY(-1px);
+}
+
 .api-card-run-btn:disabled { cursor: wait; opacity: 0.62; }
 
 .api-endpoint-card:hover,
@@ -921,6 +950,8 @@
 
 .api-btn:focus-visible,
 .api-endpoint-nav:focus-visible,
+.api-card-copy-btn:focus-visible,
+.api-card-preview-btn:focus-visible,
 .api-card-run-btn:focus-visible,
 .api-request-box button:focus-visible,
 .api-run-btn:focus-visible,
@@ -978,6 +1009,10 @@
   .api-category > p { position: static; width: auto; height: auto; overflow: visible; clip: auto; margin-bottom: 0.34rem; }
   .api-category-items { display: grid; gap: 0.3rem; }
   .api-endpoint-nav { width: 100%; grid-template-columns: 1fr; }
+  .api-card-controls { gap: 0.28rem; padding-right: 0.45rem; }
+  .api-card-copy-btn,
+  .api-card-preview-btn,
+  .api-card-run-btn { min-width: 76px; font-size: 0.59rem; }
   .api-request-box { grid-template-columns: 1fr auto; gap: 0.6rem; }
   .api-request-box code { grid-column: 1 / -1; grid-row: 2; overflow: visible; font-size: 0.7rem; overflow-wrap: anywhere; text-overflow: clip; white-space: normal; }
   .api-request-box button { grid-column: 2; grid-row: 1; }

@@ -155,6 +155,7 @@ export default function ApiPortal() {
   const [response, setResponse] = useState(starterResponse)
   const [state, setState] = useState('idle')
   const [copied, setCopied] = useState('')
+  const [copiedPath, setCopiedPath] = useState('')
   const [filter, setFilter] = useState('')
   const consoleRef = useRef(null)
 
@@ -193,7 +194,11 @@ export default function ApiPortal() {
     try {
       await navigator.clipboard.writeText(value)
       setCopied(label)
-      setTimeout(() => setCopied(''), 1800)
+      setCopiedPath(value)
+      setTimeout(() => {
+        setCopied('')
+        setCopiedPath('')
+      }, 1800)
     } catch {
       setCopied('Copy failed')
     }
@@ -312,16 +317,34 @@ export default function ApiPortal() {
                                 </span>
                                 <code>{endpoint.path}</code>
                                 <p>{endpoint.description}</p>
-                                <span className="api-endpoint-card-action">View details <span aria-hidden="true">→</span></span>
+                                <span className="api-endpoint-card-action">Live endpoint <span aria-hidden="true">→</span></span>
                               </button>
-                              <button
-                                type="button"
-                                className="api-card-run-btn"
-                                onClick={() => runRequest(endpoint)}
-                                disabled={state === 'loading' && active.id === endpoint.id}
-                              >
-                                {state === 'loading' && active.id === endpoint.id ? 'Running…' : 'Run request'}
-                              </button>
+                              <div className="api-card-controls" aria-label={`${endpoint.title} actions`}>
+                                <button
+                                  type="button"
+                                  className="api-card-copy-btn"
+                                  onClick={() => copy(endpoint.path, `${endpoint.title} path copied`)}
+                                  aria-label={`Copy ${endpoint.title} request path`}
+                                >
+                                  {copiedPath === endpoint.path ? 'Copied' : 'Copy'}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="api-card-preview-btn"
+                                  onClick={() => selectEndpoint(endpoint)}
+                                  aria-label={`Preview ${endpoint.title} request`}
+                                >
+                                  Preview
+                                </button>
+                                <button
+                                  type="button"
+                                  className="api-card-run-btn"
+                                  onClick={() => runRequest(endpoint)}
+                                  disabled={state === 'loading' && active.id === endpoint.id}
+                                >
+                                  {state === 'loading' && active.id === endpoint.id ? 'Running…' : 'Run request'}
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>
