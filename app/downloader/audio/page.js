@@ -28,7 +28,7 @@ function fmtDuration(raw) {
 }
 
 export default function AudioDownloader() {
-  const [mode, setMode]               = useState('url')
+  const [mode, setMode]               = useState('search')
   const [url, setUrl]                 = useState('')
   const [query, setQuery]             = useState('')
   const [searchResults, setSearchResults] = useState([])
@@ -115,7 +115,7 @@ export default function AudioDownloader() {
         <div className="page-wrapper">
           <div className="badge" style={{ marginBottom: '1.5rem' }}><span>🎧</span> MP3 Downloader</div>
           <h1 className="section-title">YouTube to MP3. <span className="gradient-text">In Seconds.</span></h1>
-          <p className="section-sub">Search any song by name or paste a YouTube link. Preview it first, then download as MP3. No account, no ads, no limits.</p>
+          <p className="section-sub">Start with a song or artist name, choose the right result, preview it, then download as MP3. Already have a YouTube link? You can paste it instead.</p>
         </div>
       </section>
 
@@ -125,8 +125,8 @@ export default function AudioDownloader() {
 
             {/* Mode tabs */}
             <div className="mode-tabs">
-              <button className={`mode-tab ${mode === 'url' ? 'active' : ''}`} onClick={() => switchMode('url')}>🔗 Paste URL</button>
               <button className={`mode-tab ${mode === 'search' ? 'active' : ''}`} onClick={() => switchMode('search')}>🎵 Search by Song Name</button>
+              <button className={`mode-tab ${mode === 'url' ? 'active' : ''}`} onClick={() => switchMode('url')}>🔗 Paste YouTube Link</button>
             </div>
 
             {/* URL mode */}
@@ -188,7 +188,7 @@ export default function AudioDownloader() {
             {/* Search results */}
             {mode === 'search' && searchResults.length > 0 && !playingId && !result && (
               <div className="search-results">
-                <p className="results-label">{searchResults.length} results — click to preview, or hit Get MP3</p>
+                <p className="results-label">{searchResults.length} results — select a title to preview it or start the MP3 conversion</p>
                 <div className="results-grid">
                   {searchResults.map(item => (
                     <div
