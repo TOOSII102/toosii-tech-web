@@ -46,6 +46,7 @@ export default function Footer() {
             <li><Link href="/bot">TOOSII XD ULTRA Bot</Link></li>
             <li><Link href="/projects">Portfolio</Link></li>
             <li><Link href="/blog">Blog</Link></li>
+            <li><Link href="/api">Toosii API</Link></li>
             <li><Link href="/team">Team</Link></li>
             <li><Link href="/contact">Contact</Link></li>
           </ul>
