@@ -13,6 +13,31 @@
   const dur    = s => { if (!s) return ''; const h = Math.floor(s/3600), m = Math.floor((s%3600)/60); return h ? h+'h '+m+'m' : m+'m' }
   const isTV   = m => (m?.subjectType || 1) === 2
 
+  /* Secondary manual fallbacks. These third-party embeds can contain advertising. */
+  const VS_SERVERS = [
+    {
+      id: 'vs1', label: 'Server 1',
+      movie: id => 'https://vidsrc.to/embed/movie/' + id,
+      tv: (id, s, e) => 'https://vidsrc.to/embed/tv/' + id + '/' + s + '/' + e,
+    },
+    {
+      id: 'vs2', label: 'Server 2',
+      movie: id => 'https://vidsrc.xyz/embed/movie/' + id,
+      tv: (id, s, e) => 'https://vidsrc.xyz/embed/tv/' + id + '?season=' + s + '&episode=' + e,
+    },
+    {
+      id: 'vs3', label: 'Server 3',
+      movie: id => 'https://vidsrc.me/embed/movie/' + id,
+      tv: (id, s, e) => 'https://vidsrc.me/embed/tv/' + id + '?s=' + s + '&e=' + e,
+    },
+  ]
+
+  function embedUrl(serverId, imdbId, se, ep) {
+    if (!imdbId) return ''
+    const server = VS_SERVERS.find(item => item.id === serverId)
+    return server ? ((se && ep) ? server.tv(imdbId, se, ep) : server.movie(imdbId)) : ''
+  }
+
   /* Build xcasper direct URL (Option A — no-referrer) */
   function xcUrl(subjectId, res, se, ep) {
     let u = XCSP + '?subjectId=' + encodeURIComponent(subjectId) + '&resolution=' + res
@@ -82,7 +107,7 @@
     const [ep,       setEp]       = useState(1)
     const [res,      setRes]      = useState(720)
     const [playing,  setPlaying]  = useState(false)
-    const [player,   setPlayer]   = useState('proxy') /* 'proxy' | 'direct' | 'unavailable' */
+    const [player,   setPlayer]   = useState('direct') /* 'direct' | 'proxy' | 'vs1' | 'vs2' | 'vs3' | 'unavailable' */
     const [streamNotice, setStreamNotice] = useState('')
     const histRef = useRef(false)
 
@@ -147,28 +172,41 @@
     }
 
     function watchEp(s, e) {
-      setSe(s); setEp(e); setPlaying(true); setPlayer('proxy'); setStreamNotice('')
+      setSe(s); setEp(e); setPlaying(true); setPlayer('direct'); setStreamNotice('')
       scrollToPlayer()
     }
 
     function watchNow() {
-      setPlaying(true); setPlayer('proxy'); setStreamNotice('')
+      setPlaying(true); setPlayer('direct'); setStreamNotice('')
       scrollToPlayer()
     }
 
     /* derive current player src */
+    const imdbId = playData?.imdbId || supplemental?.imdbId || null
+    const vsSrc  = embedUrl(player, imdbId, tv ? se : null, tv ? ep : null)
     const xcSrc  = xcUrl(movie.subjectId, res, tv ? se : '', tv ? ep : '')
     const pxSrc  = xcProxy(movie.subjectId, res, tv ? se : '', tv ? ep : '')
     const dlSrc  = API + '?action=download&id=' + encodeURIComponent(movie.subjectId) + '&res=' + res + (tv && se && ep ? '&se=' + se + '&ep=' + ep : '')
 
-    function showCleanStreamUnavailable() {
-      setPlayer('unavailable')
-      setStreamNotice('The clean stream is currently unavailable. Ad-supported external players are disabled for your safety.')
+    function handleCleanStreamFailure() {
+      if (player === 'direct') {
+        setPlayer('proxy')
+        setStreamNotice('Direct stream was unavailable, so Fast Stream is being tried next.')
+      } else {
+        setPlayer('unavailable')
+        setStreamNotice('Clean streams are unavailable. You may manually select a third-party backup below if needed; those providers can show ads.')
+      }
     }
 
-    function retryCleanStream() {
-      setPlayer('proxy')
+    function retryDirectStream() {
+      setPlayer('direct')
       setStreamNotice('')
+      setPlaying(true)
+    }
+
+    function selectBackup(serverId) {
+      setPlayer(serverId)
+      setStreamNotice('Third-party backup selected. It may show advertisements or external prompts.')
       setPlaying(true)
     }
 
@@ -241,8 +279,8 @@
                   <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
                     <span style={{ fontSize: '0.72rem', color: '#475569', marginRight: '0.25rem' }}>Player:</span>
                     {[
-                      { id: 'proxy',  label: '⚡ Fast Stream', title: 'Robust proxied stream (recommended)' },
-                      { id: 'direct', label: '▶ Direct',      title: 'Direct upstream stream' },
+                      { id: 'direct', label: '▶ Direct',      title: 'Direct upstream stream (first choice)' },
+                      { id: 'proxy',  label: '⚡ Fast Stream', title: 'Proxied clean-stream fallback' },
                     ].map(opt => (
                       <button key={opt.id} title={opt.title}
                         onClick={() => { setPlayer(opt.id); if (!playing) setPlaying(true) }}
@@ -252,7 +290,16 @@
                         {opt.label}
                       </button>
                     ))}
-                    <span style={{ fontSize: '0.72rem', color: '#475569', marginLeft: '0.25rem' }}>Clean-player mode</span>
+                    {imdbId && <span style={{ fontSize: '0.72rem', color: '#475569', marginLeft: '0.25rem' }}>Backup:</span>}
+                    {imdbId && VS_SERVERS.map(server => (
+                      <button key={server.id} title="Third-party backup; may show ads"
+                        onClick={() => selectBackup(server.id)}
+                        style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.3rem 0.7rem', borderRadius: '8px', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                          background: player === server.id ? 'rgba(139,92,246,0.8)' : 'rgba(139,92,246,0.08)',
+                          color: player === server.id ? '#fff' : '#a78bfa' }}>
+                        {server.label}
+                      </button>
+                    ))}
                   </div>
                   {/* Quality + Download row */}
                   <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.9rem', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -272,22 +319,40 @@
                         <div className="mv-video-placeholder" style={{ textAlign: 'center', padding: '2rem 1rem' }}>
                           <span className="mv-video-placeholder-icon">⚠️</span>
                           <p style={{ color: '#e2e8f0', margin: '0.6rem 0 0', fontWeight: 700 }}>Clean stream unavailable</p>
-                          <p style={{ color: '#94a3b8', margin: '0.4rem auto 1rem', maxWidth: 420, fontSize: '0.82rem' }}>This title cannot be played without using an ad-supported third-party embed. Those embeds have been disabled.</p>
-                          <button onClick={retryCleanStream} className="mv-quality-btn active">Retry Fast Stream</button>
+                          <p style={{ color: '#94a3b8', margin: '0.4rem auto 1rem', maxWidth: 420, fontSize: '0.82rem' }}>Direct and Fast Stream were unavailable. You can retry Direct or choose a backup server manually; third-party backups may include ads.</p>
+                          <button onClick={retryDirectStream} className="mv-quality-btn active">Retry Direct</button>
                         </div>
                       )}
-                      {/* Direct xcasper stream — retries briefly before showing the clean unavailable state. */}
+                      {/* Direct xcasper stream is always tried first. */}
                        {player === 'direct' && (
-                         <StableVideo key={xcSrc} src={xcSrc} onFailure={showCleanStreamUnavailable} />
+                         <StableVideo key={xcSrc} src={xcSrc} onFailure={handleCleanStreamFailure} />
                        )}
-                      {/* Proxied xcasper stream — never switches to an advertising embed. */}
+                      {/* Fast Stream is the automatic clean fallback after Direct fails. */}
                       {player === 'proxy' && (
                         <video key={pxSrc}
                           className="mv-video"
                           src={pxSrc}
                           controls autoPlay playsInline preload="metadata"
-                          onError={showCleanStreamUnavailable}
+                          onError={handleCleanStreamFailure}
                         />
+                      )}
+                      {/* Advertising-supported providers stay manual secondary options. */}
+                      {VS_SERVERS.some(server => server.id === player) && vsSrc && (
+                        <iframe
+                          key={vsSrc}
+                          src={vsSrc}
+                          className="mv-video"
+                          allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                          allowFullScreen
+                          referrerPolicy="origin"
+                          style={{ border: 'none' }}
+                        />
+                      )}
+                      {VS_SERVERS.some(server => server.id === player) && !vsSrc && (
+                        <div className="mv-video-placeholder">
+                          <span className="mv-video-placeholder-icon">⚠️</span>
+                          <p style={{ color: '#94a3b8', margin: '0.5rem 0 0' }}>A backup player is not available for this title.</p>
+                        </div>
                       )}
                     </div>
                   ) : (
@@ -306,7 +371,7 @@
                   )}
 
                   <p style={{ fontSize: '0.72rem', color: streamNotice ? '#fbbf24' : '#334155', margin: '0.6rem 0 0', padding: '0 0.25rem' }}>
-                    {streamNotice || (player === 'unavailable' ? 'Clean-player mode · no external embeds' : player === 'direct' ? '⚡ Direct xcasper · ' + res + 'p (no-referrer)' : '🔀 Proxy xcasper · ' + res + 'p')}
+                    {streamNotice || (player === 'unavailable' ? 'Clean streams unavailable' : player === 'direct' ? '▶ Direct stream · ' + res + 'p (first choice)' : player === 'proxy' ? '⚡ Fast Stream · ' + res + 'p (clean fallback)' : '⚠ Third-party backup · may include ads')}
                     {tv ? ' · S' + se + ' E' + ep : ''}
                   </p>
                 </div>
