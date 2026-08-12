@@ -216,7 +216,7 @@
 
     function selectBackup(serverId) {
       setPlayer(serverId)
-      setStreamNotice('Third-party backup selected. It may show advertisements or external prompts.')
+      setStreamNotice('Third-party backup is ready. Open it in a new tab to continue playback.')
       setPlaying(true)
     }
 
@@ -343,18 +343,17 @@
                           onError={handleCleanStreamFailure}
                         />
                       )}
-                      {/* Advertising-supported providers stay manual secondary options. */}
+                      {/* Third-party backup providers reject in-page frames, so keep them as explicit, user-initiated new-tab fallbacks. */}
                       {VS_SERVERS.some(server => server.id === player) && vsSrc && (
-                        <iframe
-                          key={vsSrc}
-                          src={vsSrc}
-                          className="mv-video"
-                          sandbox="allow-scripts"
-                          allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-                          allowFullScreen
-                          referrerPolicy="no-referrer"
-                          style={{ border: 'none' }}
-                        />
+                        <div className="mv-video-placeholder" style={{ textAlign: 'center', padding: '2rem 1rem' }}>
+                          <span className="mv-video-placeholder-icon">↗</span>
+                          <p style={{ color: '#e2e8f0', margin: '0.6rem 0 0', fontWeight: 700 }}>This backup opens in its own tab</p>
+                          <p style={{ color: '#94a3b8', margin: '0.45rem auto 1.1rem', maxWidth: 440, fontSize: '0.82rem', lineHeight: 1.55 }}>This provider does not allow secure playback inside the Toosii Tech player. Opening it directly avoids the sandbox error shown in the previous screen.</p>
+                          <div style={{ display: 'flex', justifyContent: 'center', gap: '0.7rem', flexWrap: 'wrap' }}>
+                            <a href={vsSrc} target="_blank" rel="noopener noreferrer" className="mv-hero-play-btn" style={{ textDecoration: 'none' }}>↗ Open {VS_SERVERS.find(server => server.id === player)?.label || 'backup'}</a>
+                            <button onClick={retryDirectStream} className="mv-quality-btn active">← Return to Direct</button>
+                          </div>
+                        </div>
                       )}
                       {VS_SERVERS.some(server => server.id === player) && !vsSrc && (
                         <div className="mv-video-placeholder">
@@ -379,7 +378,7 @@
                   )}
 
                   <p style={{ fontSize: '0.72rem', color: streamNotice ? '#fbbf24' : '#334155', margin: '0.6rem 0 0', padding: '0 0.25rem' }}>
-                    {streamNotice || (player === 'unavailable' ? 'Clean streams unavailable' : player === 'direct' ? '▶ Direct stream · ' + res + 'p (first choice)' : player === 'proxy' ? '⚡ Fast Stream · ' + res + 'p (clean fallback)' : '⚠ Third-party backup · may include ads')}
+                    {streamNotice || (player === 'unavailable' ? 'Clean streams unavailable' : player === 'direct' ? '▶ Direct stream · ' + res + 'p (first choice)' : player === 'proxy' ? '⚡ Fast Stream · ' + res + 'p (clean fallback)' : '↗ Third-party backup · opens in a new tab')}
                     {tv ? ' · S' + se + ' E' + ep : ''}
                   </p>
                 </div>
