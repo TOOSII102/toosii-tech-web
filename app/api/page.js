@@ -140,6 +140,8 @@ const endpoints = [
   },
 ]
 
+const categories = ['Core', 'Data', 'Media Search', 'Utilities', 'Sports']
+
 const starterResponse = {
   success: true,
   api: 'Toosii API',
@@ -153,11 +155,23 @@ export default function ApiPortal() {
   const [response, setResponse] = useState(starterResponse)
   const [state, setState] = useState('idle')
   const [copied, setCopied] = useState('')
+  const [filter, setFilter] = useState('')
 
   const active = useMemo(
     () => endpoints.find(endpoint => endpoint.id === activeId) || endpoints[0],
     [activeId],
   )
+
+  const visibleEndpoints = useMemo(() => {
+    const query = filter.trim().toLowerCase()
+    if (!query) return endpoints
+    return endpoints.filter(endpoint =>
+      [endpoint.title, endpoint.description, endpoint.category, endpoint.path]
+        .join(' ')
+        .toLowerCase()
+        .includes(query),
+    )
+  }, [filter])
 
   const selectEndpoint = (endpoint) => {
     setActiveId(endpoint.id)
@@ -208,6 +222,11 @@ export default function ApiPortal() {
                 <button type="button" className="api-btn api-btn-secondary" onClick={() => copy('/api/v1', 'Base URL copied')}>Copy base path</button>
               </div>
               <p className="api-copy-note" role="status">{copied || 'No API key required for the starter collection.'}</p>
+              <ul className="api-hero-facts" aria-label="Toosii API highlights">
+                <li><strong>{endpoints.length}</strong><span>documented routes</span></li>
+                <li><strong>{categories.length}</strong><span>developer categories</span></li>
+                <li><strong>0</strong><span>login required</span></li>
+              </ul>
             </div>
 
             <div className="api-hero-card">
@@ -227,30 +246,53 @@ export default function ApiPortal() {
                 <p>Choose an endpoint to see its parameters, copy the request path, or send a live request from this page.</p>
               </div>
               <div className="api-stats" aria-label="API statistics">
-                <span><strong>{endpoints.length}</strong> starter routes</span>
-                <span><strong>0</strong> login required</span>
+                <span><strong>{endpoints.length}</strong> public routes</span>
+                <span><strong>{categories.length}</strong> categories</span>
+                <span><strong>0</strong> API keys required</span>
               </div>
             </div>
 
             <div className="api-workspace">
               <aside className="api-sidebar" aria-label="Endpoint navigation">
-                <div className="api-sidebar-title">Endpoints</div>
-                {['Core', 'Data', 'Media Search', 'Utilities', 'Sports'].map(category => (
-                  <div key={category} className="api-category">
-                    <p>{category}</p>
-                    {endpoints.filter(endpoint => endpoint.category === category).map(endpoint => (
-                      <button
-                        type="button"
-                        key={endpoint.id}
-                        onClick={() => selectEndpoint(endpoint)}
-                        className={`api-endpoint-nav${active.id === endpoint.id ? ' active' : ''}`}
-                      >
-                        <span>GET</span>
-                        <span>{endpoint.title}</span>
-                      </button>
-                    ))}
-                  </div>
-                ))}
+                <div className="api-sidebar-top">
+                  <div className="api-sidebar-title">Endpoint catalogue</div>
+                  <label className="api-endpoint-filter">
+                    <span className="sr-only">Filter endpoints</span>
+                    <input
+                      type="search"
+                      value={filter}
+                      onChange={event => setFilter(event.target.value)}
+                      placeholder="Filter endpoints"
+                      aria-label="Filter endpoints by name, category, or path"
+                    />
+                    {filter && <button type="button" onClick={() => setFilter('')} aria-label="Clear endpoint filter">×</button>}
+                  </label>
+                </div>
+                <div className="api-nav-groups">
+                  {categories.map(category => {
+                    const items = visibleEndpoints.filter(endpoint => endpoint.category === category)
+                    if (!items.length) return null
+                    return (
+                      <div key={category} className="api-category">
+                        <p><span>{category}</span><b>{items.length}</b></p>
+                        <div className="api-category-items">
+                          {items.map(endpoint => (
+                            <button
+                              type="button"
+                              key={endpoint.id}
+                              onClick={() => selectEndpoint(endpoint)}
+                              className={`api-endpoint-nav${active.id === endpoint.id ? ' active' : ''}`}
+                            >
+                              <span>GET</span>
+                              <span>{endpoint.title}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
+                  {!visibleEndpoints.length && <p className="api-no-results">No endpoints match “{filter}”.</p>}
+                </div>
                 <div className="api-sidebar-note">
                   <strong>Built to grow</strong>
                   <span>New vetted endpoints will appear here as the API expands.</span>
