@@ -52,6 +52,24 @@ const endpoints = [
     ],
   },
   {
+    id: 'youtube-search',
+    category: 'Media Search',
+    method: 'GET',
+    title: 'YouTube video search',
+    description: 'Search YouTube and receive normalized video titles, channels, durations, views, thumbnails, and watch URLs.',
+    path: '/api/search/youtube?q=kenya%20music',
+    params: [{ name: 'q', type: 'string', required: true, description: 'Video search phrase.' }],
+  },
+  {
+    id: 'spotify-search',
+    category: 'Media Search',
+    method: 'GET',
+    title: 'Spotify track search',
+    description: 'Search music metadata and receive track, artist, album, cover, preview, and provider-link details.',
+    path: '/api/search/spotify?q=afrobeats',
+    params: [{ name: 'q', type: 'string', required: true, description: 'Track, artist, album, or music search phrase.' }],
+  },
+  {
     id: 'base64-encode',
     category: 'Utilities',
     method: 'GET',
@@ -217,7 +235,7 @@ export default function ApiPortal() {
             <div className="api-workspace">
               <aside className="api-sidebar" aria-label="Endpoint navigation">
                 <div className="api-sidebar-title">Endpoints</div>
-                {['Core', 'Data', 'Utilities', 'Sports'].map(category => (
+                {['Core', 'Data', 'Media Search', 'Utilities', 'Sports'].map(category => (
                   <div key={category} className="api-category">
                     <p>{category}</p>
                     {endpoints.filter(endpoint => endpoint.category === category).map(endpoint => (
