@@ -191,7 +191,12 @@
     const vsSrc  = embedUrl(player, imdbId, tv ? se : null, tv ? ep : null)
     const xcSrc  = xcUrl(movie.subjectId, res, tv ? se : '', tv ? ep : '')
     const pxSrc  = xcProxy(movie.subjectId, res, tv ? se : '', tv ? ep : '')
-    const dlSrc  = API + '?action=download&id=' + encodeURIComponent(movie.subjectId) + '&res=' + res + (tv && se && ep ? '&se=' + se + '&ep=' + ep : '')
+    const downloadRequest = {
+      subjectId: String(movie.subjectId),
+      type: tv ? 'episode' : 'movie',
+      resolution: String(res),
+      ...(tv ? { season: se, episode: ep } : {}),
+    }
 
     function handleCleanStreamFailure() {
       if (player === 'direct') {
@@ -311,9 +316,9 @@
                         {r}p
                       </button>
                     ))}
-                    <DlButton downloadUrl={dlSrc} res={res} />
+                    <DlButton requestBody={downloadRequest} res={res} />
                   </div>
-                  <p className="mv-download-note">Downloads use the same clean source as Direct. If that source is unavailable, the button explains why instead of downloading a broken file.</p>
+                  <p className="mv-download-note">Downloads use a secure, time-limited link for titles that have an authorized private asset. Unmapped titles stay unavailable instead of downloading a broken file.</p>
 
                   {playing ? (
                     <div className="mv-video-wrap">
@@ -638,41 +643,34 @@ function StableVideo({ src, onFailure }) {
 }
 
 
-/* ── Native download: verifies the same-origin download route, then lets the browser stream the file. ── */
-function DlButton({ downloadUrl, res }) {
+/* ── Native download: the server authorizes the title and returns a temporary private-storage URL. ── */
+function DlButton({ requestBody, res }) {
   const [dlState, setDlState] = useState('idle') // 'idle' | 'checking' | 'starting' | 'error'
   const [message, setMessage] = useState('')
 
   async function handleDownload() {
     setDlState('checking'); setMessage('')
     try {
-      const probe = await fetch(downloadUrl, {
-        headers: { Range: 'bytes=0-0' },
+      const response = await fetch('/api/movies/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
         cache: 'no-store',
       })
-      if (!probe.ok) {
-        let error = 'The clean download source is unavailable.'
-        try {
-          const body = await probe.json()
-          error = body?.error || error
-        } catch {}
-        throw new Error(error)
-      }
 
-      const contentType = probe.headers.get('content-type') || ''
-      if (!contentType.includes('video') && !contentType.includes('octet-stream') && !contentType.includes('mp4')) {
-        throw new Error('The source did not return a downloadable video file.')
+      const body = await response.json().catch(() => null)
+      if (!response.ok || !body?.url) {
+        throw new Error(body?.error || 'The download could not be prepared.')
       }
 
       const link = document.createElement('a')
-      link.href = downloadUrl
-      link.download = `movie-${res}p.mp4`
+      link.href = body.url
       link.rel = 'noopener'
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
       setDlState('starting')
-      setMessage('Download started in your browser.')
+      setMessage('Secure download started in your browser.')
       setTimeout(() => { setDlState('idle'); setMessage('') }, 3500)
     } catch (error) {
       setDlState('error')
