@@ -110,6 +110,7 @@
     const [res,      setRes]      = useState(720)
     const [playing,  setPlaying]  = useState(false)
     const [player,   setPlayer]   = useState('proxy') /* 'proxy' | 'direct' | 'vs1'|'vs2'|'vs3' */
+    const [streamNotice, setStreamNotice] = useState('')
     const histRef = useRef(false)
 
     /* scroll lock + back button */
@@ -160,12 +161,12 @@
     }
 
     function watchEp(s, e) {
-      setSe(s); setEp(e); setPlaying(true); setPlayer('direct')
+      setSe(s); setEp(e); setPlaying(true); setPlayer('proxy'); setStreamNotice('')
       scrollToPlayer()
     }
 
     function watchNow() {
-      setPlaying(true); setPlayer('direct')
+      setPlaying(true); setPlayer('proxy'); setStreamNotice('')
       scrollToPlayer()
     }
 
@@ -175,6 +176,15 @@
     const xcSrc  = xcUrl(movie.subjectId, res, tv ? se : '', tv ? ep : '')
     const pxSrc  = xcProxy(movie.subjectId, res, tv ? se : '', tv ? ep : '')
     const dlSrc  = API + '?action=download&id=' + encodeURIComponent(movie.subjectId) + '&res=' + res + (tv && se && ep ? '&se=' + se + '&ep=' + ep : '')
+
+    function fallbackToEmbed() {
+      if (imdbId) {
+        setPlayer('vs3')
+        setStreamNotice('The upstream stream was unavailable, so Backup Server 3 was selected automatically.')
+      } else {
+        setStreamNotice('The upstream stream is unavailable for this title. Try another title or search again.')
+      }
+    }
 
     return (
       <div className="mv-modal-backdrop" onClick={e => { if (e.target === e.currentTarget) close() }}>
@@ -299,7 +309,7 @@
                       )}
                       {/* xcasper direct — auto-retry on stall/error */}
                        {player === 'direct' && (
-                         <StableVideo key={xcSrc} src={xcSrc} />
+                         <StableVideo key={xcSrc} src={xcSrc} onFailure={fallbackToEmbed} />
                        )}
                       {/* xcasper proxy — Option B, Range-aware */}
                       {player === 'proxy' && (
@@ -307,6 +317,7 @@
                           className="mv-video"
                           src={pxSrc}
                           controls autoPlay playsInline preload="metadata"
+                          onError={fallbackToEmbed}
                         />
                       )}
                     </div>
@@ -325,8 +336,8 @@
                     </div>
                   )}
 
-                  <p style={{ fontSize: '0.72rem', color: '#334155', margin: '0.6rem 0 0', padding: '0 0.25rem' }}>
-                    {player === 'vidsrc' ? '▶ VidSrc stream' : player === 'direct' ? '⚡ Direct xcasper · ' + res + 'p (no-referrer)' : '🔀 Proxy xcasper · ' + res + 'p'}
+                  <p style={{ fontSize: '0.72rem', color: streamNotice ? '#fbbf24' : '#334155', margin: '0.6rem 0 0', padding: '0 0.25rem' }}>
+                    {streamNotice || (player === 'vidsrc' ? '▶ VidSrc stream' : player === 'direct' ? '⚡ Direct xcasper · ' + res + 'p (no-referrer)' : VS_SERVERS.some(s => s.id === player) ? '▶ Embedded backup player' : '🔀 Proxy xcasper · ' + res + 'p')}
                     {tv ? ' · S' + se + ' E' + ep : ''}
                     {VS_SERVERS.some(s => s.id === player) && !imdbId && ' · IMDB ID unavailable for this title'}
                   </p>
@@ -524,11 +535,12 @@
   }
  
 /* ── StableVideo: auto-resumes xcasper stream on stall or error ── */
-function StableVideo({ src }) {
+function StableVideo({ src, onFailure }) {
   const videoRef = useRef(null)
   const retryRef = useRef(null)
   const stallRef = useRef(null)
   const retryCount = useRef(0)
+  const failedRef = useRef(false)
 
   function scheduleRetry(delay = 2000) {
     clearTimeout(retryRef.current)
@@ -553,7 +565,11 @@ function StableVideo({ src }) {
   }
 
   function handleError() {
-    if (retryCount.current < 5) scheduleRetry(2000)
+    if (retryCount.current < 2) scheduleRetry(1200)
+    else if (!failedRef.current) {
+      failedRef.current = true
+      onFailure?.()
+    }
   }
 
   function handlePlaying() {
@@ -562,8 +578,12 @@ function StableVideo({ src }) {
     clearTimeout(stallRef.current)
   }
 
-  useEffect(() => () => {
-    clearTimeout(retryRef.current); clearTimeout(stallRef.current)
+  useEffect(() => {
+    failedRef.current = false
+    retryCount.current = 0
+    return () => {
+      clearTimeout(retryRef.current); clearTimeout(stallRef.current)
+    }
   }, [src])
 
   return (
