@@ -16,6 +16,42 @@ const endpoints = [
     params: [],
   },
   {
+    id: 'weather',
+    category: 'Data',
+    method: 'GET',
+    title: 'Weather forecast',
+    description: 'Get current conditions and a compact three-day forecast for any coordinates.',
+    path: '/api/v1/weather?latitude=-1.2864&longitude=36.8172',
+    params: [
+      { name: 'latitude', type: 'number', required: false, description: 'Latitude from -90 to 90. Defaults to Nairobi.' },
+      { name: 'longitude', type: 'number', required: false, description: 'Longitude from -180 to 180. Defaults to Nairobi.' },
+    ],
+  },
+  {
+    id: 'holidays',
+    category: 'Data',
+    method: 'GET',
+    title: 'Public holidays',
+    description: 'List country public holidays for a given year.',
+    path: '/api/v1/holidays?country=KE&year=2026',
+    params: [
+      { name: 'country', type: 'string', required: false, description: 'ISO country code, such as KE, US, or GB. Defaults to KE.' },
+      { name: 'year', type: 'integer', required: false, description: 'Calendar year from 1900 to 2100. Defaults to the current year.' },
+    ],
+  },
+  {
+    id: 'books-search',
+    category: 'Data',
+    method: 'GET',
+    title: 'Book search',
+    description: 'Discover books, authors, cover art, and first publication years.',
+    path: '/api/v1/books/search?query=things%20fall%20apart&limit=5',
+    params: [
+      { name: 'query', type: 'string', required: true, description: 'Book title, author, or search phrase.' },
+      { name: 'limit', type: 'integer', required: false, description: 'Number of results from 1 to 10. Defaults to 5.' },
+    ],
+  },
+  {
     id: 'base64-encode',
     category: 'Utilities',
     method: 'GET',
@@ -43,6 +79,36 @@ const endpoints = [
     params: [
       { name: 'text', type: 'string', required: true, description: 'Text or URL to encode.' },
       { name: 'size', type: 'integer', required: false, description: 'QR width and height, from 120 to 1,000.' },
+    ],
+  },
+  {
+    id: 'uuid',
+    category: 'Utilities',
+    method: 'GET',
+    title: 'UUID generator',
+    description: 'Generate one or more unique RFC 4122 identifiers without an upstream dependency.',
+    path: '/api/v1/utils/uuid?count=3',
+    params: [{ name: 'count', type: 'integer', required: false, description: 'How many UUIDs to generate, from 1 to 25.' }],
+  },
+  {
+    id: 'slugify',
+    category: 'Utilities',
+    method: 'GET',
+    title: 'URL slug generator',
+    description: 'Turn a title or phrase into a clean, URL-friendly slug.',
+    path: '/api/v1/utils/slugify?text=Toosii%20API%20Release',
+    params: [{ name: 'text', type: 'string', required: true, description: 'Text to convert into a URL slug.' }],
+  },
+  {
+    id: 'hash',
+    category: 'Utilities',
+    method: 'GET',
+    title: 'Text hash',
+    description: 'Hash text with SHA-256, SHA-384, or SHA-512.',
+    path: '/api/v1/utils/hash?text=Toosii%20Tech&algorithm=sha256',
+    params: [
+      { name: 'text', type: 'string', required: true, description: 'Text to hash, up to 10,000 characters.' },
+      { name: 'algorithm', type: 'string', required: false, description: 'sha256, sha384, or sha512. Defaults to sha256.' },
     ],
   },
   {
@@ -151,7 +217,7 @@ export default function ApiPortal() {
             <div className="api-workspace">
               <aside className="api-sidebar" aria-label="Endpoint navigation">
                 <div className="api-sidebar-title">Endpoints</div>
-                {['Core', 'Utilities', 'Sports'].map(category => (
+                {['Core', 'Data', 'Utilities', 'Sports'].map(category => (
                   <div key={category} className="api-category">
                     <p>{category}</p>
                     {endpoints.filter(endpoint => endpoint.category === category).map(endpoint => (

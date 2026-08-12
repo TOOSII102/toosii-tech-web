@@ -1,36 +1,17 @@
 import { apiResponse, optionsResponse } from '../../../lib/publicApi'
 
 const endpoints = [
-  {
-    method: 'GET',
-    path: '/api/v1/health',
-    category: 'Core',
-    description: 'Check the service status and current API version.',
-  },
-  {
-    method: 'GET',
-    path: '/api/v1/utils/base64/encode?text=Hello',
-    category: 'Utilities',
-    description: 'Encode plain text as Base64.',
-  },
-  {
-    method: 'GET',
-    path: '/api/v1/utils/base64/decode?text=SGVsbG8%3D',
-    category: 'Utilities',
-    description: 'Decode a Base64 value into UTF-8 text.',
-  },
-  {
-    method: 'GET',
-    path: '/api/v1/utils/qr?text=https%3A%2F%2Ftoosiitech.com&size=320',
-    category: 'Utilities',
-    description: 'Generate a QR code as a PNG data URL.',
-  },
-  {
-    method: 'GET',
-    path: '/api/v1/sports?league=eng.1',
-    category: 'Sports',
-    description: 'Get a normalized live scoreboard for a supported league.',
-  },
+  { method: 'GET', path: '/api/v1/health', category: 'Core', description: 'Check the service status and current API version.' },
+  { method: 'GET', path: '/api/v1/weather?latitude=-1.2864&longitude=36.8172', category: 'Data', description: 'Get a compact three-day weather forecast for geographic coordinates.' },
+  { method: 'GET', path: '/api/v1/holidays?country=KE&year=2026', category: 'Data', description: 'List public holidays for an ISO country code and year.' },
+  { method: 'GET', path: '/api/v1/books/search?query=things%20fall%20apart&limit=5', category: 'Data', description: 'Run a small, user-initiated book discovery search.' },
+  { method: 'GET', path: '/api/v1/utils/base64/encode?text=Hello', category: 'Utilities', description: 'Encode plain text as Base64.' },
+  { method: 'GET', path: '/api/v1/utils/base64/decode?text=SGVsbG8%3D', category: 'Utilities', description: 'Decode a Base64 value into UTF-8 text.' },
+  { method: 'GET', path: '/api/v1/utils/qr?text=https%3A%2F%2Ftoosiitech.com&size=320', category: 'Utilities', description: 'Generate a QR code as a PNG data URL.' },
+  { method: 'GET', path: '/api/v1/utils/uuid?count=3', category: 'Utilities', description: 'Generate one or more RFC 4122 UUIDs locally.' },
+  { method: 'GET', path: '/api/v1/utils/slugify?text=Toosii%20API%20Release', category: 'Utilities', description: 'Convert text into a clean URL-friendly slug.' },
+  { method: 'GET', path: '/api/v1/utils/hash?text=Toosii%20Tech&algorithm=sha256', category: 'Utilities', description: 'Create a SHA-256, SHA-384, or SHA-512 text hash.' },
+  { method: 'GET', path: '/api/v1/sports?league=eng.1', category: 'Sports', description: 'Get a normalized live scoreboard for a supported league.' },
 ]
 
 export async function GET() {
