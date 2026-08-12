@@ -174,16 +174,19 @@ export default function ApiPortal() {
     )
   }, [filter])
 
-  const selectEndpoint = (endpoint) => {
-    setActiveId(endpoint.id)
-    setState('idle')
-    setResponse(starterResponse)
-
+  const focusConsoleOnMobile = () => {
     if (typeof window !== 'undefined' && window.matchMedia('(max-width: 960px)').matches) {
       window.requestAnimationFrame(() => {
         consoleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       })
     }
+  }
+
+  const selectEndpoint = (endpoint) => {
+    setActiveId(endpoint.id)
+    setState('idle')
+    setResponse(starterResponse)
+    focusConsoleOnMobile()
   }
 
   const copy = async (value, label) => {
@@ -196,10 +199,13 @@ export default function ApiPortal() {
     }
   }
 
-  const runRequest = async () => {
+  const runRequest = async (endpoint = active) => {
+    setActiveId(endpoint.id)
     setState('loading')
+    focusConsoleOnMobile()
+
     try {
-      const result = await fetch(active.path, { headers: { Accept: 'application/json' } })
+      const result = await fetch(endpoint.path, { headers: { Accept: 'application/json' } })
       const body = await result.json()
       setResponse(body)
       setState(result.ok ? 'success' : 'error')
@@ -293,21 +299,30 @@ export default function ApiPortal() {
                         <p><span>{category}</span><b>{items.length}</b></p>
                         <div className="api-category-items">
                           {items.map(endpoint => (
-                            <button
-                              type="button"
-                              key={endpoint.id}
-                              onClick={() => selectEndpoint(endpoint)}
-                              className={`api-endpoint-nav${active.id === endpoint.id ? ' active' : ''}`}
-                              aria-pressed={active.id === endpoint.id}
-                            >
-                              <span className="api-endpoint-card-top">
-                                <span className="api-method-badge">GET</span>
-                                <strong>{endpoint.title}</strong>
-                              </span>
-                              <code>{endpoint.path}</code>
-                              <p>{endpoint.description}</p>
-                              <span className="api-endpoint-card-action">Preview &amp; test <span aria-hidden="true">→</span></span>
-                            </button>
+                            <div key={endpoint.id} className={`api-endpoint-card${active.id === endpoint.id ? ' active' : ''}`}>
+                              <button
+                                type="button"
+                                onClick={() => selectEndpoint(endpoint)}
+                                className="api-endpoint-nav"
+                                aria-pressed={active.id === endpoint.id}
+                              >
+                                <span className="api-endpoint-card-top">
+                                  <span className="api-method-badge">GET</span>
+                                  <strong>{endpoint.title}</strong>
+                                </span>
+                                <code>{endpoint.path}</code>
+                                <p>{endpoint.description}</p>
+                                <span className="api-endpoint-card-action">View details <span aria-hidden="true">→</span></span>
+                              </button>
+                              <button
+                                type="button"
+                                className="api-card-run-btn"
+                                onClick={() => runRequest(endpoint)}
+                                disabled={state === 'loading' && active.id === endpoint.id}
+                              >
+                                {state === 'loading' && active.id === endpoint.id ? 'Running…' : 'Run request'}
+                              </button>
+                            </div>
                           ))}
                         </div>
                       </div>
@@ -357,7 +372,6 @@ export default function ApiPortal() {
                   <div className="api-response-block">
                     <div className="api-response-head">
                       <div><span className={`api-response-state ${state}`} /> Response {state === 'loading' ? 'loading' : state === 'error' ? 'error' : 'preview'}</div>
-                      <button type="button" className="api-run-btn" onClick={runRequest} disabled={state === 'loading'}>{state === 'loading' ? 'Running…' : 'Run request'}</button>
                     </div>
                     <pre>{JSON.stringify(response, null, 2)}</pre>
                   </div>
