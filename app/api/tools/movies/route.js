@@ -181,25 +181,30 @@ export async function GET(req) {
     }
   }
 
-  /* ── Download: full browser headers + Content-Disposition ── */
+  /* ── Download: probe/range support + native browser download handoff ── */
   if (action === 'download') {
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
     const url = xcStreamUrl(id, res, se, ep)
+    const range = req.headers.get('range') || ''
     try {
       const upstream = await upstreamFetch(url, {
-        headers: { ...BROWSER_HDRS, 'Accept': 'video/mp4,video/webm,video/*,*/*;q=0.9' },
+        headers: {
+          ...BROWSER_HDRS,
+          'Accept': 'video/mp4,video/webm,video/*,*/*;q=0.9',
+          ...(range ? { Range: range } : {}),
+        },
         signal: AbortSignal.timeout(60000),
       })
       if (!upstream.ok) {
         return NextResponse.json(
-          { error: 'Stream source unavailable (' + upstream.status + '). Try again later.' },
+          { error: 'The clean download source is unavailable for this title. Try streaming or select a manual backup to watch.' },
           { status: 502 }
         )
       }
       const ct = upstream.headers.get('content-type') || ''
       if (!ct.includes('video') && !ct.includes('octet-stream') && !ct.includes('mp4')) {
         return NextResponse.json(
-          { error: 'Source did not return a video file. Stream provider may be down.' },
+          { error: 'The source did not return a downloadable video file.' },
           { status: 502 }
         )
       }
@@ -207,12 +212,18 @@ export async function GET(req) {
         'Content-Disposition': 'attachment; filename="movie-' + res + 'p.mp4"',
         'Content-Type':        ct || 'video/mp4',
         'Cache-Control':       'no-store',
+        'Accept-Ranges':       'bytes',
       })
-      const cl = upstream.headers.get('content-length')
-      if (cl) out.set('Content-Length', cl)
-      return new Response(upstream.body, { status: 200, headers: out })
-    } catch (e) {
-      return NextResponse.json({ error: 'Download failed: ' + e.message }, { status: 502 })
+      for (const header of ['content-length', 'content-range']) {
+        const value = upstream.headers.get(header)
+        if (value) out.set(header, value)
+      }
+      return new Response(upstream.body, { status: upstream.status, headers: out })
+    } catch {
+      return NextResponse.json(
+        { error: 'The clean download source did not respond. Please try again later.' },
+        { status: 502 }
+      )
     }
   }
 

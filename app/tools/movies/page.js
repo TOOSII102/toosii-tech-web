@@ -126,33 +126,38 @@
       else onClose()
     }, [onClose])
 
-    /* fetch detail + play data in parallel */
+    /* Show the movie page as soon as details arrive; playback and metadata continue independently. */
     useEffect(() => {
+      let active = true
       setDetail(null); setPlayData(null); setSupplemental(null); setLoadInfo(true); setPlaying(false)
       const sid = movie.subjectId
-      ;(async () => {
-        try {
-          const [dR, pR, rR] = await Promise.all([
-            fetch(API + '?action=detail&id='    + sid),
-            fetch(API + '?action=play&id='      + sid),
-            fetch(API + '?action=recommend&id=' + sid),
-          ])
-          const [dD, pD, rD] = await Promise.all([dR.json(), pR.json(), rR.json()])
-          setDetail(dD?.data || null)
-          setPlayData(pD?.data || null)
-          setRecs((rD?.data?.subjectList || rD?.data?.items || []).slice(0, 12))
+      const getJson = url => fetch(url).then(response => response.ok ? response.json() : null).catch(() => null)
 
-          fetch(API + '?action=metadata&q=' + encodeURIComponent(movie.title || '') + '&kind=' + (isTV(movie) ? 'tv' : 'movie'))
-            .then(response => response.ok ? response.json() : null)
-            .then(payload => {
-              const meta = payload?.data || null
-              setSupplemental(meta)
-              if (meta?.seasons?.length) setSe(current => meta.seasons.includes(current) ? current : meta.seasons[0])
-            })
-            .catch(() => {})
-        } catch {}
-        setLoadInfo(false)
-      })()
+      const detailRequest = getJson(API + '?action=detail&id=' + sid)
+      const recommendationRequest = getJson(API + '?action=recommend&id=' + sid)
+      const playRequest = getJson(API + '?action=play&id=' + sid)
+      const metadataRequest = getJson(API + '?action=metadata&q=' + encodeURIComponent(movie.title || '') + '&kind=' + (isTV(movie) ? 'tv' : 'movie'))
+
+      Promise.all([detailRequest, recommendationRequest]).then(([detailData, recommendationData]) => {
+        if (!active) return
+        setDetail(detailData?.data || null)
+        setRecs((recommendationData?.data?.subjectList || recommendationData?.data?.items || []).slice(0, 12))
+      }).finally(() => {
+        if (active) setLoadInfo(false)
+      })
+
+      playRequest.then(playData => {
+        if (active) setPlayData(playData?.data || null)
+      })
+
+      metadataRequest.then(payload => {
+        if (!active) return
+        const meta = payload?.data || null
+        setSupplemental(meta)
+        if (meta?.seasons?.length) setSe(current => meta.seasons.includes(current) ? current : meta.seasons[0])
+      })
+
+      return () => { active = false }
     }, [movie.subjectId])
 
     const d       = detail || movie
@@ -276,42 +281,39 @@
                   </div>
 
                   {/* Player source tabs */}
-                  <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.72rem', color: '#475569', marginRight: '0.25rem' }}>Player:</span>
+                  <div className="mv-player-controls">
+                    <span className="mv-player-controls-label">Player:</span>
                     {[
                       { id: 'direct', label: '▶ Direct',      title: 'Direct upstream stream (first choice)' },
                       { id: 'proxy',  label: '⚡ Fast Stream', title: 'Proxied clean-stream fallback' },
                     ].map(opt => (
                       <button key={opt.id} title={opt.title}
                         onClick={() => { setPlayer(opt.id); if (!playing) setPlaying(true) }}
-                        style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.3rem 0.75rem', borderRadius: '8px', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                          background: player === opt.id ? 'linear-gradient(135deg,#25d366,#16a34a)' : 'rgba(37,211,102,0.08)',
-                          color: player === opt.id ? '#fff' : '#4ade80' }}>
+                        className={'mv-player-source-btn mv-player-clean-btn' + (player === opt.id ? ' active' : '')}>
                         {opt.label}
                       </button>
                     ))}
-                    {imdbId && <span style={{ fontSize: '0.72rem', color: '#475569', marginLeft: '0.25rem' }}>Backup:</span>}
+                    {imdbId && <span className="mv-player-controls-label mv-player-backup-label">Backup:</span>}
                     {imdbId && VS_SERVERS.map(server => (
                       <button key={server.id} title="Third-party backup; may show ads"
                         onClick={() => selectBackup(server.id)}
-                        style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.3rem 0.7rem', borderRadius: '8px', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                          background: player === server.id ? 'rgba(139,92,246,0.8)' : 'rgba(139,92,246,0.08)',
-                          color: player === server.id ? '#fff' : '#a78bfa' }}>
+                        className={'mv-player-source-btn mv-player-backup-btn' + (player === server.id ? ' active' : '')}>
                         {server.label}
                       </button>
                     ))}
                   </div>
                   {/* Quality + Download row */}
-                  <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.9rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.72rem', color: '#475569', marginRight: '0.25rem' }}>Quality:</span>
+                  <div className="mv-player-utility-row">
+                    <span className="mv-player-controls-label">Quality:</span>
                     {RESS.map(r => (
                       <button key={r} className={'mv-quality-btn' + (res === r ? ' active' : '')}
                         onClick={() => setRes(r)}>
                         {r}p
                       </button>
                     ))}
-                    <DlButton xcSrc={xcSrc} res={res} />
+                    <DlButton downloadUrl={dlSrc} res={res} />
                   </div>
+                  <p className="mv-download-note">Downloads use the same clean source as Direct. If that source is unavailable, the button explains why instead of downloading a broken file.</p>
 
                   {playing ? (
                     <div className="mv-video-wrap">
@@ -342,9 +344,10 @@
                           key={vsSrc}
                           src={vsSrc}
                           className="mv-video"
+                          sandbox="allow-scripts"
                           allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
                           allowFullScreen
-                          referrerPolicy="origin"
+                          referrerPolicy="no-referrer"
                           style={{ border: 'none' }}
                         />
                       )}
@@ -635,51 +638,53 @@ function StableVideo({ src, onFailure }) {
 }
 
 
-/* ── Browser-side download: fetches directly from xcasper so no server proxy needed ── */
-function DlButton({ xcSrc, res }) {
-  const [dlState, setDlState] = useState('idle') // 'idle' | 'loading' | 'error'
-  const [pct, setPct] = useState(0)
+/* ── Native download: verifies the same-origin download route, then lets the browser stream the file. ── */
+function DlButton({ downloadUrl, res }) {
+  const [dlState, setDlState] = useState('idle') // 'idle' | 'checking' | 'starting' | 'error'
+  const [message, setMessage] = useState('')
 
   async function handleDownload() {
-    setDlState('loading'); setPct(0)
+    setDlState('checking'); setMessage('')
     try {
-      const resp = await fetch(xcSrc, {
-        headers: { Accept: 'video/mp4,video/*,*/*', 'Referer': 'https://xcasper.space/' },
+      const probe = await fetch(downloadUrl, {
+        headers: { Range: 'bytes=0-0' },
+        cache: 'no-store',
       })
-      if (!resp.ok) throw new Error('Source returned ' + resp.status + '. It may be temporarily down.')
-
-      const contentType = resp.headers.get('content-type') || ''
-      if (!contentType.includes('video') && !contentType.includes('octet-stream')) {
-        throw new Error('Stream provider is currently down. Try again later.')
+      if (!probe.ok) {
+        let error = 'The clean download source is unavailable.'
+        try {
+          const body = await probe.json()
+          error = body?.error || error
+        } catch {}
+        throw new Error(error)
       }
 
-      const total = parseInt(resp.headers.get('content-length') || '0', 10)
-      const reader = resp.body.getReader()
-      const chunks = []
-      let loaded = 0
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        chunks.push(value)
-        loaded += value.length
-        if (total) setPct(Math.round((loaded / total) * 100))
+      const contentType = probe.headers.get('content-type') || ''
+      if (!contentType.includes('video') && !contentType.includes('octet-stream') && !contentType.includes('mp4')) {
+        throw new Error('The source did not return a downloadable video file.')
       }
-      const blob = new Blob(chunks, { type: 'video/mp4' })
-      const url  = URL.createObjectURL(blob)
-      const a    = document.createElement('a')
-      a.href = url; a.download = `movie-${res}p.mp4`
-      document.body.appendChild(a); a.click()
-      document.body.removeChild(a)
-      setTimeout(() => URL.revokeObjectURL(url), 10000)
-      setDlState('idle'); setPct(0)
-    } catch (err) {
+
+      const link = document.createElement('a')
+      link.href = downloadUrl
+      link.download = `movie-${res}p.mp4`
+      link.rel = 'noopener'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      setDlState('starting')
+      setMessage('Download started in your browser.')
+      setTimeout(() => { setDlState('idle'); setMessage('') }, 3500)
+    } catch (error) {
       setDlState('error')
-      setTimeout(() => setDlState('idle'), 4000)
+      setMessage(error?.message || 'The download could not be started.')
+      setTimeout(() => { setDlState('idle'); setMessage('') }, 6000)
     }
   }
 
-  const label = dlState === 'loading'
-    ? (pct > 0 ? `⬇ ${pct}%` : '⬇ …')
+  const label = dlState === 'checking'
+    ? '⬇ Checking…'
+    : dlState === 'starting'
+    ? '✓ Started'
     : dlState === 'error'
     ? '✕ Unavailable'
     : `⬇ Download ${res}p`
@@ -689,13 +694,16 @@ function DlButton({ xcSrc, res }) {
   const txtColor    = dlState === 'error' ? '#f87171' : '#4ade80'
 
   return (
-    <button onClick={handleDownload} disabled={dlState === 'loading'}
-      style={{ marginLeft: 'auto', fontSize: '0.75rem', fontWeight: 700, padding: '0.3rem 0.85rem',
-        borderRadius: '8px', border: '1px solid ' + borderColor, cursor: dlState === 'loading' ? 'wait' : 'pointer',
-        fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-        background: bgColor, color: txtColor, transition: 'all 0.2s', minWidth: '7rem', justifyContent: 'center' }}>
-      {label}
-    </button>
+    <div className="mv-download-control">
+      <button onClick={handleDownload} disabled={dlState === 'checking'}
+        style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.3rem 0.85rem',
+          borderRadius: '8px', border: '1px solid ' + borderColor, cursor: dlState === 'checking' ? 'wait' : 'pointer',
+          fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+          background: bgColor, color: txtColor, transition: 'all 0.2s', minWidth: '7rem', justifyContent: 'center' }}>
+        {label}
+      </button>
+      {message && <span aria-live="polite" className="mv-download-message" style={{ color: txtColor }}>{message}</span>}
+    </div>
   )
 }
 
