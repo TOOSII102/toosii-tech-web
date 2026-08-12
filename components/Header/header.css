@@ -457,3 +457,37 @@
   .mobile-menu  { inset: 62px 0 0 0; }
   .brand-logo   { height: 40px; }
 }
+
+
+/* ── Toosii Tech sitewide shell refresh ── */
+.site-header {
+  background: rgba(9, 11, 15, 0.82);
+  border-bottom-color: var(--line, rgba(222,236,242,0.11));
+  box-shadow: 0 1px 0 rgba(255,255,255,0.025), 0 18px 42px rgba(0,0,0,0.18);
+}
+.header-inner { max-width: 1400px; height: 72px; padding: 0 clamp(1rem, 3vw, 2.5rem); }
+.brand-link { gap: 0.68rem; }
+.brand-logo { height: 36px; filter: drop-shadow(0 4px 12px rgba(114,240,186,0.13)); }
+.brand-link:hover .brand-logo { filter: drop-shadow(0 6px 16px rgba(114,240,186,0.26)); }
+.brand-name { font-family: var(--display-font, 'DM Sans', sans-serif); font-size: 1.1rem; font-weight: 700; letter-spacing: -0.055em; }
+.nav-menu { gap: 0.2rem; }
+.nav-link { color: #a6b2bd; padding: 0.48rem 0.68rem; border-radius: 8px; font-family: var(--ui-font, sans-serif); font-size: 0.76rem; font-weight: 700; letter-spacing: 0.005em; }
+.nav-link:hover { color: #eafaf2; background: rgba(114,240,186,0.075); }
+.nav-link.active { color: var(--mint, #72f0ba); background: rgba(114,240,186,0.10); border-color: rgba(114,240,186,0.20); }
+.nav-support-btn { background: linear-gradient(135deg, var(--mint, #72f0ba), #7ee7ff); color: #0b1515; padding: 0.55rem 0.86rem; border-radius: 9px; box-shadow: 0 5px 18px rgba(114,240,186,0.16); font-family: var(--ui-font, sans-serif); font-size: 0.72rem; letter-spacing: 0.01em; }
+.nav-support-btn:hover { box-shadow: 0 9px 24px rgba(114,240,186,0.25); }
+.nav-dropdown-panel { background: rgba(15, 19, 26, 0.98); border-color: rgba(114,240,186,0.16); border-radius: 18px; box-shadow: 0 28px 70px rgba(0,0,0,0.52); }
+.dropdown-link { border-radius: 11px; }
+.dropdown-link:hover { background: rgba(114,240,186,0.07); border-color: rgba(114,240,186,0.13); }
+.dropdown-link.active { background: rgba(114,240,186,0.10); border-color: rgba(114,240,186,0.20); }
+.dropdown-label { font-family: var(--ui-font, sans-serif); font-size: 0.79rem; font-weight: 700; }
+.dropdown-desc { color: #8a98a5; font-size: 0.68rem; }
+.dropdown-link:hover .dropdown-label, .dropdown-link.active .dropdown-label, .dropdown-all-link { color: var(--mint, #72f0ba); }
+.dropdown-all-link:hover { background: rgba(114,240,186,0.10); }
+
+@media (max-width: 840px) {
+  .header-inner { height: 64px; }
+  .brand-logo { height: 32px; }
+  .brand-name { font-size: 1rem; }
+  .hamburger { background: rgba(255,255,255,0.045); border-color: rgba(255,255,255,0.13); border-radius: 10px; }
+}

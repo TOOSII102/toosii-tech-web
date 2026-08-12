@@ -1,4 +1,5 @@
 import './globals.css'
+import './refurbishment.css'
 import { headers } from 'next/headers'
 import AnimatedBackground from '../components/AnimatedBackground'
 import NavigationHistory from '../components/NavigationHistory'

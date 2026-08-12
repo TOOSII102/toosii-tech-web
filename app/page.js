@@ -32,7 +32,7 @@ export default function Home() {
       num: '02',
       icon: '🛠️',
       title: 'Free Web Tools',
-      desc: 'Stream movies, download videos & MP3s, generate WhatsApp sessions, remove vocals, create fire logos, write AI stories — all free, no sign-up.',
+      desc: 'Discover focused utilities for media, sessions, vocals, branding, creative writing, and everyday digital work.',
       cta: 'Browse Tools',
       href: '/tools',
       accent: '#3b82f6',
@@ -53,7 +53,7 @@ export default function Home() {
     { icon: '🎬', title: 'Video Downloader',    desc: 'YouTube, TikTok, Instagram — HD.', href: '/downloader/video',  color: '#ef4444' },
     { icon: '🎧', title: 'MP3 Downloader',      desc: 'Extract audio from any YouTube video.', href: '/downloader/audio',  color: '#f59e0b' },
     { icon: '🎵', title: 'Spotify Downloader',  desc: 'Spotify link → MP3, no premium needed.', href: '/downloader/spotify', color: '#25d366' },
-    { icon: '🎬', title: 'Movies & Streams',    desc: 'HD movies & TV series, free.', href: '/tools/movies',        color: '#a78bfa' },
+    { icon: '🎬', title: 'ToosiiFlix',           desc: 'Discover movies and series in a dedicated experience.', href: '/tools/movies', color: '#a78bfa' },
     { icon: '🎤', title: 'Vocal Remover',        desc: 'Isolate vocals or get instrumentals.', href: '/tools/vocal-remover', color: '#06b6d4' },
     { icon: '🔑', title: 'Session Generator',   desc: 'WhatsApp session ID in seconds.', href: '/session',           color: '#25d366' },
     { icon: '🔥', title: 'Fire Logo Maker',      desc: 'Striking fire-style logo, instant.', href: '/tools/firelogo', color: '#f97316' },
@@ -82,29 +82,27 @@ export default function Home() {
 
           <div className="hero-eyebrow">
             <span className="hero-dot" />
-            Platform Active — Serving Thousands from Kenya
+            Built in Kenya · Available everywhere
           </div>
 
           <h1 className="hero-title">
-            One Platform.<br />
-            <span className="gradient-text">Infinite Possibilities.</span>
+            Practical tools for<br />
+            <span className="gradient-text">digital momentum.</span>
           </h1>
 
           <p className="hero-sub">
-            A developer platform featuring powerful web tools, AI features, a full
-            WhatsApp bot suite, and free movie streaming. Built in Kenya.
-            All free. No sign-up.
+            A focused workspace for useful web tools, AI-assisted creation, and a capable WhatsApp bot suite. Built in Kenya for people who want to get more done.
           </p>
 
           <div className="hero-cta">
             <Link href="/tools/ai" className="hero-btn-primary">
-              <span>✨</span> Try Toosii AI
+              <span>✨</span> Explore Toosii AI
             </Link>
             <Link href="/tools/movies" className="hero-btn-secondary">
-              <span>🎬</span> Watch Movies
+              <span>🧰</span> Browse tools
             </Link>
             <Link href="/bot" className="hero-btn-ghost">
-              <span>🤖</span> Explore the Bot
+              <span>🤖</span> Meet XD Bot
             </Link>
           </div>
 
@@ -222,18 +220,17 @@ export default function Home() {
               <p className="section-eyebrow" style={{ color: '#8b5cf6' }}>🎬 Now on Toosii Tech</p>
               <h2 className="section-title" style={{ textAlign: 'left', marginBottom: '0.75rem' }}>
                 Stream &amp; Download<br />
-                <span className="movies-gradient-text">Full Movies Free</span>
+                <span className="movies-gradient-text">ToosiiFlix</span>
               </h2>
               <p className="movies-copy-sub">
-                Hollywood blockbusters, international films, and hit TV series — all in HD.
-                Multiple quality options from 360p to 1080p. One-click downloads. No subscription, no sign-up, no ads.
+                A dedicated discovery experience for films and television, with personalised profiles, watch lists, and a clean, focused viewing interface.
               </p>
 
               <ul className="movies-features">
                 {[
                   ['🎞️', 'Full Movies & TV Series', 'Hollywood, African & international titles'],
                   ['📺', 'Multiple Qualities',       '360p · 480p · 720p · 1080p — your choice'],
-                  ['⬇️', 'Direct Downloads',         'Download any movie to your device instantly'],
+                  ['👤', 'Personal Profiles',      'Keep your list and watch history organised'],
                   ['🔍', 'Smart Search',              'Find anything by title, actor, or genre'],
                 ].map(([icon, title, sub]) => (
                   <li key={title} className="movies-feature-item">
@@ -255,8 +252,8 @@ export default function Home() {
             <div className="movies-spotlight-card">
               <div className="movies-spotlight-card-top" />
               <div className="movies-card-icon">🎬</div>
-              <h3 className="movies-card-title">Toosii Movies</h3>
-              <p className="movies-card-sub">Free HD streaming by TOOSII</p>
+              <h3 className="movies-card-title">ToosiiFlix</h3>
+              <p className="movies-card-sub">A dedicated discovery experience</p>
               <div className="movies-quality-row">
                 {['360p', '480p', '720p', '1080p'].map(q => (
                   <span key={q} className="movies-q-chip">{q}</span>

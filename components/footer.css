@@ -93,3 +93,25 @@
 
 @media (max-width: 1024px) { .footer-inner { grid-template-columns: 1fr 1fr; gap: 2rem; } }
 @media (max-width: 640px) { .footer-inner { grid-template-columns: 1fr; } .footer-bottom { flex-direction: column; gap: 0.75rem; text-align: center; } }
+
+
+/* ── Toosii Tech footer refurbishment ── */
+.site-footer { background: linear-gradient(180deg, rgba(13,17,23,0.98), #080a0e); border-top-color: rgba(117,214,255,0.13); padding: 5rem clamp(1rem, 3vw, 2.5rem) 1.4rem; color: #98a5b0; }
+.footer-inner { max-width: 1400px; gap: clamp(2rem, 5vw, 5rem); }
+.footer-logo { gap: 0.72rem; }
+.footer-logo-img { height: 38px; filter: drop-shadow(0 6px 12px rgba(114,240,186,0.14)); }
+.footer-logo span { font-family: var(--display-font, sans-serif); font-size: 1.25rem; letter-spacing: -0.06em; }
+.footer-tagline { color: #9dabb5; font-family: var(--ui-font, sans-serif); font-size: 0.79rem; line-height: 1.7; }
+.email-direct { color: var(--mint, #72f0ba); background: rgba(114,240,186,0.075); border-color: rgba(114,240,186,0.20); border-radius: 9px; font-family: var(--ui-font, sans-serif); font-size: 0.72rem; font-weight: 800; }
+.email-direct:hover { background: rgba(114,240,186,0.14); }
+.response-note { color: #71808c; font-size: 0.68rem; }
+.footer-socials { gap: 0.55rem; }
+.footer-socials a { width: 34px; height: 34px; color: #aab5be; background: rgba(255,255,255,0.035); border-color: rgba(255,255,255,0.085); border-radius: 9px; }
+.footer-socials a:hover { color: var(--mint, #72f0ba); background: rgba(114,240,186,0.09); border-color: rgba(114,240,186,0.22); }
+.footer-links h4, .footer-contact-col h4 { color: #dfe8eb; font-family: var(--ui-font, sans-serif); font-size: 0.62rem; font-weight: 800; letter-spacing: 0.14em; }
+.footer-links ul { gap: 0.62rem; }
+.footer-links a, .footer-contact-col a, .footer-contact-col span { color: #9aa7b1; font-family: var(--ui-font, sans-serif); font-size: 0.74rem; }
+.footer-links a:hover, .footer-contact-col a:hover, .footer-bottom a { color: var(--mint, #72f0ba); }
+.footer-bottom { max-width: 1400px; color: #71808b; font-family: var(--ui-font, sans-serif); font-size: 0.68rem; }
+
+@media (max-width: 640px) { .site-footer { padding-top: 3.7rem; } .footer-inner { gap: 2.4rem; } }

@@ -56,7 +56,7 @@ export default function Footer() {
           <h4>Free Tools</h4>
           <ul>
             <li><Link href="/tools/ai">Toosii AI</Link></li>
-            <li><Link href="/tools/movies">Movies &amp; Streams</Link></li>
+            <li><Link href="/tools/movies">ToosiiFlix</Link></li>
             <li><Link href="/downloader/video">Video Downloader</Link></li>
             <li><Link href="/downloader/audio">MP3 Downloader</Link></li>
             <li><Link href="/downloader/spotify">Spotify Downloader</Link></li>

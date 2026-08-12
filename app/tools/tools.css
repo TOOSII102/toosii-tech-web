@@ -245,4 +245,24 @@
     box-shadow: 0 4px 16px rgba(37,211,102,0.35), inset 0 1px 0 rgba(255,255,255,0.15);
   }
   .dl-search-btn:disabled { opacity: 0.55; cursor: not-allowed; }
-  
+
+
+/* ── Shared tool experience refurbishment ── */
+.tool-card { max-width: 880px; padding: clamp(1.25rem, 3vw, 2.25rem); border-radius: 16px; }
+.tool-textarea, .dl-search-wrapper { background: rgba(10,13,18,0.52); border-color: rgba(222,236,242,0.13); border-radius: 12px; }
+.tool-textarea:focus, .dl-search-wrapper:focus-within { border-color: rgba(114,240,186,0.55); box-shadow: 0 0 0 4px rgba(114,240,186,0.10); }
+.tool-output, .result-panel, .apk-item { background: linear-gradient(145deg, rgba(29,36,47,0.72), rgba(13,17,23,0.88)); border-color: rgba(222,236,242,0.11); border-radius: 14px; }
+.tool-output { color: #dce7e5; }
+.copy-btn { color: #0b1715; background: linear-gradient(135deg, #72f0ba, #7ee7ff); border-color: transparent; font-family: var(--ui-font, sans-serif); font-size: 0.72rem; font-weight: 800; }
+.copy-btn:hover { filter: brightness(1.06); }
+.tip-card { background: rgba(255,255,255,0.028); border-color: rgba(222,236,242,0.10); border-radius: 13px; }
+.tip-card h3, .result-title, .apk-name { font-family: var(--display-font, sans-serif); letter-spacing: -0.03em; }
+.tip-card p, .result-artist, .apk-meta { color: #98a6b1; }
+.progress-box { color: #b9efff; background: rgba(117,214,255,0.075); border-color: rgba(117,214,255,0.20); }
+.spinner { border-color: rgba(114,240,186,0.25); border-top-color: #72f0ba; }
+.file-upload-area { border-color: rgba(222,236,242,0.18); background: rgba(255,255,255,0.02); border-radius: 14px; }
+.file-upload-area:hover, .file-upload-area.drag { border-color: #72f0ba; background: rgba(114,240,186,0.055); }
+.ai-bubble.user { color: #dfffee; background: rgba(114,240,186,0.12); border-color: rgba(114,240,186,0.22); }
+.ai-bubble.bot { color: #dde7e6; background: rgba(255,255,255,0.045); border-color: rgba(222,236,242,0.10); }
+.dl-search-btn { color: #0b1715; background: linear-gradient(135deg, #72f0ba, #7ee7ff); font-family: var(--ui-font, sans-serif); font-size: 0.78rem; }
+.dl-search-btn:hover:not(:disabled) { box-shadow: 0 4px 16px rgba(114,240,186,0.24), inset 0 1px 0 rgba(255,255,255,0.15); }
