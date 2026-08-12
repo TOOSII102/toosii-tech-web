@@ -103,6 +103,7 @@
     const [loadInfo, setLoadInfo] = useState(true)
     const [playData, setPlayData] = useState(null)  /* { imdbId, seasons, isTV } */
     const [recs,     setRecs]     = useState([])
+    const [supplemental, setSupplemental] = useState(null)
 
     /* player */
     const [se,       setSe]       = useState(1)
@@ -130,7 +131,7 @@
 
     /* fetch detail + play data in parallel */
     useEffect(() => {
-      setDetail(null); setPlayData(null); setLoadInfo(true); setPlaying(false)
+      setDetail(null); setPlayData(null); setSupplemental(null); setLoadInfo(true); setPlaying(false)
       const sid = movie.subjectId
       ;(async () => {
         try {
@@ -143,18 +144,31 @@
           setDetail(dD?.data || null)
           setPlayData(pD?.data || null)
           setRecs((rD?.data?.subjectList || rD?.data?.items || []).slice(0, 12))
+
+          fetch(API + '?action=metadata&q=' + encodeURIComponent(movie.title || '') + '&kind=' + (isTV(movie) ? 'tv' : 'movie'))
+            .then(response => response.ok ? response.json() : null)
+            .then(payload => {
+              const meta = payload?.data || null
+              setSupplemental(meta)
+              if (meta?.seasons?.length) setSe(current => meta.seasons.includes(current) ? current : meta.seasons[0])
+            })
+            .catch(() => {})
         } catch {}
         setLoadInfo(false)
       })()
     }, [movie.subjectId])
 
-    const d      = detail || movie
-    const tv     = isTV(d)
-    const poster = cover(d)
+    const d       = detail || movie
+    const tv      = isTV(d)
+    const poster  = cover(d) || supplemental?.poster || ''
+    const summary = d.description || supplemental?.summary || ''
+    const genres  = (d.genre || supplemental?.genres?.join(',') || '').split(',').map(g => g.trim()).filter(Boolean)
+    const rating  = d.imdbRatingValue || supplemental?.rating || null
 
-    /* season list: from ShowBox if available, else [1] */
-    const seasons = playData?.seasons?.length ? playData.seasons : (tv ? [1] : [])
-    const EP_PER  = 24  /* show 24 episode buttons per season */
+    /* Prefer provider episode data, then the ShowBox list, then a compact default. */
+    const seasons = supplemental?.seasons?.length ? supplemental.seasons : (playData?.seasons?.length ? playData.seasons : (tv ? [1] : []))
+    const EP_PER  = 24
+    const episodeCount = supplemental?.episodeCounts?.[se] || EP_PER
 
     function scrollToPlayer() {
       setTimeout(() => document.querySelector('.mv-player-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
@@ -171,7 +185,7 @@
     }
 
     /* derive current player src */
-    const imdbId  = playData?.imdbId || null
+    const imdbId  = playData?.imdbId || supplemental?.imdbId || null
     const vsSrc   = imdbId ? embedUrl(player, imdbId, tv ? se : null, tv ? ep : null) : null
     const xcSrc  = xcUrl(movie.subjectId, res, tv ? se : '', tv ? ep : '')
     const pxSrc  = xcProxy(movie.subjectId, res, tv ? se : '', tv ? ep : '')
@@ -202,14 +216,15 @@
                 <div className="mv-modal-badges">
                   <span className="mv-modal-badge mv-badge-purple">{tv ? '📺 Series' : '🎬 Movie'}</span>
                   {d.countryName && <span className="mv-modal-badge mv-badge-blue">📍 {d.countryName}</span>}
-                  {d.imdbRatingValue && <span className="mv-modal-badge mv-badge-amber">⭐ {d.imdbRatingValue}</span>}
+                  {rating && <span className="mv-modal-badge mv-badge-amber">⭐ {rating}</span>}
+                  {supplemental?.provider === 'tvmaze' && <span className="mv-modal-badge mv-badge-blue">TV episode guide</span>}
                 </div>
                 <h2 className="mv-modal-title">{d.title}</h2>
                 <div className="mv-modal-meta">
                   {year(d) && <span>📅 {year(d)}</span>}
                   {dur(d.duration) && <span>⏱ {dur(d.duration)}</span>}
-                  {(d.genre || '').split(',').slice(0, 3).filter(Boolean).map(g => (
-                    <span key={g} style={{ color: '#a78bfa' }}>{g.trim()}</span>
+                  {genres.slice(0, 3).map(g => (
+                    <span key={g} style={{ color: '#a78bfa' }}>{g}</span>
                   ))}
                 </div>
                 <div style={{ marginTop: '1.1rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -234,7 +249,10 @@
 
             {!loadInfo && (
               <>
-                {d.description && <p className="mv-modal-desc">{d.description}</p>}
+                {summary && <p className="mv-modal-desc">{summary}</p>}
+                {supplemental?.provider && <p style={{ margin: '0.45rem 0 1.1rem', color: '#64748b', fontSize: '0.72rem' }}>
+                  Metadata enhanced by {supplemental.provider === 'tvmaze' ? 'TVmaze' : 'AllInOne catalogue'}{supplemental?.totalEpisodes ? ' · ' + supplemental.totalEpisodes + ' episodes indexed' : ''}
+                </p>}
 
 
 
@@ -367,13 +385,13 @@
                           disabled={ep <= 1 && se <= seasons[0]}
                           onClick={() => {
                             if (ep > 1) { const next = ep - 1; setEp(next); watchEp(se, next) }
-                            else if (se > seasons[0]) { const ps = seasons[seasons.indexOf(se) - 1]; setSe(ps); setEp(EP_PER); watchEp(ps, EP_PER) }
+                            else if (se > seasons[0]) { const ps = seasons[seasons.indexOf(se) - 1]; const previousCount = supplemental?.episodeCounts?.[ps] || EP_PER; setSe(ps); setEp(previousCount); watchEp(ps, previousCount) }
                           }}>
                           ← Prev
                         </button>
                         <button className="mv-eps-nav-btn mv-eps-next"
                           onClick={() => {
-                            if (ep < EP_PER) { const next = ep + 1; setEp(next); watchEp(se, next) }
+                            if (ep < episodeCount) { const next = ep + 1; setEp(next); watchEp(se, next) }
                             else { const idx = seasons.indexOf(se); if (idx < seasons.length - 1) { const ns = seasons[idx + 1]; setSe(ns); setEp(1); watchEp(ns, 1) } }
                           }}>
                           Next →
@@ -382,7 +400,7 @@
                     </div>
                     {/* Scrollable episode strip */}
                     <div className="mv-eps-strip">
-                      {Array.from({ length: EP_PER }, (_, i) => i + 1).map(e => (
+                      {Array.from({ length: episodeCount }, (_, i) => i + 1).map(e => (
                         <button key={e}
                           className={'mv-eps-ep' + (ep === e && playing ? ' active' : '')}
                           onClick={() => watchEp(se, e)}>

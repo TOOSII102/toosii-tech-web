@@ -5,6 +5,8 @@ export const runtime = 'nodejs'
 
 const BASE = 'https://movieapi.xcasper.space'
 const SITE = 'https://xcasper.space'
+const TVMAZE = 'https://api.tvmaze.com'
+const ALL_IN_ONE = 'https://allinoneapi.vercel.app'
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
 
@@ -47,12 +49,107 @@ function xcStreamUrl(id, res, se, ep) {
   return url
 }
 
+function plainText(value = '') {
+  return String(value).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
+function comparableTitle(value = '') {
+  return plainText(value)
+    .replace(/\s*S\d+(?:\s*-\s*S?\d+)?\b.*$/i, '')
+    .replace(/[^a-z0-9]+/gi, ' ')
+    .trim()
+    .toLowerCase()
+}
+
+function bestTitleMatch(items, title, getTitle) {
+  const target = comparableTitle(title)
+  if (!target || !Array.isArray(items)) return null
+  let best = null
+  let bestScore = 0
+  for (const item of items) {
+    const candidate = comparableTitle(getTitle(item))
+    if (!candidate) continue
+    const score = candidate === target ? 3 : (candidate.includes(target) || target.includes(candidate) ? 2 : 0)
+    if (score > bestScore) { best = item; bestScore = score }
+  }
+  return bestScore ? best : null
+}
+
+async function publicJson(url, timeout = 8000) {
+  try {
+    const response = await fetch(url, {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(timeout),
+      next: { revalidate: 3600 },
+    })
+    return response.ok ? response.json() : null
+  } catch {
+    return null
+  }
+}
+
+function allInOneMeta(item, isTV) {
+  if (!item) return null
+  return {
+    provider: 'allinone',
+    title: item.title || '',
+    summary: item.description || '',
+    poster: item.img || '',
+    rating: item.rate || null,
+    genres: Array.isArray(item.genre) ? item.genre : [],
+    year: isTV ? item.started : item.year,
+    endYear: isTV ? item.ended : null,
+    seasons: isTV && Number.isFinite(item.seasons) ? Array.from({ length: item.seasons }, (_, index) => index + 1) : [],
+    totalEpisodes: isTV && Number.isFinite(item.episodes) ? item.episodes : null,
+  }
+}
+
+async function supplementalMetadata(title, isTV) {
+  const cataloguePath = isTV ? '/series' : '/movies'
+  const [catalogue, showSearch] = await Promise.all([
+    publicJson(ALL_IN_ONE + cataloguePath),
+    isTV ? publicJson(TVMAZE + '/search/shows?q=' + encodeURIComponent(title)) : Promise.resolve(null),
+  ])
+
+  const catalogueMatch = bestTitleMatch(catalogue, title, item => item.title)
+  const catalogueMeta = allInOneMeta(catalogueMatch, isTV)
+  if (!isTV) return catalogueMeta
+
+  const showMatch = bestTitleMatch(showSearch, title, item => item?.show?.name)
+  const show = showMatch?.show
+  if (!show) return catalogueMeta
+
+  const episodes = await publicJson(TVMAZE + '/shows/' + show.id + '/episodes')
+  const episodeCounts = {}
+  for (const episode of Array.isArray(episodes) ? episodes : []) {
+    if (episode?.season > 0) episodeCounts[episode.season] = (episodeCounts[episode.season] || 0) + 1
+  }
+  const seasons = Object.keys(episodeCounts).map(Number).sort((a, b) => a - b)
+
+  return {
+    provider: 'tvmaze',
+    title: show.name || title,
+    summary: plainText(show.summary || catalogueMeta?.summary || ''),
+    poster: show.image?.original || show.image?.medium || catalogueMeta?.poster || '',
+    rating: show.rating?.average || catalogueMeta?.rating || null,
+    genres: show.genres?.length ? show.genres : (catalogueMeta?.genres || []),
+    year: show.premiered?.slice(0, 4) || catalogueMeta?.year || '',
+    endYear: show.ended?.slice(0, 4) || catalogueMeta?.endYear || '',
+    imdbId: show.externals?.imdb || null,
+    status: show.status || '',
+    seasons,
+    episodeCounts,
+    totalEpisodes: Array.isArray(episodes) ? episodes.length : (catalogueMeta?.totalEpisodes || null),
+  }
+}
+
 export async function GET(req) {
   const { searchParams } = new URL(req.url)
   const action = searchParams.get('action') || 'trending'
   const id     = searchParams.get('id')     || ''
   const q      = searchParams.get('q')      || ''
   const type   = searchParams.get('type')   || ''
+  const kind   = searchParams.get('kind')   || ''
   const res    = searchParams.get('res')    || '720'
   const se     = searchParams.get('se')     || ''
   const ep     = searchParams.get('ep')     || ''
@@ -168,6 +265,7 @@ export async function GET(req) {
       case 'search':    return NextResponse.json(await xc('/api/search?keyword=' + encodeURIComponent(q) + (type ? '&type=' + type : '')))
       case 'detail':    return NextResponse.json(await xc('/api/rich-detail?subjectId=' + encodeURIComponent(id)))
       case 'recommend': return NextResponse.json(await xc('/api/recommend?subjectId=' + encodeURIComponent(id) + '&page=1&perPage=12'))
+      case 'metadata':  return NextResponse.json({ data: await supplementalMetadata(q, kind === 'tv') })
       default:          return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
     }
   } catch (e) {
