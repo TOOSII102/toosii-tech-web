@@ -141,6 +141,8 @@ const endpoints = [
 ]
 
 const categories = ['Core', 'Data', 'Media Search', 'Utilities', 'Sports']
+const API_ORIGIN = 'https://www.toosiitech.org'
+const publicEndpointUrl = path => `${API_ORIGIN}${path}`
 
 const starterResponse = {
   success: true,
@@ -156,6 +158,7 @@ export default function ApiPortal() {
   const [state, setState] = useState('idle')
   const [copied, setCopied] = useState('')
   const [copiedPath, setCopiedPath] = useState('')
+  const [previewedId, setPreviewedId] = useState('')
   const [filter, setFilter] = useState('')
   const consoleRef = useRef(null)
 
@@ -237,7 +240,7 @@ export default function ApiPortal() {
               </p>
               <div className="api-hero-actions">
                 <a href="#reference" className="api-btn api-btn-primary">Explore endpoints <span aria-hidden="true">→</span></a>
-                <button type="button" className="api-btn api-btn-secondary" onClick={() => copy('/api/v1', 'Base URL copied')}>Copy base path</button>
+                <button type="button" className="api-btn api-btn-secondary" onClick={() => copy(publicEndpointUrl('/api/v1'), 'Public base URL copied')}>Copy base path</button>
               </div>
               <p className="api-copy-note" role="status">{copied || 'No API key required for the starter collection.'}</p>
               <ul className="api-hero-facts" aria-label="Toosii API highlights">
@@ -290,8 +293,8 @@ export default function ApiPortal() {
                   </label>
                   <div className="api-base-control">
                     <span>Base URL</span>
-                    <code>/api/v1</code>
-                    <button type="button" onClick={() => copy('/api/v1', 'Base URL copied')}>Copy</button>
+                    <code>https://www.toosiitech.org/api/v1</code>
+                    <button type="button" onClick={() => copy(publicEndpointUrl('/api/v1'), 'Public base URL copied')}>Copy</button>
                   </div>
                   <p className="api-sidebar-status" role="status">{copied || 'No key required'}</p>
                 </div>
@@ -323,18 +326,20 @@ export default function ApiPortal() {
                                 <button
                                   type="button"
                                   className="api-card-copy-btn"
-                                  onClick={() => copy(endpoint.path, `${endpoint.title} path copied`)}
-                                  aria-label={`Copy ${endpoint.title} request path`}
+                                  onClick={() => copy(publicEndpointUrl(endpoint.path), `${endpoint.title} endpoint copied`)}
+                                  aria-label={`Copy full public URL for ${endpoint.title}`}
                                 >
-                                  {copiedPath === endpoint.path ? 'Copied' : 'Copy'}
+                                  {copiedPath === publicEndpointUrl(endpoint.path) ? 'Copied' : 'Copy URL'}
                                 </button>
                                 <button
                                   type="button"
                                   className="api-card-preview-btn"
-                                  onClick={() => selectEndpoint(endpoint)}
-                                  aria-label={`Preview ${endpoint.title} request`}
+                                  onClick={() => setPreviewedId(current => current === endpoint.id ? '' : endpoint.id)}
+                                  aria-expanded={previewedId === endpoint.id}
+                                  aria-controls={`preview-${endpoint.id}`}
+                                  aria-label={`${previewedId === endpoint.id ? 'Hide' : 'Show'} ${endpoint.title} request preview`}
                                 >
-                                  Preview
+                                  {previewedId === endpoint.id ? 'Hide preview' : 'Preview'}
                                 </button>
                                 <button
                                   type="button"
@@ -345,6 +350,13 @@ export default function ApiPortal() {
                                   {state === 'loading' && active.id === endpoint.id ? 'Running…' : 'Run request'}
                                 </button>
                               </div>
+                              {previewedId === endpoint.id && (
+                                <div id={`preview-${endpoint.id}`} className="api-inline-preview">
+                                  <div className="api-inline-preview-head"><span>Request preview</span><b>GET</b></div>
+                                  <code>{publicEndpointUrl(endpoint.path)}</code>
+                                  <p>{endpoint.params.length ? `Query: ${endpoint.params.map(param => `${param.name}${param.required ? '*' : ''}`).join(', ')}` : 'No query parameters required.'}</p>
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -373,8 +385,8 @@ export default function ApiPortal() {
                   <div className="api-console-details">
                     <div className="api-request-box">
                       <div className="api-request-label">Request path</div>
-                      <code>{active.path}</code>
-                      <button type="button" onClick={() => copy(active.path, 'Request path copied')}>Copy</button>
+                      <code>{publicEndpointUrl(active.path)}</code>
+                      <button type="button" onClick={() => copy(publicEndpointUrl(active.path), 'Public endpoint copied')}>Copy</button>
                     </div>
 
                     <div className="api-parameter-block">

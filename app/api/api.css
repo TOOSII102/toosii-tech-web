@@ -648,6 +648,51 @@
 
 .api-card-run-btn:disabled { cursor: wait; opacity: 0.62; }
 
+.api-inline-preview {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.4rem;
+  margin: 0 0.58rem 0.58rem;
+  padding: 0.7rem;
+  border: 1px solid rgba(125, 211, 252, 0.16);
+  border-radius: 8px;
+  background: rgba(2, 6, 23, 0.48);
+}
+
+.api-inline-preview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: #94a3b8;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.api-inline-preview-head b {
+  padding: 0.16rem 0.3rem;
+  border-radius: 4px;
+  color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.12);
+  font-size: 0.58rem;
+}
+
+.api-inline-preview code {
+  overflow-wrap: anywhere;
+  color: #7dd3fc;
+  font-size: 0.65rem;
+  line-height: 1.45;
+}
+
+.api-inline-preview p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.64rem;
+  line-height: 1.45;
+}
+
 .api-endpoint-card:hover,
 .api-endpoint-card.active {
   border-color: rgba(96, 165, 250, 0.3);
@@ -1010,6 +1055,7 @@
   .api-category-items { display: grid; gap: 0.3rem; }
   .api-endpoint-nav { width: 100%; grid-template-columns: 1fr; }
   .api-card-controls { gap: 0.28rem; padding-right: 0.45rem; }
+  .api-inline-preview { margin: 0 0.45rem 0.45rem; padding: 0.62rem; }
   .api-card-copy-btn,
   .api-card-preview-btn,
   .api-card-run-btn { min-width: 76px; font-size: 0.59rem; }
