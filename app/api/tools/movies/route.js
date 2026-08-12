@@ -1,4 +1,7 @@
 import { NextResponse } from 'next/server'
+import { fetchWithWebshare, webshareEnabled } from '../../../../lib/webshareProxy'
+
+export const runtime = 'nodejs'
 
 const BASE = 'https://movieapi.xcasper.space'
 const SITE = 'https://xcasper.space'
@@ -27,8 +30,13 @@ const JSON_HDRS = {
   'Sec-Fetch-Mode': 'cors',
 }
 
+async function upstreamFetch(url, init = {}) {
+  if (webshareEnabled()) return fetchWithWebshare(url, init)
+  return fetch(url, init)
+}
+
 async function xc(path) {
-  const r = await fetch(BASE + path, { headers: JSON_HDRS, signal: AbortSignal.timeout(12000) })
+  const r = await upstreamFetch(BASE + path, { headers: JSON_HDRS, signal: AbortSignal.timeout(12000) })
   if (!r.ok) throw new Error('xcasper ' + r.status + ': ' + path)
   return r.json()
 }
@@ -55,7 +63,7 @@ export async function GET(req) {
     const url   = xcStreamUrl(id, res, se, ep)
     const range = req.headers.get('range') || ''
     try {
-      const upstream = await fetch(url, {
+      const upstream = await upstreamFetch(url, {
         headers: {
           ...BROWSER_HDRS,
           'Accept': 'video/mp4,video/webm,video/*,*/*;q=0.9',
@@ -81,7 +89,7 @@ export async function GET(req) {
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
     const url = xcStreamUrl(id, res, se, ep)
     try {
-      const upstream = await fetch(url, {
+      const upstream = await upstreamFetch(url, {
         headers: { ...BROWSER_HDRS, 'Accept': 'video/mp4,video/webm,video/*,*/*;q=0.9' },
         signal: AbortSignal.timeout(60000),
       })
@@ -121,7 +129,7 @@ export async function GET(req) {
       const title  = (d.title || '').replace(/\s*S\d.*/i, '').trim()
       const sbType = isTV ? 'tv' : 'movie'
 
-      const sbSearch = await fetch(
+      const sbSearch = await upstreamFetch(
         BASE + '/api/showbox/search?keyword=' + encodeURIComponent(title) + '&type=' + sbType,
         { headers: JSON_HDRS, signal: AbortSignal.timeout(10000) }
       ).then(r => r.json())
@@ -131,13 +139,13 @@ export async function GET(req) {
 
       if (sbItem) {
         if (!isTV) {
-          const m = await fetch(
+          const m = await upstreamFetch(
             BASE + '/api/showbox/movie?id=' + sbItem.id,
             { headers: JSON_HDRS, signal: AbortSignal.timeout(10000) }
           ).then(r => r.json())
           imdbId = m?.data?.imdb_id || null
         } else {
-          const t = await fetch(
+          const t = await upstreamFetch(
             BASE + '/api/showbox/tv?id=' + sbItem.id + '&season=1&episode=1',
             { headers: JSON_HDRS, signal: AbortSignal.timeout(10000) }
           ).then(r => r.json())
