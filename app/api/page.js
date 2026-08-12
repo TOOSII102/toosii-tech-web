@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import Layout from '../../components/Layout'
 import './api.css'
 
@@ -156,6 +156,7 @@ export default function ApiPortal() {
   const [state, setState] = useState('idle')
   const [copied, setCopied] = useState('')
   const [filter, setFilter] = useState('')
+  const consoleRef = useRef(null)
 
   const active = useMemo(
     () => endpoints.find(endpoint => endpoint.id === activeId) || endpoints[0],
@@ -177,6 +178,12 @@ export default function ApiPortal() {
     setActiveId(endpoint.id)
     setState('idle')
     setResponse(starterResponse)
+
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 960px)').matches) {
+      window.requestAnimationFrame(() => {
+        consoleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
+    }
   }
 
   const copy = async (value, label) => {
@@ -299,7 +306,7 @@ export default function ApiPortal() {
                 </div>
               </aside>
 
-              <section className="api-console" aria-live="polite">
+              <section ref={consoleRef} className="api-console" aria-live="polite">
                 <div className="api-console-heading">
                   <div>
                     <div className="api-method-label"><span>GET</span> {active.category}</div>
@@ -309,32 +316,36 @@ export default function ApiPortal() {
                   <a href={active.path} target="_blank" rel="noreferrer" className="api-open-link">Open route <span aria-hidden="true">↗</span></a>
                 </div>
 
-                <div className="api-request-box">
-                  <div className="api-request-label">Request path</div>
-                  <code>{active.path}</code>
-                  <button type="button" onClick={() => copy(active.path, 'Request path copied')}>Copy</button>
-                </div>
-
-                <div className="api-parameter-block">
-                  <h4>Query parameters</h4>
-                  {active.params.length ? (
-                    <div className="api-param-list">
-                      {active.params.map(param => (
-                        <div key={param.name} className="api-param">
-                          <div><code>{param.name}</code><span>{param.type}</span>{param.required && <b>required</b>}</div>
-                          <p>{param.description}</p>
-                        </div>
-                      ))}
+                <div className="api-console-grid">
+                  <div className="api-console-details">
+                    <div className="api-request-box">
+                      <div className="api-request-label">Request path</div>
+                      <code>{active.path}</code>
+                      <button type="button" onClick={() => copy(active.path, 'Request path copied')}>Copy</button>
                     </div>
-                  ) : <p className="api-empty">This endpoint does not require parameters.</p>}
-                </div>
 
-                <div className="api-response-block">
-                  <div className="api-response-head">
-                    <div><span className={`api-response-state ${state}`} /> Response {state === 'loading' ? 'loading' : state === 'error' ? 'error' : 'preview'}</div>
-                    <button type="button" className="api-run-btn" onClick={runRequest} disabled={state === 'loading'}>{state === 'loading' ? 'Running…' : 'Run request'}</button>
+                    <div className="api-parameter-block">
+                      <h4>Query parameters</h4>
+                      {active.params.length ? (
+                        <div className="api-param-list">
+                          {active.params.map(param => (
+                            <div key={param.name} className="api-param">
+                              <div><code>{param.name}</code><span>{param.type}</span>{param.required && <b>required</b>}</div>
+                              <p>{param.description}</p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : <p className="api-empty">This endpoint does not require parameters.</p>}
+                    </div>
                   </div>
-                  <pre>{JSON.stringify(response, null, 2)}</pre>
+
+                  <div className="api-response-block">
+                    <div className="api-response-head">
+                      <div><span className={`api-response-state ${state}`} /> Response {state === 'loading' ? 'loading' : state === 'error' ? 'error' : 'preview'}</div>
+                      <button type="button" className="api-run-btn" onClick={runRequest} disabled={state === 'loading'}>{state === 'loading' ? 'Running…' : 'Run request'}</button>
+                    </div>
+                    <pre>{JSON.stringify(response, null, 2)}</pre>
+                  </div>
                 </div>
               </section>
             </div>
