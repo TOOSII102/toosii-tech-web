@@ -659,6 +659,47 @@
   background: rgba(2, 6, 23, 0.48);
 }
 
+.api-inline-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.3rem;
+  padding: 0.24rem;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 7px;
+  background: rgba(15, 23, 42, 0.72);
+}
+
+.api-inline-tabs button {
+  min-height: 27px;
+  padding: 0.32rem 0.38rem;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: #94a3b8;
+  background: transparent;
+  font: inherit;
+  font-size: 0.58rem;
+  font-weight: 800;
+  line-height: 1.1;
+  cursor: pointer;
+  transition: color 0.16s ease, background 0.16s ease, border-color 0.16s ease;
+}
+
+.api-inline-tabs button:hover {
+  color: #e0f2fe;
+  background: rgba(56, 189, 248, 0.08);
+}
+
+.api-inline-tabs button.active {
+  border-color: rgba(56, 189, 248, 0.24);
+  color: #e0f2fe;
+  background: rgba(14, 165, 233, 0.13);
+}
+
+.api-inline-tab-panel {
+  display: grid;
+  gap: 0.4rem;
+}
+
 .api-inline-preview-head {
   display: flex;
   align-items: center;
@@ -691,6 +732,20 @@
   color: #64748b;
   font-size: 0.64rem;
   line-height: 1.45;
+}
+
+.api-inline-response {
+  max-height: 210px;
+  margin: 0;
+  overflow: auto;
+  padding: 0.65rem;
+  border: 1px solid rgba(56, 189, 248, 0.12);
+  border-radius: 6px;
+  color: #bae6fd;
+  background: rgba(2, 6, 23, 0.52);
+  font-size: 0.59rem;
+  line-height: 1.5;
+  white-space: pre;
 }
 
 .api-endpoint-card:hover,
@@ -1056,6 +1111,7 @@
   .api-endpoint-nav { width: 100%; grid-template-columns: 1fr; }
   .api-card-controls { gap: 0.28rem; padding-right: 0.45rem; }
   .api-inline-preview { margin: 0 0.45rem 0.45rem; padding: 0.62rem; }
+  .api-inline-tabs button { font-size: 0.55rem; }
   .api-card-copy-btn,
   .api-card-preview-btn,
   .api-card-run-btn { min-width: 76px; font-size: 0.59rem; }

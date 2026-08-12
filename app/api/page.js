@@ -152,6 +152,16 @@ const starterResponse = {
   status: 'operational',
 }
 
+const responseBodyPreview = endpoint => ({
+  success: true,
+  api: 'Toosii API',
+  operation: endpoint.id.replaceAll('-', '.'),
+  endpoint: `${endpoint.method} ${publicEndpointUrl(endpoint.path)}`,
+  data: {
+    note: 'Preview schema. Use Run request to retrieve a fresh live response.',
+  },
+})
+
 export default function ApiPortal() {
   const [activeId, setActiveId] = useState('health')
   const [response, setResponse] = useState(starterResponse)
@@ -159,6 +169,7 @@ export default function ApiPortal() {
   const [copied, setCopied] = useState('')
   const [copiedPath, setCopiedPath] = useState('')
   const [previewedId, setPreviewedId] = useState('')
+  const [previewTab, setPreviewTab] = useState('request')
   const [filter, setFilter] = useState('')
   const consoleRef = useRef(null)
 
@@ -205,6 +216,12 @@ export default function ApiPortal() {
     } catch {
       setCopied('Copy failed')
     }
+  }
+
+  const togglePreview = (endpoint) => {
+    const isOpening = previewedId !== endpoint.id
+    setPreviewedId(isOpening ? endpoint.id : '')
+    if (isOpening) setPreviewTab('request')
   }
 
   const runRequest = async (endpoint = active) => {
@@ -334,7 +351,7 @@ export default function ApiPortal() {
                                 <button
                                   type="button"
                                   className="api-card-preview-btn"
-                                  onClick={() => setPreviewedId(current => current === endpoint.id ? '' : endpoint.id)}
+                                  onClick={() => togglePreview(endpoint)}
                                   aria-expanded={previewedId === endpoint.id}
                                   aria-controls={`preview-${endpoint.id}`}
                                   aria-label={`${previewedId === endpoint.id ? 'Hide' : 'Show'} ${endpoint.title} request preview`}
@@ -352,9 +369,42 @@ export default function ApiPortal() {
                               </div>
                               {previewedId === endpoint.id && (
                                 <div id={`preview-${endpoint.id}`} className="api-inline-preview">
-                                  <div className="api-inline-preview-head"><span>Request preview</span><b>GET</b></div>
-                                  <code>{publicEndpointUrl(endpoint.path)}</code>
-                                  <p>{endpoint.params.length ? `Query: ${endpoint.params.map(param => `${param.name}${param.required ? '*' : ''}`).join(', ')}` : 'No query parameters required.'}</p>
+                                  <div className="api-inline-tabs" role="tablist" aria-label={`${endpoint.title} preview tabs`}>
+                                    <button
+                                      type="button"
+                                      role="tab"
+                                      id={`request-tab-${endpoint.id}`}
+                                      aria-selected={previewTab === 'request'}
+                                      aria-controls={`request-panel-${endpoint.id}`}
+                                      className={previewTab === 'request' ? 'active' : ''}
+                                      onClick={() => setPreviewTab('request')}
+                                    >
+                                      Request preview
+                                    </button>
+                                    <button
+                                      type="button"
+                                      role="tab"
+                                      id={`response-tab-${endpoint.id}`}
+                                      aria-selected={previewTab === 'response'}
+                                      aria-controls={`response-panel-${endpoint.id}`}
+                                      className={previewTab === 'response' ? 'active' : ''}
+                                      onClick={() => setPreviewTab('response')}
+                                    >
+                                      Response body
+                                    </button>
+                                  </div>
+                                  {previewTab === 'request' ? (
+                                    <div id={`request-panel-${endpoint.id}`} role="tabpanel" aria-labelledby={`request-tab-${endpoint.id}`} className="api-inline-tab-panel">
+                                      <div className="api-inline-preview-head"><span>Request preview</span><b>{endpoint.method}</b></div>
+                                      <code>{publicEndpointUrl(endpoint.path)}</code>
+                                      <p>{endpoint.params.length ? `Query: ${endpoint.params.map(param => `${param.name}${param.required ? '*' : ''}`).join(', ')}` : 'No query parameters required.'}</p>
+                                    </div>
+                                  ) : (
+                                    <div id={`response-panel-${endpoint.id}`} role="tabpanel" aria-labelledby={`response-tab-${endpoint.id}`} className="api-inline-tab-panel">
+                                      <div className="api-inline-preview-head"><span>Response body preview</span><b>JSON</b></div>
+                                      <pre className="api-inline-response">{JSON.stringify(responseBodyPreview(endpoint), null, 2)}</pre>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
