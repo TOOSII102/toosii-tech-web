@@ -82,14 +82,9 @@ export default function Header() {
               </Link>
             ))}
 
-            {/* Support button */}
-            <button
-              className="nav-support-btn"
-              onClick={() => window.dispatchEvent(new Event('open-coffee-modal'))}
-              aria-label="Buy me a coffee"
-            >
-              ☕ Support
-            </button>
+            <Link href="/contact" className="nav-support-btn" aria-label="Contact Toosii Tech">
+              Feedback
+            </Link>
 
             {/* Tools dropdown */}
             <div className={`nav-dropdown${toolsOpen ? ' open' : ''}`} ref={dropRef}>
@@ -198,12 +193,7 @@ export default function Header() {
             <p className="mobile-nav-label" style={{padding:'0.5rem 0.75rem 0.35rem'}}>More</p>
             <Link href="/team" className="mobile-link">Team</Link>
             <Link href="/projects" className="mobile-link">Portfolio</Link>
-            <button
-              className="mobile-support-btn"
-              onClick={() => { setMobileOpen(false); setTimeout(() => window.dispatchEvent(new Event('open-coffee-modal')), 180) }}
-            >
-              ☕ Buy Me a Coffee
-            </button>
+            <Link href="/contact" className="mobile-support-btn">Send Feedback</Link>
           </div>
         </div>
       </div>

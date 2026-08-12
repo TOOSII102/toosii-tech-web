@@ -460,7 +460,7 @@
                 <span>{isTV(hero) ? '📺 Series' : '🎬 Movie'}</span>
               </div>
               <div className="mv-hero-btns">
-                <button className="mv-hero-play-btn">▶ Play Now</button>
+                <button type="button" className="mv-hero-play-btn" onClick={e => { e.stopPropagation(); setSelected(hero) }}>▶ Play Now</button>
                 <button className="mv-hero-info-btn" onClick={e => { e.stopPropagation(); setSelected(hero) }}>ℹ More Info</button>
               </div>
             </div>

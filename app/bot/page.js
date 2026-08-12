@@ -80,11 +80,11 @@ export default function BotPage() {
           </h1>
           <p className="section-sub">
             Engineered on gifted-baileys for rock-solid multi-device WhatsApp support.
-            Self-hosted, always-on, open-source, and continuously improved with new features every week.
+            Built for self-hosted, always-on use and continuously improved with new features every week.
           </p>
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '2rem' }}>
             <Link href="/session" className="btn-primary">Get Session Key →</Link>
-            <a href="https://github.com/TOOSII102/TOOSII-XD-ULTRA" target="_blank" rel="noopener noreferrer" className="btn-outline">GitHub →</a>
+            <Link href="/contact" className="btn-outline">Get Bot Help →</Link>
           </div>
         </div>
       </section>
@@ -118,10 +118,10 @@ export default function BotPage() {
         <div className="page-wrapper">
           <div className="deploy-box glass-card">
             <h2>Ready to run your own instance?</h2>
-            <p>Download the source, generate a session key, and your bot is live in minutes — no complex setup, no cloud subscription required. Free, forever.</p>
+            <p>Generate a session key, then get in touch for help with access, deployment, and configuration. You will have a clear path to get your bot running.</p>
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '1.75rem' }}>
               <Link href="/session" className="btn-primary">Generate Session Key →</Link>
-              <a href="https://github.com/TOOSII102/TOOSII-XD-ULTRA" target="_blank" rel="noopener noreferrer" className="btn-outline">View Source on GitHub</a>
+              <Link href="/contact" className="btn-outline">Ask About Setup</Link>
             </div>
           </div>
         </div>

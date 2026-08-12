@@ -1,5 +1,6 @@
 import Layout from '../components/Layout'
 import Link from 'next/link'
+import FeedbackSection from '../components/FeedbackSection'
 import './home.css'
 
 export const metadata = {
@@ -114,14 +115,9 @@ export default function Home() {
             <Link href="/tools/movies" className="hero-btn-secondary">
               <span>🎬</span> Watch Movies
             </Link>
-            <a
-              href="https://github.com/TOOSII102/TOOSII-XD-ULTRA/archive/refs/heads/main.zip"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hero-btn-ghost"
-            >
-              <span>⬇️</span> Download Bot
-            </a>
+            <Link href="/bot" className="hero-btn-ghost">
+              <span>🤖</span> Explore the Bot
+            </Link>
           </div>
 
           <div className="hero-stats">
@@ -198,23 +194,15 @@ export default function Home() {
               <p className="section-eyebrow" style={{ color: '#25d366' }}>🤖 WhatsApp Bot Suite</p>
               <h2 className="bot-title">TOOSII XD ULTRA</h2>
               <p className="bot-desc">
-                150+ commands. 6+ AI models. 20+ download platforms. Anti-delete, group tools, live
-                sports — all in one always-on, self-hosted, open-source WhatsApp bot.
+                150+ commands. 6+ AI models. 20+ download platforms. Anti-delete, group tools, and live
+                sports — all in one always-on WhatsApp bot built for multi-device use.
               </p>
               <p className="bot-desc" style={{ marginBottom: '2rem' }}>
-                Free to download. No subscription. No cloud fees. Deploy it on any host in minutes.
+                Need help with bot access, setup, or configuration? Get in touch and we will help you get started.
               </p>
               <div className="bot-actions">
-                <a
-                  href="https://github.com/TOOSII102/TOOSII-XD-ULTRA/archive/refs/heads/main.zip"
-                  className="bot-btn-primary"
-                >
-                  ⬇️ Download ZIP
-                </a>
+                <Link href="/contact" className="bot-btn-primary">💬 Ask About Bot Access</Link>
                 <Link href="/bot" className="bot-btn-outline">All Commands →</Link>
-                <a href="https://github.com/TOOSII102/TOOSII-XD-ULTRA" target="_blank" rel="noopener noreferrer" className="bot-btn-ghost">
-                  ⭐ GitHub
-                </a>
               </div>
             </div>
 
@@ -298,6 +286,9 @@ export default function Home() {
         </div>
       </section>
 
+
+      {/* ══════════════ CONTACT & FEEDBACK ══════════════ */}
+      <FeedbackSection />
 
       {/* ══════════════ ABOUT CTA ══════════════ */}
       <section className="section about-section">
