@@ -1,6 +1,5 @@
 import Layout from '../components/Layout'
 import Link from 'next/link'
-import SupportSection from '../components/SupportSection'
 import './home.css'
 
 export const metadata = {
@@ -299,8 +298,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ══════════════ SUPPORT ══════════════ */}
-      <SupportSection />
 
       {/* ══════════════ ABOUT CTA ══════════════ */}
       <section className="section about-section">
