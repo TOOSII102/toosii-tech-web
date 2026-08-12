@@ -496,14 +496,30 @@
     const isSearch = results.length > 0
 
     return (
-      <div className="mv-page">
+      <div className="mv-page tf-page">
+        <header className="tf-nav">
+          <a className="tf-brand" href="/tools/movies" aria-label="ToosiiFlix home">
+            <span className="tf-brand-mark">TF</span>
+            <span className="tf-brand-word">Toosii<span>Flix</span></span>
+          </a>
+          <nav className="tf-nav-links" aria-label="ToosiiFlix navigation">
+            <a href="#featured">Home</a>
+            <a href="#browse">Browse</a>
+            <a href="#search">Discover</a>
+          </nav>
+          <button className="tf-search-trigger" type="button" onClick={() => document.querySelector('.mv-search-input')?.focus()} aria-label="Search titles">
+            <span>⌕</span><span className="tf-search-trigger-label">Search</span>
+          </button>
+        </header>
+
         {/* ── Hero ── */}
         {hero && (
-          <div className="mv-hero" style={{ cursor: 'pointer' }} onClick={() => setSelected(hero)}>
+          <div id="featured" className="mv-hero tf-hero" style={{ cursor: 'pointer' }} onClick={() => setSelected(hero)}>
             <div className="mv-hero-bg" style={{ backgroundImage: 'url(' + cover(hero) + ')' }} />
             <div className="mv-hero-gradient" />
             <div className="mv-hero-content">
-              <div className="mv-hero-badge">🔥 Trending Now</div>
+              <div className="mv-hero-badge">Featured tonight</div>
+              <p className="tf-hero-eyebrow">TOOSIIFLIX PRESENTS</p>
               <h1 className="mv-hero-title">{hero.title}</h1>
               <div className="mv-hero-meta">
                 {year(hero) && <span>📅 {year(hero)}</span>}
@@ -512,17 +528,17 @@
                 <span>{isTV(hero) ? '📺 Series' : '🎬 Movie'}</span>
               </div>
               <div className="mv-hero-btns">
-                <button type="button" className="mv-hero-play-btn" onClick={e => { e.stopPropagation(); setSelected(hero) }}>▶ Play Now</button>
-                <button className="mv-hero-info-btn" onClick={e => { e.stopPropagation(); setSelected(hero) }}>ℹ More Info</button>
+                <button type="button" className="mv-hero-play-btn" onClick={e => { e.stopPropagation(); setSelected(hero) }}>▶ Watch now</button>
+                <button className="mv-hero-info-btn" onClick={e => { e.stopPropagation(); setSelected(hero) }}>Details</button>
               </div>
             </div>
           </div>
         )}
 
         {/* ── Search ── */}
-        <div className="mv-search-wrap">
+        <div id="search" className="mv-search-wrap tf-search-wrap">
           <form className="mv-search-row" onSubmit={handleSearch}>
-            <span className="mv-search-icon">🔍</span>
+            <span className="mv-search-icon">⌕</span>
             <input className="mv-search-input" value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Search movies, series…" />
@@ -531,22 +547,22 @@
               <option value="1">Movies</option>
               <option value="2">Series</option>
             </select>
-            <button type="submit" className="mv-search-btn">Search</button>
+            <button type="submit" className="mv-search-btn">Explore</button>
           </form>
         </div>
 
         {/* ── Grid ── */}
-        <div className="mv-section">
+        <div id="browse" className="mv-section tf-browse-section">
           <div className="mv-section-head">
             <h2 className="mv-section-title">
               <span className="mv-section-bar" />
-              {isSearch ? 'Results for "' + query + '"' : '🔥 Trending'}
+              {isSearch ? 'Results for “' + query + '”' : 'Trending now'}
             </h2>
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
               {isSearch && (
                 <button onClick={() => { setResults([]); setQuery('') }}
-                  style={{ fontSize: '0.8rem', color: '#a78bfa', background: 'none', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '7px', padding: '0.3rem 0.7rem', cursor: 'pointer' }}>
-                  ✕ Clear
+                  className="tf-clear-btn">
+                  Clear
                 </button>
               )}
               <span className="mv-count">{display.length} titles</span>
