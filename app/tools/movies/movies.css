@@ -1391,3 +1391,68 @@
   .tf-browse-section { animation-delay: 120ms; }
 }
 @keyframes tf-rise { from { opacity: 0; transform: translateY(13px); } to { opacity: 1; transform: translateY(0); } }
+
+
+/* ── ToosiiFlix personal profiles and collections ── */
+.tf-profile-trigger { margin-left: auto; display: inline-flex; align-items: center; gap: 0.48rem; padding: 0.24rem 0.42rem 0.24rem 0.24rem; color: #eaeaf0; background: rgba(255,255,255,0.045); border: 1px solid rgba(255,255,255,0.09); border-radius: 999px; font: 800 0.7rem 'Manrope', sans-serif; transition: border-color 160ms ease-out, background 160ms ease-out, transform 160ms ease-out; }
+.tf-profile-trigger:hover { background: rgba(255,255,255,0.09); border-color: rgba(210,255,83,0.36); transform: translateY(-1px); }
+.tf-profile-trigger:active { transform: scale(0.97); }
+.tf-profile-avatar { width: 27px; height: 27px; display: grid; place-items: center; border-radius: 50%; color: #121214; font: 800 0.67rem 'Manrope', sans-serif; }
+.tf-profile-name { max-width: 88px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tf-nav .tf-profile-trigger + .tf-search-trigger { margin-left: 0; }
+
+.tf-collection { width: min(1480px, calc(100% - 3rem)); margin: 2.4rem auto 0; }
+.tf-history-section { margin-top: 3.8rem; }
+.tf-collection-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; padding-bottom: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.tf-collection-kicker { margin: 0 0 0.34rem; color: var(--tf-lime); font: 800 0.6rem/1 'Manrope', sans-serif; letter-spacing: 0.15em; }
+.tf-collection-head h2 { margin: 0; color: #f5f5f5; font: 700 clamp(1.08rem, 1.7vw, 1.38rem)/1 'DM Sans', sans-serif; letter-spacing: -0.04em; }
+.tf-collection-head > span { color: #858591; font: 700 0.66rem 'Manrope', sans-serif; }
+.tf-collection-grid { padding-top: 1.15rem; }
+.tf-history-card-wrap { min-width: 0; }
+.tf-resume-label { margin: 0.36rem 0.12rem 0; color: var(--tf-lime); font: 800 0.58rem 'Manrope', sans-serif; }
+.tf-list-empty { margin-top: 1.15rem; padding: 1.1rem 1.2rem; color: #9d9da8; background: rgba(255,255,255,0.035); border: 1px dashed rgba(255,255,255,0.13); border-radius: 12px; font: 600 0.75rem 'Manrope', sans-serif; }
+.tf-list-empty strong { color: var(--tf-lime); }
+.tf-modal-list-btn { padding: 0.68rem 0.88rem; color: #eeedf3; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.17); border-radius: 9px; font: 800 0.7rem 'Manrope', sans-serif; transition: transform 160ms ease-out, background 160ms ease-out, border-color 160ms ease-out; }
+.tf-modal-list-btn:hover { background: rgba(210,255,83,0.10); border-color: rgba(210,255,83,0.42); }
+.tf-modal-list-btn:active { transform: scale(0.97); }
+
+.tf-profile-backdrop { position: fixed; z-index: 60; inset: 0; display: grid; place-items: center; padding: 1rem; background: rgba(3,3,5,0.74); backdrop-filter: blur(12px); }
+.tf-profile-panel { position: relative; width: min(430px, 100%); padding: 2rem; overflow: hidden; color: #f8f8fb; background: linear-gradient(150deg, #24202e, #111116 56%); border: 1px solid rgba(255,255,255,0.14); border-radius: 20px; box-shadow: 0 26px 90px rgba(0,0,0,0.5); font-family: 'Manrope', sans-serif; }
+.tf-profile-panel::before { content: ''; position: absolute; width: 250px; height: 250px; top: -150px; right: -90px; border-radius: 50%; background: rgba(159,122,234,0.18); filter: blur(10px); pointer-events: none; }
+.tf-profile-panel > * { position: relative; }
+.tf-profile-close { position: absolute; top: 0.8rem; right: 0.8rem; width: 31px; height: 31px; color: #bcbcc7; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.11); border-radius: 50%; font-size: 1.3rem; line-height: 1; }
+.tf-profile-kicker { margin: 0 0 0.55rem; color: var(--tf-lime); font: 800 0.62rem/1 'Manrope', sans-serif; letter-spacing: 0.16em; }
+.tf-profile-panel h2 { margin: 0; font: 700 2rem/1 'DM Sans', sans-serif; letter-spacing: -0.065em; }
+.tf-profile-copy { max-width: 320px; margin: 0.75rem 0 1.4rem; color: #aaaab7; font-size: 0.74rem; line-height: 1.55; }
+.tf-profile-options { display: grid; gap: 0.55rem; }
+.tf-profile-option { display: flex; align-items: center; gap: 0.48rem; }
+.tf-profile-select { flex: 1; display: flex; align-items: center; gap: 0.75rem; min-height: 56px; padding: 0.5rem 0.7rem; color: #dedee5; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09); border-radius: 12px; text-align: left; font: 800 0.76rem 'Manrope', sans-serif; transition: background 160ms ease-out, border-color 160ms ease-out; }
+.tf-profile-select:hover, .tf-profile-select.active { background: rgba(210,255,83,0.08); border-color: rgba(210,255,83,0.36); }
+.tf-profile-choice-avatar { width: 35px; height: 35px; display: grid; place-items: center; flex: 0 0 auto; color: #121214; border-radius: 10px; font: 800 0.76rem 'Manrope', sans-serif; }
+.tf-profile-select small { margin-left: auto; color: var(--tf-lime); font: 800 0.58rem 'Manrope', sans-serif; text-transform: uppercase; letter-spacing: 0.08em; }
+.tf-profile-remove { width: 34px; height: 34px; color: #a5a5b1; background: transparent; border: 1px solid transparent; border-radius: 9px; font-size: 1.1rem; }
+.tf-profile-remove:hover { color: #ff9687; background: rgba(255,114,92,0.08); border-color: rgba(255,114,92,0.24); }
+.tf-add-profile { margin-top: 1.3rem; padding-top: 1.3rem; border-top: 1px solid rgba(255,255,255,0.09); }
+.tf-add-profile label { display: block; margin-bottom: 0.55rem; color: #cacad4; font: 800 0.68rem 'Manrope', sans-serif; }
+.tf-add-profile-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 0.5rem; align-items: center; }
+.tf-add-profile input { width: 100%; min-width: 0; height: 38px; padding: 0 0.65rem; color: #fff; outline: none; background: rgba(0,0,0,0.22); border: 1px solid rgba(255,255,255,0.12); border-radius: 9px; font: 700 0.72rem 'Manrope', sans-serif; }
+.tf-add-profile input:focus { border-color: rgba(210,255,83,0.5); }
+.tf-profile-colors { display: flex; gap: 0.28rem; }
+.tf-profile-colors button { width: 14px; height: 14px; padding: 0; border: 2px solid transparent; border-radius: 50%; }
+.tf-profile-colors button.active { outline: 2px solid #fff; outline-offset: 2px; }
+.tf-add-profile-row > button[type="submit"] { height: 38px; padding: 0 0.75rem; color: #111; background: var(--tf-lime); border: 0; border-radius: 9px; font: 800 0.7rem 'Manrope', sans-serif; }
+.tf-add-profile-row > button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+@media (max-width: 760px) {
+  .tf-profile-trigger { margin-left: auto; padding-right: 0.28rem; }
+  .tf-profile-name { display: none; }
+  .tf-nav .tf-profile-trigger + .tf-search-trigger { margin-left: 0; }
+  .tf-collection { width: calc(100% - 2rem); margin-top: 2.6rem; }
+  .tf-history-section { margin-top: 3.1rem; }
+  .tf-collection-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.78rem; }
+  .tf-collection-head h2 { font-size: 1.05rem; }
+  .tf-profile-panel { padding: 1.55rem 1.15rem; border-radius: 17px; }
+  .tf-profile-panel h2 { font-size: 1.7rem; }
+  .tf-add-profile-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .tf-profile-colors { grid-column: 1 / -1; }
+}

@@ -1,5 +1,6 @@
 'use client'
   import { useState, useCallback, useEffect, useRef } from 'react'
+  import { addProfile, createInitialPersonalization, loadPersonalization, PROFILE_COLORS, recordWatch, removeProfile, savePersonalization, switchProfile, toggleMyList } from '../../../lib/toosiiFlixStorage'
   import '../tools.css'
   import './movies.css'
 
@@ -95,7 +96,7 @@
   }
 
   /* ── Detail + Player modal ── */
-  function Modal({ movie, onClose, onSelect }) {
+  function Modal({ movie, onClose, onSelect, isInMyList, onToggleList, onWatch, resume }) {
     const [detail,   setDetail]   = useState(null)
     const [loadInfo, setLoadInfo] = useState(true)
     const [playData, setPlayData] = useState(null)  /* { imdbId, seasons, isTV } */
@@ -130,6 +131,7 @@
     useEffect(() => {
       let active = true
       setDetail(null); setPlayData(null); setSupplemental(null); setLoadInfo(true); setPlaying(false)
+      setSe(resume?.season || 1); setEp(resume?.episode || 1)
       const sid = movie.subjectId
       const getJson = url => fetch(url).then(response => response.ok ? response.json() : null).catch(() => null)
 
@@ -178,11 +180,13 @@
 
     function watchEp(s, e) {
       setSe(s); setEp(e); setPlaying(true); setPlayer('direct'); setStreamNotice('')
+      onWatch(d, { season: s, episode: e })
       scrollToPlayer()
     }
 
     function watchNow() {
       setPlaying(true); setPlayer('direct'); setStreamNotice('')
+      onWatch(d, { season: tv ? se : null, episode: tv ? ep : null })
       scrollToPlayer()
     }
 
@@ -249,9 +253,14 @@
                 </div>
                 <div style={{ marginTop: '1.1rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                   {!loadInfo && (
-                    <button className="mv-hero-play-btn" onClick={watchNow}>
-                      ▶ {tv ? 'Watch S' + se + ' E' + ep : 'Watch Movie'}
-                    </button>
+                    <>
+                      <button className="mv-hero-play-btn" onClick={watchNow}>
+                        ▶ {tv ? 'Watch S' + se + ' E' + ep : 'Watch Movie'}
+                      </button>
+                      <button className="tf-modal-list-btn" onClick={() => onToggleList(d)}>
+                        {isInMyList ? '✓ In My List' : '+ My List'}
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -466,6 +475,38 @@
     const [query,     setQuery]     = useState('')
     const [type,      setType]      = useState('')
     const [selected,  setSelected]  = useState(null)
+    const [personalization, setPersonalization] = useState(null)
+    const [profileOpen, setProfileOpen] = useState(false)
+    const [newProfileName, setNewProfileName] = useState('')
+    const [newProfileColor, setNewProfileColor] = useState(PROFILE_COLORS[0])
+
+    useEffect(() => { setPersonalization(loadPersonalization()) }, [])
+
+    const updatePersonalization = useCallback(transform => {
+      setPersonalization(current => savePersonalization(transform(current || createInitialPersonalization())))
+    }, [])
+
+    const activeProfile = personalization?.profiles?.find(profile => profile.id === personalization.activeProfileId) || null
+    const activeCollections = activeProfile ? (personalization?.collections?.[activeProfile.id] || { list: [], history: [] }) : { list: [], history: [] }
+    const myList = activeCollections.list || []
+    const watchHistory = activeCollections.history || []
+
+    const toggleTitleInMyList = useCallback(title => {
+      if (!activeProfile) return
+      updatePersonalization(current => toggleMyList(current, activeProfile.id, title))
+    }, [activeProfile, updatePersonalization])
+
+    const rememberWatch = useCallback((title, progress) => {
+      if (!activeProfile) return
+      updatePersonalization(current => recordWatch(current, activeProfile.id, title, progress))
+    }, [activeProfile, updatePersonalization])
+
+    function createProfile() {
+      if (!newProfileName.trim()) return
+      updatePersonalization(current => addProfile(current, newProfileName, newProfileColor))
+      setNewProfileName('')
+      setNewProfileColor(PROFILE_COLORS[0])
+    }
 
     useEffect(() => {
       (async () => {
@@ -505,8 +546,13 @@
           <nav className="tf-nav-links" aria-label="ToosiiFlix navigation">
             <a href="#featured">Home</a>
             <a href="#browse">Browse</a>
+            <a href="#my-list">My List</a>
             <a href="#search">Discover</a>
           </nav>
+          <button className="tf-profile-trigger" type="button" onClick={() => setProfileOpen(true)} aria-label="Choose a ToosiiFlix profile">
+            <span className="tf-profile-avatar" style={{ background: activeProfile?.color || PROFILE_COLORS[0] }}>{(activeProfile?.name || 'Viewer').slice(0, 1).toUpperCase()}</span>
+            <span className="tf-profile-name">{activeProfile?.name || 'Profiles'}</span>
+          </button>
           <button className="tf-search-trigger" type="button" onClick={() => document.querySelector('.mv-search-input')?.focus()} aria-label="Search titles">
             <span>⌕</span><span className="tf-search-trigger-label">Search</span>
           </button>
@@ -551,6 +597,45 @@
           </form>
         </div>
 
+        {!isSearch && watchHistory.length > 0 && (
+          <section className="tf-collection tf-history-section">
+            <div className="tf-collection-head">
+              <div>
+                <p className="tf-collection-kicker">PERSONAL TO {activeProfile?.name || 'YOU'}</p>
+                <h2>Continue watching</h2>
+              </div>
+              <span>{watchHistory.length} recent</span>
+            </div>
+            <div className="mv-grid tf-collection-grid">
+              {watchHistory.map(item => (
+                <div key={item.subjectId} className="tf-history-card-wrap">
+                  <Card movie={item} onClick={setSelected} />
+                  {item.season && <p className="tf-resume-label">Resume · S{item.season} E{item.episode}</p>}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {!isSearch && (
+          <section id="my-list" className="tf-collection tf-my-list-section">
+            <div className="tf-collection-head">
+              <div>
+                <p className="tf-collection-kicker">YOUR SPACE</p>
+                <h2>My List</h2>
+              </div>
+              <span>{myList.length} saved</span>
+            </div>
+            {myList.length > 0 ? (
+              <div className="mv-grid tf-collection-grid">
+                {myList.map(item => <Card key={item.subjectId} movie={item} onClick={setSelected} />)}
+              </div>
+            ) : (
+              <div className="tf-list-empty">Open any title and select <strong>+ My List</strong> to save it for later.</div>
+            )}
+          </section>
+        )}
+
         {/* ── Grid ── */}
         <div id="browse" className="mv-section tf-browse-section">
           <div className="mv-section-head">
@@ -585,7 +670,48 @@
             movie={selected}
             onClose={() => setSelected(null)}
             onSelect={setSelected}
+            isInMyList={myList.some(item => item.subjectId === String(selected.subjectId))}
+            onToggleList={toggleTitleInMyList}
+            onWatch={rememberWatch}
+            resume={watchHistory.find(item => item.subjectId === String(selected.subjectId)) || null}
           />
+        )}
+
+        {profileOpen && (
+          <div className="tf-profile-backdrop" onClick={() => setProfileOpen(false)}>
+            <section className="tf-profile-panel" role="dialog" aria-modal="true" aria-label="ToosiiFlix profiles" onClick={event => event.stopPropagation()}>
+              <button className="tf-profile-close" type="button" onClick={() => setProfileOpen(false)} aria-label="Close profile selector">×</button>
+              <p className="tf-profile-kicker">TOOSIIFLIX</p>
+              <h2>Who’s watching?</h2>
+              <p className="tf-profile-copy">Profiles, My List, and watch history are saved only on this device.</p>
+              <div className="tf-profile-options">
+                {personalization?.profiles?.map(profile => (
+                  <div className="tf-profile-option" key={profile.id}>
+                    <button type="button" className={'tf-profile-select' + (profile.id === activeProfile?.id ? ' active' : '')}
+                      onClick={() => { updatePersonalization(current => switchProfile(current, profile.id)); setProfileOpen(false) }}>
+                      <span className="tf-profile-choice-avatar" style={{ background: profile.color }}>{profile.name.slice(0, 1).toUpperCase()}</span>
+                      <span>{profile.name}</span>
+                      {profile.id === activeProfile?.id && <small>Active</small>}
+                    </button>
+                    {personalization.profiles.length > 1 && <button type="button" className="tf-profile-remove" aria-label={'Remove ' + profile.name}
+                      onClick={() => updatePersonalization(current => removeProfile(current, profile.id))}>×</button>}
+                  </div>
+                ))}
+              </div>
+              {personalization?.profiles?.length < 5 && (
+                <form className="tf-add-profile" onSubmit={event => { event.preventDefault(); createProfile() }}>
+                  <label htmlFor="tf-profile-name">Add a profile</label>
+                  <div className="tf-add-profile-row">
+                    <input id="tf-profile-name" value={newProfileName} onChange={event => setNewProfileName(event.target.value)} maxLength="22" placeholder="Name" />
+                    <div className="tf-profile-colors" aria-label="Profile colour">
+                      {PROFILE_COLORS.map(color => <button key={color} type="button" className={newProfileColor === color ? 'active' : ''} style={{ background: color }} onClick={() => setNewProfileColor(color)} aria-label="Choose profile colour" />)}
+                    </div>
+                    <button type="submit" disabled={!newProfileName.trim()}>Add</button>
+                  </div>
+                </form>
+              )}
+            </section>
+          </div>
         )}
       </div>
     )
