@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Layout from '../../components/Layout'
 import './api.css'
 
@@ -141,8 +141,8 @@ const endpoints = [
 ]
 
 const categories = ['Core', 'Data', 'Media Search', 'Utilities', 'Sports']
-const API_ORIGIN = 'https://www.toosiitech.org'
-const publicEndpointUrl = path => `${API_ORIGIN}${path}`
+const DEFAULT_API_ORIGIN = 'https://www.toosiitech.org'
+const buildPublicEndpointUrl = (origin, path) => `${origin}${path}`
 
 const starterResponse = {
   success: true,
@@ -152,11 +152,11 @@ const starterResponse = {
   status: 'operational',
 }
 
-const responseBodyPreview = endpoint => ({
+const responseBodyPreview = (endpoint, origin) => ({
   success: true,
   api: 'Toosii API',
   operation: endpoint.id.replaceAll('-', '.'),
-  endpoint: `${endpoint.method} ${publicEndpointUrl(endpoint.path)}`,
+  endpoint: `${endpoint.method} ${buildPublicEndpointUrl(origin, endpoint.path)}`,
   data: {
     note: 'Preview schema. Use Run request to retrieve a fresh live response.',
   },
@@ -164,6 +164,7 @@ const responseBodyPreview = endpoint => ({
 
 export default function ApiPortal() {
   const [activeId, setActiveId] = useState('health')
+  const [apiOrigin, setApiOrigin] = useState(DEFAULT_API_ORIGIN)
   const [response, setResponse] = useState(starterResponse)
   const [state, setState] = useState('idle')
   const [copied, setCopied] = useState('')
@@ -172,6 +173,13 @@ export default function ApiPortal() {
   const [previewTab, setPreviewTab] = useState('request')
   const [filter, setFilter] = useState('')
   const consoleRef = useRef(null)
+  const publicEndpointUrl = path => buildPublicEndpointUrl(apiOrigin, path)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.origin) {
+      setApiOrigin(window.location.origin)
+    }
+  }, [])
 
   const active = useMemo(
     () => endpoints.find(endpoint => endpoint.id === activeId) || endpoints[0],
@@ -310,7 +318,7 @@ export default function ApiPortal() {
                   </label>
                   <div className="api-base-control">
                     <span>Base URL</span>
-                    <code>https://www.toosiitech.org/api/v1</code>
+                    <code>{publicEndpointUrl('/api/v1')}</code>
                     <button type="button" onClick={() => copy(publicEndpointUrl('/api/v1'), 'Public base URL copied')}>Copy</button>
                   </div>
                   <p className="api-sidebar-status" role="status">{copied || 'No key required'}</p>
@@ -402,7 +410,7 @@ export default function ApiPortal() {
                                   ) : (
                                     <div id={`response-panel-${endpoint.id}`} role="tabpanel" aria-labelledby={`response-tab-${endpoint.id}`} className="api-inline-tab-panel">
                                       <div className="api-inline-preview-head"><span>Response body preview</span><b>JSON</b></div>
-                                      <pre className="api-inline-response">{JSON.stringify(responseBodyPreview(endpoint), null, 2)}</pre>
+                                      <pre className="api-inline-response">{JSON.stringify(responseBodyPreview(endpoint, apiOrigin), null, 2)}</pre>
                                     </div>
                                   )}
                                 </div>
