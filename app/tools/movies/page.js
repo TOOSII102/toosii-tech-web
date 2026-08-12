@@ -109,7 +109,7 @@
     const [ep,       setEp]       = useState(1)
     const [res,      setRes]      = useState(720)
     const [playing,  setPlaying]  = useState(false)
-    const [player,   setPlayer]   = useState('direct') /* 'direct' | 'proxy' | 'vs1'|'vs2'|'vs3' */
+    const [player,   setPlayer]   = useState('proxy') /* 'proxy' | 'direct' | 'vs1'|'vs2'|'vs3' */
     const histRef = useRef(false)
 
     /* scroll lock + back button */
@@ -241,8 +241,8 @@
                   <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
                     <span style={{ fontSize: '0.72rem', color: '#475569', marginRight: '0.25rem' }}>Player:</span>
                     {[
-                      { id: 'direct', label: '⚡ Direct',  title: 'Direct xcasper stream' },
-                      { id: 'proxy',  label: '▶ Stream',  title: 'Ad-free native player (recommended)' },
+                      { id: 'proxy',  label: '⚡ Fast Stream', title: 'Robust proxied stream (recommended)' },
+                      { id: 'direct', label: '▶ Direct',      title: 'Direct upstream stream' },
                     ].map(opt => (
                       <button key={opt.id} title={opt.title}
                         onClick={() => { setPlayer(opt.id); if (!playing) setPlaying(true) }}

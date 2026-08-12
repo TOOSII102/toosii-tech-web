@@ -61,7 +61,6 @@ export async function GET(req) {
           'Accept': 'video/mp4,video/webm,video/*,*/*;q=0.9',
           ...(range ? { Range: range } : {}),
         },
-        signal: AbortSignal.timeout(30000),
       })
       const out = new Headers({
         'Access-Control-Allow-Origin': '*',
