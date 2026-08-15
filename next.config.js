@@ -11,6 +11,9 @@ const nextConfig = {
   },
   experimental: {
     serverComponentsExternalPackages: ['gifted-baileys', 'pino'],
+    outputFileTracingIncludes: {
+      '/api/download/audio': ['./node_modules/ffmpeg-static/ffmpeg'],
+    },
   },
 }
 

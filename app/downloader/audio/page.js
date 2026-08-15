@@ -157,7 +157,7 @@ export default function AudioDownloader() {
         <div className="page-wrapper">
           <div className="badge" style={{ marginBottom: '1.5rem' }}><span>🎧</span> MP3 Downloader</div>
           <h1 className="section-title">YouTube to MP3. <span className="gradient-text">In Seconds.</span></h1>
-          <p className="section-sub">Start with a song or artist name, choose the right result, preview it, then download as MP3. Already have a YouTube link? You can paste it instead.</p>
+          <p className="section-sub">Paste a YouTube link to convert it to MP3 in seconds. You can also search by song name, preview the result, and download the audio.</p>
         </div>
       </section>
 
