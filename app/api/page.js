@@ -16,6 +16,15 @@ const endpoints = [
     params: [],
   },
   {
+    id: 'api-catalogue',
+    category: 'Core',
+    method: 'GET',
+    title: 'API catalogue',
+    description: 'List the public Toosii API routes and their categories from one machine-readable response.',
+    path: '/api/v1',
+    params: [],
+  },
+  {
     id: 'weather',
     category: 'Data',
     method: 'GET',
@@ -49,6 +58,28 @@ const endpoints = [
     params: [
       { name: 'query', type: 'string', required: true, description: 'Book title, author, or search phrase.' },
       { name: 'limit', type: 'integer', required: false, description: 'Number of results from 1 to 10. Defaults to 5.' },
+    ],
+  },
+  {
+    id: 'movie-catalogue',
+    category: 'Media',
+    method: 'GET',
+    title: 'Movie and series catalogue',
+    description: 'Browse the current movie and series catalogue with a normalized response.',
+    path: '/api/tools/movies?action=trending',
+    params: [{ name: 'action', type: 'string', required: false, description: 'trending, search, detail, play, or stream. Defaults to trending.' }],
+  },
+  {
+    id: 'dramabox-catalogue',
+    category: 'Media',
+    method: 'GET',
+    title: 'Short-drama catalogue',
+    description: 'Browse or search the short-drama catalogue and its episode metadata.',
+    path: '/api/tools/dramabox?action=trending&page=1',
+    params: [
+      { name: 'action', type: 'string', required: false, description: 'trending, search, detail, episodes, watch, or download.' },
+      { name: 'q', type: 'string', required: false, description: 'Search phrase when action is search.' },
+      { name: 'page', type: 'integer', required: false, description: 'Catalogue page number.' },
     ],
   },
   {
@@ -130,6 +161,42 @@ const endpoints = [
     ],
   },
   {
+    id: 'models',
+    category: 'AI',
+    method: 'GET',
+    title: 'Available AI models',
+    description: 'List the AI model identifiers currently available through Toosii tools.',
+    path: '/api/models',
+    params: [],
+  },
+  {
+    id: 'temp-email',
+    category: 'Tools',
+    method: 'GET',
+    title: 'Temporary email generator',
+    description: 'Generate one or more temporary email addresses for testing and short-lived sign-ups.',
+    path: '/api/tools/tempemail?count=1',
+    params: [{ name: 'count', type: 'integer', required: false, description: 'Number of addresses from 1 to 5. Defaults to 1.' }],
+  },
+  {
+    id: 'bot-qr',
+    category: 'Bot',
+    method: 'GET',
+    title: 'WhatsApp session QR',
+    description: 'Request the current Toosii WhatsApp session QR payload.',
+    path: '/api/qr',
+    params: [],
+  },
+  {
+    id: 'bot-pair',
+    category: 'Bot',
+    method: 'GET',
+    title: 'WhatsApp pairing code',
+    description: 'Generate a Toosii WhatsApp session pairing code for a phone number with country code.',
+    path: '/api/pair?number=254712345678',
+    params: [{ name: 'number', type: 'string', required: true, description: 'Phone number with country code, for example 254712345678.' }],
+  },
+  {
     id: 'sports',
     category: 'Sports',
     method: 'GET',
@@ -140,7 +207,7 @@ const endpoints = [
   },
 ]
 
-const categories = ['Core', 'Data', 'Media Search', 'Utilities', 'Sports']
+const categories = ['Core', 'Data', 'Media', 'Media Search', 'AI', 'Utilities', 'Tools', 'Bot', 'Sports']
 const DEFAULT_API_ORIGIN = 'https://www.toosiitech.org'
 const buildPublicEndpointUrl = (origin, path) => `${origin}${path}`
 
