@@ -32,7 +32,7 @@ function fmtDuration(raw) {
 }
 
 export default function AudioDownloader() {
-  const [mode, setMode]               = useState('search')
+  const [mode, setMode]               = useState('url')
   const [url, setUrl]                 = useState('')
   const [query, setQuery]             = useState('')
   const [searchResults, setSearchResults] = useState([])
@@ -167,8 +167,8 @@ export default function AudioDownloader() {
 
             {/* Mode tabs */}
             <div className="mode-tabs">
-              <button className={`mode-tab ${mode === 'search' ? 'active' : ''}`} onClick={() => switchMode('search')}>🎵 Search by Song Name</button>
               <button className={`mode-tab ${mode === 'url' ? 'active' : ''}`} onClick={() => switchMode('url')}>🔗 Paste YouTube Link</button>
+              <button className={`mode-tab ${mode === 'search' ? 'active' : ''}`} onClick={() => switchMode('search')}>🎵 Search by Song Name</button>
             </div>
 
             {/* URL mode */}
