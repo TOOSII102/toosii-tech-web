@@ -491,3 +491,29 @@
   .brand-name { font-size: 1rem; }
   .hamburger { background: rgba(255,255,255,0.045); border-color: rgba(255,255,255,0.13); border-radius: 10px; }
 }
+
+/* Keep the core tools discoverable in the expanded mobile drawer. */
+@media (max-width: 860px) {
+  .mobile-tools-toggle {
+    color: #eafaf2;
+    background: rgba(114, 240, 186, 0.055);
+    border-color: rgba(114, 240, 186, 0.16);
+  }
+
+  .mobile-tools-toggle .dropdown-chevron {
+    color: var(--mint, #72f0ba);
+  }
+
+  .mobile-tools-list {
+    margin: 0.12rem 0 0.2rem 0.4rem;
+    padding: 0.35rem 0 0.35rem 0.68rem;
+    border-left: 1px solid rgba(114, 240, 186, 0.18);
+    background: rgba(114, 240, 186, 0.025);
+    border-radius: 0 10px 10px 0;
+  }
+
+  .mobile-tools-list--open {
+    max-height: 1200px;
+    opacity: 1;
+  }
+}

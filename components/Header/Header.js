@@ -31,7 +31,8 @@ const toolsNav = [
 export default function Header() {
   const [mobileOpen, setMobileOpen]   = useState(false)
   const [toolsOpen, setToolsOpen]     = useState(false)
-  const [mobileTools, setMobileTools] = useState(false)
+  // Keep the core tools visible whenever the mobile drawer opens.
+  const [mobileTools, setMobileTools] = useState(true)
   const pathname = usePathname()
   const dropRef  = useRef()
 
@@ -51,7 +52,7 @@ export default function Header() {
   useEffect(() => {
     setMobileOpen(false)
     setToolsOpen(false)
-    setMobileTools(false)
+    setMobileTools(true)
   }, [pathname])
 
   /* lock body scroll when mobile menu open */
