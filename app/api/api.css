@@ -1370,3 +1370,252 @@
   .api-hero-facts span { font-size: 0.56rem; }
   .api-stats span { min-width: 88px; }
 }
+
+/* Mobile dashboard refinement */
+@media (max-width: 700px) {
+  .api-hero {
+    padding: 5.6rem 0 3.6rem;
+  }
+
+  .api-hero-inner {
+    gap: 2rem;
+  }
+
+  .api-hero h1 {
+    font-size: clamp(2.35rem, 11vw, 3.5rem);
+    line-height: 0.98;
+  }
+
+  .api-hero-copy > p:not(.api-kicker):not(.api-copy-note) {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    line-height: 1.68;
+  }
+
+  .api-hero-card {
+    border-radius: 14px;
+  }
+
+  .api-hero-card pre {
+    min-height: 190px;
+    max-height: 270px;
+    padding: 1rem;
+    font-size: 0.69rem;
+  }
+
+  .api-card-topline,
+  .api-card-footer {
+    padding-right: 0.9rem;
+    padding-left: 0.9rem;
+  }
+
+  .api-card-footer {
+    flex-wrap: wrap;
+  }
+
+  .api-card-footer span:last-child {
+    margin-left: auto;
+  }
+
+  .api-section-heading {
+    gap: 1.1rem;
+    margin-bottom: 1.45rem;
+  }
+
+  .api-section-heading h2 {
+    font-size: 1.55rem;
+  }
+
+  .api-reference-tools,
+  .api-monitor-card {
+    width: 100%;
+  }
+
+  .api-monitor-card {
+    padding: 0.78rem;
+  }
+
+  .api-monitor-head {
+    align-items: flex-start;
+  }
+
+  .api-monitor-meta {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.28rem;
+  }
+
+  .api-status-legend {
+    justify-content: flex-start;
+    gap: 0.45rem 0.8rem;
+    font-size: 0.62rem;
+  }
+
+  .api-workspace {
+    border-radius: 14px;
+  }
+
+  .api-sidebar-top {
+    grid-template-columns: 1fr;
+  }
+
+  .api-sidebar-title-row,
+  .api-endpoint-filter,
+  .api-base-control,
+  .api-sidebar-status {
+    grid-column: auto;
+  }
+
+  .api-nav-groups {
+    grid-template-columns: 1fr;
+  }
+
+  .api-console {
+    padding: 1rem;
+  }
+
+  .api-console-heading {
+    gap: 0.7rem;
+  }
+
+  .api-console-heading h3 {
+    font-size: 1.3rem;
+  }
+
+  .api-console-heading p {
+    font-size: 0.8rem;
+  }
+
+  .api-open-link {
+    width: 100%;
+  }
+
+  .api-request-box {
+    grid-template-columns: 1fr;
+    gap: 0.55rem;
+  }
+
+  .api-request-label,
+  .api-request-box code,
+  .api-request-box button {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .api-request-box code {
+    overflow: visible;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .api-request-box button,
+  .api-run-btn {
+    width: 100%;
+  }
+
+  .api-inline-preview-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .api-response-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .api-response-block pre {
+    max-height: 340px;
+    padding: 0.82rem;
+    font-size: 0.59rem;
+  }
+
+  .api-stats {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .api-stats span {
+    min-width: 0;
+    padding: 0.65rem 0.42rem;
+    text-align: center;
+    font-size: 0.58rem;
+  }
+
+  .api-stats strong {
+    font-size: 0.92rem;
+  }
+
+  .api-monitor-refresh {
+    min-height: 34px;
+  }
+
+  .api-monitor-issue {
+    overflow-wrap: anywhere;
+  }
+
+  .api-card-controls {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding: 0.48rem;
+    border-top: 1px solid rgba(148, 163, 184, 0.1);
+  }
+
+  .api-endpoint-card {
+    grid-template-columns: 1fr;
+  }
+
+  .api-card-copy-btn,
+  .api-card-preview-btn,
+  .api-card-run-btn {
+    width: 100%;
+    min-width: 0;
+    min-height: 32px;
+    padding: 0.42rem 0.28rem;
+    font-size: 0.59rem;
+  }
+
+  .api-endpoint-nav {
+    padding: 0.78rem 0.78rem 0.58rem;
+  }
+
+  .api-inline-preview {
+    margin-right: 0.48rem;
+    margin-left: 0.48rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .api-hero-facts {
+    grid-template-columns: 1fr;
+  }
+
+  .api-hero-facts li {
+    text-align: center;
+  }
+
+  .api-hero-facts span {
+    overflow: visible;
+    white-space: normal;
+  }
+
+  .api-stats {
+    gap: 0.38rem;
+  }
+
+  .api-stats span {
+    padding-right: 0.3rem;
+    padding-left: 0.3rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .api-btn,
+  .api-card-copy-btn,
+  .api-card-preview-btn,
+  .api-card-run-btn,
+  .api-endpoint-card,
+  .api-monitor-refresh {
+    transition: none;
+  }
+}
