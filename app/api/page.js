@@ -101,6 +101,98 @@ const endpoints = [
     params: [{ name: 'q', type: 'string', required: true, description: 'Track, artist, album, or music search phrase.' }],
   },
   {
+    id: 'news',
+    category: 'News',
+    method: 'GET',
+    title: 'Africa news feed',
+    description: 'Read current Africa headlines through a Toosii-normalized RSS response with source attribution.',
+    path: '/api/news?q=kenya&limit=10',
+    params: [
+      { name: 'q', type: 'string', required: false, description: 'Optional keyword filter applied to headline titles and descriptions.' },
+      { name: 'limit', type: 'integer', required: false, description: 'Number of articles from 1 to 20. Defaults to 10.' },
+    ],
+  },
+  {
+    id: 'video-download',
+    category: 'Downloaders',
+    method: 'POST',
+    title: 'Multi-platform video downloader',
+    description: 'Resolve a public YouTube, TikTok, Instagram, Facebook, or X video URL into normalized download metadata.',
+    path: '/api/download/video',
+    params: [],
+    body: { url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+  },
+  {
+    id: 'audio-download',
+    category: 'Downloaders',
+    method: 'POST',
+    title: 'YouTube audio downloader',
+    description: 'Convert a public YouTube URL to MP3 metadata or a binary audio download response.',
+    path: '/api/download/audio',
+    params: [],
+    body: { url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+  },
+  {
+    id: 'spotify-download',
+    category: 'Downloaders',
+    method: 'POST',
+    title: 'Spotify track downloader',
+    description: 'Resolve a public Spotify track URL into normalized track metadata and a download link when available.',
+    path: '/api/download/spotify',
+    params: [],
+    body: { url: 'https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC' },
+  },
+  {
+    id: 'tiktok-download',
+    category: 'Downloaders',
+    method: 'POST',
+    title: 'TikTok video downloader',
+    description: 'Resolve a public TikTok video URL through the Toosii downloader service.',
+    path: '/api/download/tiktok',
+    params: [],
+    body: { url: 'https://www.tiktok.com/@tiktok/video/7230000000000000000' },
+  },
+  {
+    id: 'toosii-ai',
+    category: 'AI',
+    method: 'POST',
+    title: 'Toosii AI chat',
+    description: 'Send a general-purpose prompt to the Toosii AI route and receive a normalized reply.',
+    path: '/api/tools/ai',
+    params: [],
+    body: { prompt: "Explain Kenya's technology ecosystem in three sentences." },
+  },
+  {
+    id: 'story-generator',
+    category: 'AI',
+    method: 'POST',
+    title: 'Story generator',
+    description: 'Generate a creative story from a topic through the Toosii story tool.',
+    path: '/api/tools/story',
+    params: [],
+    body: { topic: 'A startup building useful tools from Nairobi' },
+  },
+  {
+    id: 'apk-search',
+    category: 'Tools',
+    method: 'POST',
+    title: 'APK search',
+    description: 'Search public Android package metadata through the Toosii APK tool.',
+    path: '/api/tools/apk',
+    params: [],
+    body: { query: 'vlc media player' },
+  },
+  {
+    id: 'vocal-remover',
+    category: 'Audio Tools',
+    method: 'POST',
+    title: 'Vocal remover',
+    description: 'Submit a public audio URL for vocal and instrumental separation.',
+    path: '/api/tools/vocal-remover',
+    params: [],
+    body: { url: 'https://example.com/audio.mp3' },
+  },
+  {
     id: 'base64-encode',
     category: 'Utilities',
     method: 'GET',
@@ -207,7 +299,7 @@ const endpoints = [
   },
 ]
 
-const categories = ['Core', 'Data', 'Media', 'Media Search', 'AI', 'Utilities', 'Tools', 'Bot', 'Sports']
+const categories = ['Core', 'Data', 'Media', 'Media Search', 'News', 'Downloaders', 'AI', 'Audio Tools', 'Utilities', 'Tools', 'Bot', 'Sports']
 const DEFAULT_API_ORIGIN = 'https://www.toosiitech.org'
 const buildPublicEndpointUrl = (origin, path) => `${origin}${path}`
 
@@ -305,8 +397,30 @@ export default function ApiPortal() {
     focusConsoleOnMobile()
 
     try {
-      const result = await fetch(endpoint.path, { headers: { Accept: 'application/json' } })
-      const body = await result.json()
+      const request = {
+        headers: { Accept: 'application/json' },
+      }
+      if (endpoint.method === 'POST') {
+        request.method = 'POST'
+        request.headers['Content-Type'] = 'application/json'
+        request.body = JSON.stringify(endpoint.body || {})
+      }
+
+      const result = await fetch(endpoint.path, request)
+      const contentType = result.headers.get('content-type') || ''
+      let body
+      if (contentType.includes('application/json')) {
+        body = await result.json()
+      } else {
+        const binary = await result.arrayBuffer()
+        body = {
+          success: result.ok,
+          responseType: contentType || 'application/octet-stream',
+          bytes: binary.byteLength,
+          contentDisposition: result.headers.get('content-disposition'),
+          note: 'Binary response received. Use the dedicated downloader page for a browser download.',
+        }
+      }
       setResponse(body)
       setState(result.ok ? 'success' : 'error')
     } catch {
@@ -407,7 +521,7 @@ export default function ApiPortal() {
                                 aria-pressed={active.id === endpoint.id}
                               >
                                 <span className="api-endpoint-card-top">
-                                  <span className="api-method-badge">GET</span>
+                                  <span className="api-method-badge">{endpoint.method}</span>
                                   <strong>{endpoint.title}</strong>
                                 </span>
                                 <code>{endpoint.path}</code>
@@ -472,7 +586,8 @@ export default function ApiPortal() {
                                     <div id={`request-panel-${endpoint.id}`} role="tabpanel" aria-labelledby={`request-tab-${endpoint.id}`} className="api-inline-tab-panel">
                                       <div className="api-inline-preview-head"><span>Request preview</span><b>{endpoint.method}</b></div>
                                       <code>{publicEndpointUrl(endpoint.path)}</code>
-                                      <p>{endpoint.params.length ? `Query: ${endpoint.params.map(param => `${param.name}${param.required ? '*' : ''}`).join(', ')}` : 'No query parameters required.'}</p>
+                                      <p>{endpoint.params.length ? `Query: ${endpoint.params.map(param => `${param.name}${param.required ? '*' : ''}`).join(', ')}` : endpoint.body ? 'JSON request body included below.' : 'No query parameters required.'}</p>
+                                      {endpoint.body && <pre className="api-inline-response">{JSON.stringify(endpoint.body, null, 2)}</pre>}
                                     </div>
                                   ) : (
                                     <div id={`response-panel-${endpoint.id}`} role="tabpanel" aria-labelledby={`response-tab-${endpoint.id}`} className="api-inline-tab-panel">
@@ -499,11 +614,11 @@ export default function ApiPortal() {
               <section ref={consoleRef} className="api-console" aria-live="polite">
                 <div className="api-console-heading">
                   <div>
-                    <div className="api-method-label"><span>GET</span> {active.category}</div>
+                    <div className="api-method-label"><span>{active.method}</span> {active.category}</div>
                     <h3>{active.title}</h3>
                     <p>{active.description}</p>
                   </div>
-                  <a href={active.path} target="_blank" rel="noreferrer" className="api-open-link">Open route <span aria-hidden="true">↗</span></a>
+                  {active.method === 'GET' ? <a href={active.path} target="_blank" rel="noreferrer" className="api-open-link">Open route <span aria-hidden="true">↗</span></a> : <span className="api-open-link api-open-link-muted">POST JSON route</span>}
                 </div>
 
                 <div className="api-console-grid">
@@ -525,7 +640,13 @@ export default function ApiPortal() {
                             </div>
                           ))}
                         </div>
-                      ) : <p className="api-empty">This endpoint does not require parameters.</p>}
+                      ) : !active.body && <p className="api-empty">This endpoint does not require parameters.</p>}
+                      {active.body && (
+                        <div id="request-body" className="api-request-body-block">
+                          <h4>JSON request body</h4>
+                          <pre className="api-inline-response">{JSON.stringify(active.body, null, 2)}</pre>
+                        </div>
+                      )}
                     </div>
                   </div>
 
