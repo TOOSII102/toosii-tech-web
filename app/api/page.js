@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Layout from '../../components/Layout'
 import './api.css'
 
@@ -364,6 +364,9 @@ export default function ApiPortal() {
   const [filter, setFilter] = useState('')
   const [portalStatus, setPortalStatus] = useState('loading')
   const [endpointStatus, setEndpointStatus] = useState({})
+  const [monitorState, setMonitorState] = useState('checking')
+  const [lastChecked, setLastChecked] = useState(null)
+  const [monitorError, setMonitorError] = useState('')
   const consoleRef = useRef(null)
   const publicEndpointUrl = path => buildPublicEndpointUrl(apiOrigin, path)
 
@@ -373,24 +376,53 @@ export default function ApiPortal() {
     }
   }, [])
 
+  const runHealthChecks = useCallback(async () => {
+    setMonitorState('checking')
+    setMonitorError('')
+    setEndpointStatus(Object.fromEntries(endpoints.map(endpoint => [endpoint.id, 'loading'])))
+
+    const checks = await Promise.all(endpoints.map(async endpoint => {
+      const controller = new AbortController()
+      const timeout = window.setTimeout(() => controller.abort(), 8000)
+      try {
+        const result = await fetch(endpoint.path, {
+          method: 'HEAD',
+          cache: 'no-store',
+          headers: { Accept: 'application/json', 'X-Toosii-Health-Check': '1' },
+          signal: controller.signal,
+        })
+        const reachable = result.ok || result.status === 405 || result.status === 429 || result.status === 501
+        return [endpoint.id, reachable ? 'live' : 'dead']
+      } catch {
+        return [endpoint.id, 'dead']
+      } finally {
+        window.clearTimeout(timeout)
+      }
+    }))
+
+    const nextStatuses = Object.fromEntries(checks)
+    setEndpointStatus(nextStatuses)
+    setPortalStatus(nextStatuses.health === 'live' ? 'live' : 'dead')
+    setLastChecked(new Date())
+    setMonitorState('ready')
+    if (!Object.values(nextStatuses).some(status => status === 'live')) {
+      setMonitorError('No routes responded during the latest health check.')
+    }
+  }, [])
+
   useEffect(() => {
     let cancelled = false
-    fetch('/api/v1/health', { headers: { Accept: 'application/json' } })
-      .then(result => {
-        if (!cancelled) {
-          const nextStatus = result.ok ? 'live' : 'dead'
-          setPortalStatus(nextStatus)
-          setEndpointStatus(current => ({ ...current, health: nextStatus }))
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setPortalStatus('dead')
-          setEndpointStatus(current => ({ ...current, health: 'dead' }))
-        }
-      })
-    return () => { cancelled = true }
-  }, [])
+    const check = async () => {
+      if (cancelled) return
+      await runHealthChecks()
+    }
+    check()
+    const interval = window.setInterval(check, 60000)
+    return () => {
+      cancelled = true
+      window.clearInterval(interval)
+    }
+  }, [runHealthChecks])
 
   const active = useMemo(
     () => endpoints.find(endpoint => endpoint.id === activeId) || endpoints[0],
@@ -407,6 +439,17 @@ export default function ApiPortal() {
         .includes(query),
     )
   }, [filter])
+
+  const statusCounts = useMemo(() => endpoints.reduce((counts, endpoint) => {
+    const status = endpointStatus[endpoint.id] || 'unknown'
+    counts[status] = (counts[status] || 0) + 1
+    return counts
+  }, { live: 0, dead: 0, loading: 0, unknown: 0 }), [endpointStatus])
+
+  const formatLastChecked = value => {
+    if (!value) return 'Starting automatic checks'
+    return `Last checked ${value.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
+  }
 
   const focusConsoleOnMobile = () => {
     if (typeof window !== 'undefined' && window.matchMedia('(max-width: 960px)').matches) {
@@ -537,9 +580,27 @@ export default function ApiPortal() {
               <div>
                 <p className="section-eyebrow">Developer Reference</p>
                 <h2 className="section-title">Test every endpoint live.</h2>
-                <p>Choose an endpoint to see its parameters, copy the request path, or send a live request from this page.</p>
+                <p>Choose an endpoint to see its parameters, copy the request path, or send a live request from this page. Automatic route checks run every 60 seconds.</p>
               </div>
               <div className="api-reference-tools">
+                <div className={`api-monitor-card ${monitorState}`} aria-live="polite">
+                  <div className="api-monitor-head">
+                    <div className="api-monitor-title"><span className={`api-status-dot ${portalStatus}`} /> <strong>Automatic health monitor</strong></div>
+                    <button type="button" className="api-monitor-refresh" onClick={runHealthChecks} disabled={monitorState === 'checking'}>
+                      {monitorState === 'checking' ? 'Checking…' : 'Refresh now'}
+                    </button>
+                  </div>
+                  <div className="api-monitor-meta">
+                    <span>{formatLastChecked(lastChecked)}</span>
+                    <span>Every 60 seconds</span>
+                  </div>
+                  <div className="api-monitor-counts" aria-label="Automatic endpoint status counts">
+                    <span className="live"><b>{statusCounts.live}</b> live</span>
+                    <span className="dead"><b>{statusCounts.dead}</b> dead</span>
+                    <span className="loading"><b>{statusCounts.loading}</b> checking</span>
+                  </div>
+                  {monitorError && <p className="api-monitor-error">{monitorError}</p>}
+                </div>
                 <div className="api-stats" aria-label="API statistics">
                   <span><strong>{endpoints.length}</strong> public routes</span>
                   <span><strong>{categories.length}</strong> categories</span>
@@ -576,7 +637,7 @@ export default function ApiPortal() {
                     <code>{publicEndpointUrl('/api/v1')}</code>
                     <button type="button" onClick={() => copy(publicEndpointUrl('/api/v1'), 'Public base URL copied')}>Copy</button>
                   </div>
-                  <p className="api-sidebar-status" role="status">{copied || 'No key required'}</p>
+                  <p className="api-sidebar-status" role="status">{copied || (monitorState === 'checking' ? 'Checking all routes…' : `${statusCounts.live} live · ${statusCounts.dead} dead · ${formatLastChecked(lastChecked)}`)}</p>
                 </div>
                 <div className="api-nav-groups">
                   {categories.map(category => {
