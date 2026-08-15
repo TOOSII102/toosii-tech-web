@@ -237,7 +237,7 @@
                   <span className="mv-modal-badge mv-badge-purple">{tv ? '📺 Series' : '🎬 Movie'}</span>
                   {d.countryName && <span className="mv-modal-badge mv-badge-blue">📍 {d.countryName}</span>}
                   {rating && <span className="mv-modal-badge mv-badge-amber">⭐ {rating}</span>}
-                  {supplemental?.provider === 'tvmaze' && <span className="mv-modal-badge mv-badge-blue">TV episode guide</span>}
+                  {supplemental?.provider === 'toosii' && <span className="mv-modal-badge mv-badge-blue">Toosii metadata</span>}
                 </div>
                 <h2 className="mv-modal-title">{d.title}</h2>
                 <div className="mv-modal-meta">
@@ -271,7 +271,7 @@
               <>
                 {summary && <p className="mv-modal-desc">{summary}</p>}
                 {supplemental?.provider && <p style={{ margin: '0.45rem 0 1.1rem', color: '#64748b', fontSize: '0.72rem' }}>
-                  Metadata enhanced by {supplemental.provider === 'tvmaze' ? 'TVmaze' : 'AllInOne catalogue'}{supplemental?.totalEpisodes ? ' · ' + supplemental.totalEpisodes + ' episodes indexed' : ''}
+                  Metadata enriched by Toosii Tech{supplemental?.totalEpisodes ? ' · ' + supplemental.totalEpisodes + ' episodes indexed' : ''}
                 </p>}
 
 

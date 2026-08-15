@@ -96,7 +96,7 @@ const endpoints = [
     category: 'Media Search',
     method: 'GET',
     title: 'Spotify track search',
-    description: 'Search music metadata and receive track, artist, album, cover, preview, and provider-link details.',
+    description: 'Search music metadata and receive track, artist, album, cover, preview, and platform-link details.',
     path: '/api/search/spotify?q=afrobeats',
     params: [{ name: 'q', type: 'string', required: true, description: 'Track, artist, album, or music search phrase.' }],
   },

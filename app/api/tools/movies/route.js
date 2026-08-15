@@ -37,9 +37,19 @@ async function upstreamFetch(url, init = {}) {
   return fetch(url, init)
 }
 
+function toosiiEnvelope(payload) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return payload
+  const { provider, creator, ...rest } = payload
+  return { ...rest, api: 'Toosii API', brand: 'Toosii Tech' }
+}
+
+function publicMovieError(message = 'Toosii movie service is temporarily unavailable. Please try again shortly.') {
+  return NextResponse.json({ success: false, api: 'Toosii API', brand: 'Toosii Tech', error: message }, { status: 502 })
+}
+
 async function xc(path) {
   const r = await upstreamFetch(BASE + path, { headers: JSON_HDRS, signal: AbortSignal.timeout(12000) })
-  if (!r.ok) throw new Error('xcasper ' + r.status + ': ' + path)
+  if (!r.ok) throw new Error('Movies upstream returned ' + r.status)
   return r.json()
 }
 
@@ -91,7 +101,7 @@ async function publicJson(url, timeout = 8000) {
 function allInOneMeta(item, isTV) {
   if (!item) return null
   return {
-    provider: 'allinone',
+    provider: 'toosii',
     title: item.title || '',
     summary: item.description || '',
     poster: item.img || '',
@@ -127,7 +137,7 @@ async function supplementalMetadata(title, isTV) {
   const seasons = Object.keys(episodeCounts).map(Number).sort((a, b) => a - b)
 
   return {
-    provider: 'tvmaze',
+    provider: 'toosii',
     title: show.name || title,
     summary: plainText(show.summary || catalogueMeta?.summary || ''),
     poster: show.image?.original || show.image?.medium || catalogueMeta?.poster || '',
@@ -175,9 +185,11 @@ export async function GET(req) {
         const v = upstream.headers.get(h)
         if (v) out.set(h, v)
       }
+      if (!upstream.ok) return publicMovieError('Toosii movie stream is currently unavailable.')
       return new Response(upstream.body, { status: upstream.status, headers: out })
     } catch (e) {
-      return NextResponse.json({ error: e.message }, { status: 502 })
+      console.error('[toosii-movies-stream]', e.message)
+      return publicMovieError('Toosii movie stream is currently unavailable.')
     }
   }
 
@@ -197,14 +209,14 @@ export async function GET(req) {
       })
       if (!upstream.ok) {
         return NextResponse.json(
-          { error: 'The clean download source is unavailable for this title. Try streaming or select a manual backup to watch.' },
+          { success: false, api: 'Toosii API', brand: 'Toosii Tech', error: 'The clean download source is unavailable for this title. Try streaming or select a manual backup to watch.' },
           { status: 502 }
         )
       }
       const ct = upstream.headers.get('content-type') || ''
       if (!ct.includes('video') && !ct.includes('octet-stream') && !ct.includes('mp4')) {
         return NextResponse.json(
-          { error: 'The source did not return a downloadable video file.' },
+          { success: false, api: 'Toosii API', brand: 'Toosii Tech', error: 'The source did not return a downloadable video file.' },
           { status: 502 }
         )
       }
@@ -221,7 +233,7 @@ export async function GET(req) {
       return new Response(upstream.body, { status: upstream.status, headers: out })
     } catch {
       return NextResponse.json(
-        { error: 'The clean download source did not respond. Please try again later.' },
+        { success: false, api: 'Toosii API', brand: 'Toosii Tech', error: 'The clean download source did not respond. Please try again later.' },
         { status: 502 }
       )
     }
@@ -262,24 +274,26 @@ export async function GET(req) {
         }
       }
 
-      return NextResponse.json({ data: { isTV, imdbId, seasons } })
+      return NextResponse.json({ api: 'Toosii API', brand: 'Toosii Tech', data: { isTV, imdbId, seasons } })
     } catch (e) {
-      return NextResponse.json({ error: e.message }, { status: 502 })
+      console.error('[toosii-movies-play]', e.message)
+      return publicMovieError('Toosii movie details are temporarily unavailable.')
     }
   }
 
-  /* ── Standard xcasper API actions ── */
+  /* ── Standard movie catalogue actions ── */
   try {
     switch (action) {
-      case 'trending':  return NextResponse.json(await xc('/api/trending'))
-      case 'hot':       return NextResponse.json(await xc('/api/hot'))
-      case 'search':    return NextResponse.json(await xc('/api/search?keyword=' + encodeURIComponent(q) + (type ? '&type=' + type : '')))
-      case 'detail':    return NextResponse.json(await xc('/api/rich-detail?subjectId=' + encodeURIComponent(id)))
-      case 'recommend': return NextResponse.json(await xc('/api/recommend?subjectId=' + encodeURIComponent(id) + '&page=1&perPage=12'))
-      case 'metadata':  return NextResponse.json({ data: await supplementalMetadata(q, kind === 'tv') })
+      case 'trending':  return NextResponse.json(toosiiEnvelope(await xc('/api/trending')))
+      case 'hot':       return NextResponse.json(toosiiEnvelope(await xc('/api/hot')))
+      case 'search':    return NextResponse.json(toosiiEnvelope(await xc('/api/search?keyword=' + encodeURIComponent(q) + (type ? '&type=' + type : ''))))
+      case 'detail':    return NextResponse.json(toosiiEnvelope(await xc('/api/rich-detail?subjectId=' + encodeURIComponent(id))))
+      case 'recommend': return NextResponse.json(toosiiEnvelope(await xc('/api/recommend?subjectId=' + encodeURIComponent(id) + '&page=1&perPage=12')))
+      case 'metadata':  return NextResponse.json({ api: 'Toosii API', brand: 'Toosii Tech', data: await supplementalMetadata(q, kind === 'tv') })
       default:          return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
     }
   } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 502 })
+    console.error('[toosii-movies]', e.message)
+    return publicMovieError()
   }
 }

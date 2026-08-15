@@ -65,7 +65,7 @@ export async function GET(req) {
           views:     fmtViews(v.views),
           uploaded:  v.uploaded || '',
         }))
-        return Response.json({ results, source: 'eliteprotech' })
+        return Response.json({ api: 'Toosii API', brand: 'Toosii Tech', results, source: 'Toosii Media Search' })
       }
     }
   } catch { /* fall through */ }
@@ -91,8 +91,8 @@ export async function GET(req) {
     if (!res.ok) throw new Error(`YouTube ${res.status}`)
     const data = await res.json()
     const results = parseInnerTube(data)
-    if (results.length) return Response.json({ results, source: 'innertube' })
+    if (results.length) return Response.json({ api: 'Toosii API', brand: 'Toosii Tech', results, source: 'Toosii Media Search' })
   } catch { /* fall through */ }
 
-  return Response.json({ results: [], error: 'Search unavailable — try again shortly' })
+  return Response.json({ api: 'Toosii API', brand: 'Toosii Tech', results: [], error: 'Toosii media search is unavailable — try again shortly' })
 }

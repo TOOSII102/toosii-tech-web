@@ -21,8 +21,8 @@ export async function GET(req) {
       link:     t.link || '',
       explicit: t.explicit_lyrics || false,
     }))
-    return NextResponse.json({ results: tracks })
+    return NextResponse.json({ api: 'Toosii API', brand: 'Toosii Tech', results: tracks, source: 'Toosii Media Search' })
   } catch (e) {
-    return NextResponse.json({ error: 'Search failed', message: e.message }, { status: 500 })
+    return NextResponse.json({ api: 'Toosii API', brand: 'Toosii Tech', error: 'Toosii music search failed. Please try again shortly.' }, { status: 500 })
   }
 }
