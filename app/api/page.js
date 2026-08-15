@@ -362,6 +362,8 @@ export default function ApiPortal() {
   const [previewedId, setPreviewedId] = useState('')
   const [previewTab, setPreviewTab] = useState('request')
   const [filter, setFilter] = useState('')
+  const [portalStatus, setPortalStatus] = useState('loading')
+  const [endpointStatus, setEndpointStatus] = useState({})
   const consoleRef = useRef(null)
   const publicEndpointUrl = path => buildPublicEndpointUrl(apiOrigin, path)
 
@@ -369,6 +371,25 @@ export default function ApiPortal() {
     if (typeof window !== 'undefined' && window.location.origin) {
       setApiOrigin(window.location.origin)
     }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/v1/health', { headers: { Accept: 'application/json' } })
+      .then(result => {
+        if (!cancelled) {
+          const nextStatus = result.ok ? 'live' : 'dead'
+          setPortalStatus(nextStatus)
+          setEndpointStatus(current => ({ ...current, health: nextStatus }))
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPortalStatus('dead')
+          setEndpointStatus(current => ({ ...current, health: 'dead' }))
+        }
+      })
+    return () => { cancelled = true }
   }, [])
 
   const active = useMemo(
@@ -402,6 +423,13 @@ export default function ApiPortal() {
     focusConsoleOnMobile()
   }
 
+  const endpointStatusLabel = status => {
+    if (status === 'live') return 'Live'
+    if (status === 'dead') return 'Dead'
+    if (status === 'loading') return 'Checking'
+    return 'Not tested'
+  }
+
   const copy = async (value, label) => {
     try {
       await navigator.clipboard.writeText(value)
@@ -425,6 +453,7 @@ export default function ApiPortal() {
   const runRequest = async (endpoint = active) => {
     setActiveId(endpoint.id)
     setState('loading')
+    setEndpointStatus(current => ({ ...current, [endpoint.id]: 'loading' }))
     focusConsoleOnMobile()
 
     try {
@@ -454,12 +483,14 @@ export default function ApiPortal() {
       }
       setResponse(body)
       setState(result.ok ? 'success' : 'error')
+      setEndpointStatus(current => ({ ...current, [endpoint.id]: result.ok ? 'live' : 'dead' }))
     } catch {
       setResponse({
         success: false,
         error: { code: 'NETWORK_ERROR', message: 'The API request could not be completed. Please try again.' },
       })
       setState('error')
+      setEndpointStatus(current => ({ ...current, [endpoint.id]: 'dead' }))
     }
   }
 
@@ -490,7 +521,12 @@ export default function ApiPortal() {
             <div className="api-hero-card">
               <div className="api-card-topline"><span>GET</span><code>/api/v1/health</code></div>
               <pre>{JSON.stringify(starterResponse, null, 2)}</pre>
-              <div className="api-card-footer"><span className="api-live-indicator" /> Service operational <span>JSON REST</span></div>
+              <div className="api-card-footer">
+                <span className={`api-status-dot ${portalStatus}`} />
+                <span>{portalStatus === 'live' ? 'Service operational' : portalStatus === 'dead' ? 'Service unavailable' : 'Checking service'}</span>
+                <span className={`api-status-chip ${portalStatus}`}>{endpointStatusLabel(portalStatus)}</span>
+                <span>JSON REST</span>
+              </div>
             </div>
           </div>
         </section>
@@ -503,10 +539,17 @@ export default function ApiPortal() {
                 <h2 className="section-title">Test every endpoint live.</h2>
                 <p>Choose an endpoint to see its parameters, copy the request path, or send a live request from this page.</p>
               </div>
-              <div className="api-stats" aria-label="API statistics">
-                <span><strong>{endpoints.length}</strong> public routes</span>
-                <span><strong>{categories.length}</strong> categories</span>
-                <span><strong>0</strong> API keys required</span>
+              <div className="api-reference-tools">
+                <div className="api-stats" aria-label="API statistics">
+                  <span><strong>{endpoints.length}</strong> public routes</span>
+                  <span><strong>{categories.length}</strong> categories</span>
+                  <span><strong>0</strong> API keys required</span>
+                </div>
+                <div className="api-status-legend" aria-label="Endpoint status legend">
+                  <span><i className="api-status-dot live" /> Live</span>
+                  <span><i className="api-status-dot dead" /> Dead</span>
+                  <span><i className="api-status-dot unknown" /> Not tested</span>
+                </div>
               </div>
             </div>
 
@@ -557,7 +600,10 @@ export default function ApiPortal() {
                                 </span>
                                 <code>{endpoint.path}</code>
                                 <p>{endpoint.description}</p>
-                                <span className="api-endpoint-card-action">Live endpoint <span aria-hidden="true">→</span></span>
+                                <span className="api-endpoint-card-action">Open details <span aria-hidden="true">→</span></span>
+                                <span className={`api-endpoint-status ${endpointStatus[endpoint.id] || 'unknown'}`}>
+                                  <i className="api-status-dot" /> {endpointStatusLabel(endpointStatus[endpoint.id])}
+                                </span>
                               </button>
                               <div className="api-card-controls" aria-label={`${endpoint.title} actions`}>
                                 <button
@@ -645,7 +691,10 @@ export default function ApiPortal() {
               <section ref={consoleRef} className="api-console" aria-live="polite">
                 <div className="api-console-heading">
                   <div>
-                    <div className="api-method-label"><span>{active.method}</span> {active.category}</div>
+                    <div className="api-method-label">
+                      <span>{active.method}</span> {active.category}
+                      <span className={`api-console-status ${endpointStatus[active.id] || 'unknown'}`}><i className="api-status-dot" /> {endpointStatusLabel(endpointStatus[active.id])}</span>
+                    </div>
                     <h3>{active.title}</h3>
                     <p>{active.description}</p>
                   </div>
