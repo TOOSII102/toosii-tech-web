@@ -113,6 +113,27 @@ const endpoints = [
     ],
   },
   {
+    id: 'education-search',
+    category: 'Education',
+    method: 'GET',
+    title: 'Scholarly works search',
+    description: 'Search public scholarly works metadata with authors, publication years, citations, and open-access links.',
+    path: '/api/education?q=climate%20technology&limit=5',
+    params: [
+      { name: 'q', type: 'string', required: false, description: 'Topic or phrase from 2 to 160 characters.' },
+      { name: 'limit', type: 'integer', required: false, description: 'Number of results from 1 to 10. Defaults to 5.' },
+    ],
+  },
+  {
+    id: 'fun-joke',
+    category: 'Fun',
+    method: 'GET',
+    title: 'Random joke',
+    description: 'Return a normalized random joke response with clear source attribution.',
+    path: '/api/fun',
+    params: [],
+  },
+  {
     id: 'video-download',
     category: 'Downloaders',
     method: 'POST',
@@ -181,6 +202,16 @@ const endpoints = [
     path: '/api/tools/apk',
     params: [],
     body: { query: 'vlc media player' },
+  },
+  {
+    id: 'fire-logo',
+    category: 'Tools',
+    method: 'POST',
+    title: 'Fire logo generator',
+    description: 'Generate a fire-style logo image from short text through the Toosii logo tool.',
+    path: '/api/tools/firelogo',
+    params: [],
+    body: { text: 'Toosii' },
   },
   {
     id: 'vocal-remover',
@@ -299,7 +330,7 @@ const endpoints = [
   },
 ]
 
-const categories = ['Core', 'Data', 'Media', 'Media Search', 'News', 'Downloaders', 'AI', 'Audio Tools', 'Utilities', 'Tools', 'Bot', 'Sports']
+const categories = ['Core', 'Data', 'Media', 'Media Search', 'News', 'Education', 'Fun', 'Downloaders', 'AI', 'Audio Tools', 'Utilities', 'Tools', 'Bot', 'Sports']
 const DEFAULT_API_ORIGIN = 'https://www.toosiitech.org'
 const buildPublicEndpointUrl = (origin, path) => `${origin}${path}`
 
