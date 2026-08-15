@@ -384,14 +384,17 @@ export default function ApiPortal() {
     const checks = await Promise.all(endpoints.map(async endpoint => {
       const controller = new AbortController()
       const timeout = window.setTimeout(() => controller.abort(), 8000)
+      const sideEffectSensitiveGet = endpoint.id === 'temp-email' || endpoint.id === 'bot-pair'
+      const probeMethod = endpoint.method === 'GET' && !sideEffectSensitiveGet ? 'GET' : 'OPTIONS'
       try {
         const result = await fetch(endpoint.path, {
-          method: 'HEAD',
+          method: probeMethod,
           cache: 'no-store',
           headers: { Accept: 'application/json', 'X-Toosii-Health-Check': '1' },
           signal: controller.signal,
         })
         const reachable = result.ok || result.status === 405 || result.status === 429 || result.status === 501
+        if (probeMethod === 'GET') await result.body?.cancel?.()
         return [endpoint.id, reachable ? 'live' : 'dead']
       } catch {
         return [endpoint.id, 'dead']
@@ -445,6 +448,8 @@ export default function ApiPortal() {
     counts[status] = (counts[status] || 0) + 1
     return counts
   }, { live: 0, dead: 0, loading: 0, unknown: 0 }), [endpointStatus])
+
+  const deadEndpoints = useMemo(() => endpoints.filter(endpoint => endpointStatus[endpoint.id] === 'dead'), [endpointStatus])
 
   const formatLastChecked = value => {
     if (!value) return 'Starting automatic checks'
@@ -592,7 +597,7 @@ export default function ApiPortal() {
                   </div>
                   <div className="api-monitor-meta">
                     <span>{formatLastChecked(lastChecked)}</span>
-                    <span>Every 60 seconds</span>
+                    <span>Every 60 seconds · safe probes</span>
                   </div>
                   <div className="api-monitor-counts" aria-label="Automatic endpoint status counts">
                     <span className="live"><b>{statusCounts.live}</b> live</span>
@@ -600,6 +605,9 @@ export default function ApiPortal() {
                     <span className="loading"><b>{statusCounts.loading}</b> checking</span>
                   </div>
                   {monitorError && <p className="api-monitor-error">{monitorError}</p>}
+                  {monitorState === 'ready' && deadEndpoints.length > 0 && (
+                    <p className="api-monitor-issue"><strong>Needs attention:</strong> {deadEndpoints.slice(0, 3).map(endpoint => endpoint.title).join(', ')}{deadEndpoints.length > 3 ? ` +${deadEndpoints.length - 3} more` : ''}</p>
+                  )}
                 </div>
                 <div className="api-stats" aria-label="API statistics">
                   <span><strong>{endpoints.length}</strong> public routes</span>

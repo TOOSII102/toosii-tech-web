@@ -466,11 +466,20 @@
 .api-monitor-counts .dead { color: #fda4af; background: rgba(239, 68, 68, 0.1); }
 .api-monitor-counts .loading { color: #fde68a; background: rgba(245, 158, 11, 0.1); }
 
-.api-monitor-error {
+.api-monitor-error,
+.api-monitor-issue {
   margin: 0;
   color: #fda4af;
   font-size: 0.64rem;
   line-height: 1.4;
+}
+
+.api-monitor-issue {
+  color: #fde68a;
+}
+
+.api-monitor-issue strong {
+  color: #fbbf24;
 }
 
 .api-status-legend {
