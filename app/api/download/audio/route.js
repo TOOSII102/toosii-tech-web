@@ -30,6 +30,14 @@ import { ytdlpJson, ytdlpGetUrl, findPython3, getYtdlpPath } from '../../../../l
 
 const execFileAsync = promisify(execFile)
 
+// YouTube frequently blocks the default web player client. These audio-only
+// formats remain small enough for the server-side conversion fallback.
+const AUDIO_YTDLP_ARGS = [
+  '--force-ipv4',
+  '--extractor-args', 'youtube:player_client=android_vr',
+]
+const AUDIO_FORMAT = '140/139/249/250/251'
+
 // ── Path 0: EliteProTech API — instant direct MP3 URL (no processing) ────────
 async function eliteProtechMp3(url) {
   try {
@@ -65,7 +73,7 @@ async function convertToMp3(url) {
 
   try {
     // Step 1 — metadata
-    const info = await ytdlpJson(url)
+    const info = await ytdlpJson(url, AUDIO_YTDLP_ARGS)
     const title     = info.title     || null
     const thumbnail = info.thumbnail || null
     const duration  = info.duration  || null
@@ -74,7 +82,8 @@ async function convertToMp3(url) {
     await execFileAsync(python, [
       ytdlp,
       '--no-warnings', '--no-playlist',
-      '-f', 'bestaudio[ext=m4a]/bestaudio',
+      ...AUDIO_YTDLP_ARGS,
+      '-f', AUDIO_FORMAT,
       '-o', outM4a,
       url,
     ], { timeout: 90000, cwd: '/tmp' })
@@ -108,8 +117,8 @@ async function getAudioUrl(url) {
   if (!python || !ytdlp) return null
 
   const [info, streamUrl] = await Promise.all([
-    ytdlpJson(url),
-    ytdlpGetUrl(url, 'bestaudio[ext=m4a]/bestaudio'),
+    ytdlpJson(url, AUDIO_YTDLP_ARGS),
+    ytdlpGetUrl(url, AUDIO_FORMAT, AUDIO_YTDLP_ARGS),
   ])
 
   if (!streamUrl) return null

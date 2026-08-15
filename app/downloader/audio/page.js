@@ -6,9 +6,13 @@ import './audio.css'
 const GT = 'https://api.giftedtech.co.ke/api/download'
 const STEPS = ['Fetching video info…', 'Converting to MP3…', 'Finalising…']
 
+function mp3Filename(title) {
+  const base = title ? title.replace(/[^a-z0-9\s-]/gi, '').trim().slice(0, 60) : 'audio'
+  return `${base || 'audio'}.mp3`
+}
+
 function proxyUrl(url, title) {
-  const name = (title ? title.replace(/[^a-z0-9\s-]/gi, '').trim().slice(0, 60) : 'audio') + '.mp3'
-  return `/api/download/proxy?url=${encodeURIComponent(url)}&name=${encodeURIComponent(name)}`
+  return `/api/download/proxy?url=${encodeURIComponent(url)}&name=${encodeURIComponent(mp3Filename(title))}`
 }
 
 function ytThumb(url) {
@@ -52,6 +56,12 @@ export default function AudioDownloader() {
       .finally(() => setTrendingLoading(false))
   }, [])
 
+  useEffect(() => {
+    return () => {
+      if (result?.isBlob && result.download_url) URL.revokeObjectURL(result.download_url)
+    }
+  }, [result])
+
   const search = async () => {
     const q = query.trim()
     if (!q) return setSearchError('Enter a song or video name to search')
@@ -72,16 +82,48 @@ export default function AudioDownloader() {
     setLoading(true); setError(''); setResult(null); setStep(0)
     const timer = setInterval(() => setStep(s => Math.min(s + 1, STEPS.length - 1)), 7000)
     try {
-      const serverData = await (await fetch('/api/download/audio', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: trimmed }) })).json()
-      if (serverData.download_url) { setResult(serverData); clearInterval(timer); setLoading(false); return }
+      const serverRes = await fetch('/api/download/audio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: trimmed }),
+      })
+      const contentType = serverRes.headers.get('content-type') || ''
+
+      // The local conversion path returns an actual audio/mpeg body. Keep it
+      // in the browser as a Blob URL so the download link does not send a
+      // client-only blob: URL back through the server proxy.
+      if (serverRes.ok && contentType.toLowerCase().startsWith('audio/')) {
+        const blob = await serverRes.blob()
+        const title = serverRes.headers.get('x-title') || 'YouTube audio'
+        setResult({
+          download_url: URL.createObjectURL(blob),
+          isBlob: true,
+          fileName: mp3Filename(title),
+          title,
+          thumbnail: serverRes.headers.get('x-thumbnail') || ytThumb(trimmed),
+          duration: fmtDuration(serverRes.headers.get('x-duration')),
+          quality: serverRes.headers.get('x-quality') || '192kbps',
+        })
+        return
+      }
+
+      const serverData = await serverRes.json().catch(() => ({}))
+      if (serverRes.ok && serverData.download_url) {
+        setResult(serverData)
+        return
+      }
+
+      // Keep the external provider fallback for deployments where local
+      // ffmpeg is unavailable or YouTube blocks the server-side conversion.
       setStep(1)
-      const gtData = await (await fetch(`${GT}/ytmp3?apikey=gifted&url=${encodeURIComponent(trimmed)}`)).json()
-      if (gtData.success && gtData.result?.download_url) {
+      const gtRes = await fetch(`${GT}/ytmp3?apikey=gifted&url=${encodeURIComponent(trimmed)}`)
+      const gtData = await gtRes.json().catch(() => ({}))
+      if (gtRes.ok && gtData.success && gtData.result?.download_url) {
         const d = gtData.result
         setResult({ download_url: d.download_url, title: d.title, thumbnail: d.thumbnail || ytThumb(trimmed), duration: fmtDuration(d.duration), quality: d.quality || '128kbps' })
-        clearInterval(timer); setLoading(false); return
+        return
       }
-      const msg = gtData.message || 'Could not extract audio. The conversion service is busy — please try again.'
+      const msg = gtData.message || serverData.error || 'Could not extract audio. The conversion service is busy — please try again.'
       setError(msg.includes('Limit') ? 'Download service is temporarily overloaded. Please try again in a few minutes.' : msg)
     } catch { setError('Network error — please check your connection and try again.') }
     finally { clearInterval(timer); setLoading(false) }
@@ -235,7 +277,7 @@ export default function AudioDownloader() {
                   </div>
                   <p className="expire-note">⚡ Download now — this link expires soon</p>
                   <div className="dl-buttons">
-                    <a href={proxyUrl(result.download_url, result.title)} download className="btn-primary" style={{ width: 'fit-content' }}>⬇ Download MP3</a>
+                    <a href={result.isBlob ? result.download_url : proxyUrl(result.download_url, result.title)} download={result.isBlob ? result.fileName : undefined} className="btn-primary" style={{ width: 'fit-content' }}>⬇ Download MP3</a>
                     {mode === 'search' && <button onClick={() => { setResult(null); setSelectedId(null) }} className="btn-outline" style={{ width: 'fit-content', fontSize: '0.85rem' }}>← Back</button>}
                   </div>
                 </div>
