@@ -162,12 +162,16 @@ export default function Header() {
 
           <p className="mobile-nav-label">Tools &amp; Apps</p>
 
+          <Link href="/tools" className={`mobile-link mobile-all-tools-link${pathname === '/tools' ? ' active' : ''}`}>
+            Browse All Tools →
+          </Link>
+
           <button
             className={`mobile-link mobile-tools-toggle${isToolsActive ? ' active' : ''}`}
             onClick={() => setMobileTools(o => !o)}
             aria-expanded={mobileTools}
           >
-            <span>Browse All Tools</span>
+            <span>Tool Shortcuts</span>
             <svg className={`dropdown-chevron${mobileTools ? ' rotated' : ''}`} width="14" height="14" viewBox="0 0 12 12" fill="none" aria-hidden="true">
               <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
