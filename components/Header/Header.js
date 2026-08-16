@@ -10,7 +10,7 @@ const mainNav = [
   { href: '/bot',     label: 'XD Bot' },
   { href: '/blog',    label: 'Blog' },
   { href: '/api',     label: 'API' },
-  { href: '/contact', label: 'Contact' },
+  { href: '/contact', label: 'Feedback' },
 ]
 
 const toolsNav = [
@@ -82,15 +82,6 @@ export default function Header() {
                 {item.label}
               </Link>
             ))}
-
-            {/* Support button */}
-            <button
-              className="nav-support-btn"
-              onClick={() => window.dispatchEvent(new Event('open-coffee-modal'))}
-              aria-label="Buy me a coffee"
-            >
-              ☕ Support
-            </button>
 
             {/* Tools dropdown */}
             <div className={`nav-dropdown${toolsOpen ? ' open' : ''}`} ref={dropRef}>
@@ -199,12 +190,6 @@ export default function Header() {
             <p className="mobile-nav-label" style={{padding:'0.5rem 0.75rem 0.35rem'}}>More</p>
             <Link href="/team" className="mobile-link">Team</Link>
             <Link href="/projects" className="mobile-link">Portfolio</Link>
-            <button
-              className="mobile-support-btn"
-              onClick={() => { setMobileOpen(false); setTimeout(() => window.dispatchEvent(new Event('open-coffee-modal')), 180) }}
-            >
-              ☕ Buy Me a Coffee
-            </button>
           </div>
         </div>
       </div>

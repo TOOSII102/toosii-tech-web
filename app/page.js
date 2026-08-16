@@ -1,6 +1,6 @@
 import Layout from '../components/Layout'
 import Link from 'next/link'
-import SupportSection from '../components/SupportSection'
+import FeedbackSection from '../components/FeedbackSection'
 import './home.css'
 
 import { createShareMetadata } from '../lib/shareMetadata'
@@ -290,8 +290,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ══════════════ SUPPORT ══════════════ */}
-      <SupportSection />
+      {/* ══════════════ FEEDBACK ══════════════ */}
+      <FeedbackSection />
 
       {/* ══════════════ ABOUT CTA ══════════════ */}
       <section className="section about-section">

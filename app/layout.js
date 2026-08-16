@@ -1,6 +1,5 @@
 import './globals.css'
   import AnimatedBackground from '../components/AnimatedBackground'
-  import BuyCoffee from '../components/BuyCoffee'
   import NavigationHistory from '../components/NavigationHistory'
   import { Analytics } from '@vercel/analytics/next'
   import { SpeedInsights } from '@vercel/speed-insights/next'
@@ -28,7 +27,6 @@ export const metadata = createShareMetadata({
           <NavigationHistory />
           <AnimatedBackground />
           {children}
-          <BuyCoffee />
           <PageTracker />
           <Analytics />
           <SpeedInsights />
