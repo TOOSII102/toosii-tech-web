@@ -108,6 +108,23 @@ function pageFor(path, searchParams = new URLSearchParams()) {
     const quality = searchParams.get('quality') || 'MP3'
     return { eyebrow: 'MP3 DOWNLOADER · SHARED SONG', title, description: artist ? `Listen to ${title} by ${artist} on Toosii Tech.` : `Listen to ${title} on the Toosii Tech MP3 downloader.`, accent: '#72f0ba', secondary: '#75d6ff', chips: [artist || 'Audio', quality, duration || 'Ready to play'], layout: 'audio-detail', thumbnail, artist, duration, quality }
   }
+  if (path === '/live-tv/share') {
+    const title = searchParams.get('title') || 'Shared live channel'
+    const subtitle = searchParams.get('subtitle') || 'Live TV channel'
+    const thumbnail = searchParams.get('thumbnail') || ''
+    const country = searchParams.get('country') || ''
+    const language = searchParams.get('language') || ''
+    const category = searchParams.get('category') || ''
+    return { eyebrow: 'TOOSII LIVE TV · SHARED CHANNEL', title, description: `Watch ${title}${country ? ` from ${country}` : ''} on Toosii Tech Live TV.`, accent: '#72f0ba', secondary: '#75d6ff', chips: [subtitle, country || 'Live', language || category || 'TV'], layout: 'live-tv-detail', thumbnail, subtitle, country, language, category }
+  }
+  if (path === '/books/share') {
+    const title = searchParams.get('title') || 'Shared book'
+    const author = searchParams.get('author') || ''
+    const subtitle = searchParams.get('subtitle') || 'Book'
+    const thumbnail = searchParams.get('thumbnail') || ''
+    const year = searchParams.get('year') || ''
+    return { eyebrow: 'TOOSII BOOKS · SHARED TITLE', title, description: author ? `Discover ${title} by ${author} on Toosii Tech Books.` : `Discover ${title} on Toosii Tech Books.`, accent: '#c084fc', secondary: '#75d6ff', chips: [author || subtitle, year || 'Book', 'Toosii Books'], layout: 'book-detail', thumbnail, author, subtitle, year }
+  }
   if (pages[path]) return pages[path]
   if (path.startsWith('/tools/apk')) return { eyebrow: 'APK SEARCH', title: 'Find your next app.', description: 'Search and download Android APK files without the Play Store.', accent: '#72f0ba', secondary: '#75d6ff', chips: ['APK Search', 'Android Apps', 'Free Download'], layout: 'tool' }
   if (path.startsWith('/tools/firelogo')) return { eyebrow: 'FIRE LOGO MAKER', title: 'Make it burn.', description: 'Create a striking fire-style logo in seconds.', accent: '#fb923c', secondary: '#fbbf24', chips: ['Text Logos', 'Fire Effect', 'Instant Download'], layout: 'tool' }
@@ -161,6 +178,22 @@ function MiniVisual({ page }) {
       <div style={{ display: 'flex', gap: 18, width: '100%', height: 150 }}>
         {page.thumbnail ? <img src={page.thumbnail} alt="" style={{ display: 'flex', width: 150, height: 150, objectFit: 'cover', borderRadius: 12 }} /> : <div style={{ display: 'flex', width: 150, height: 150, borderRadius: 12, background: 'linear-gradient(145deg,#065f46,#111827)', alignItems: 'center', justifyContent: 'center', color: '#a7f3d0', fontSize: 16, fontWeight: 800 }}>MP3</div>}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, justifyContent: 'center' }}><div style={{ display: 'flex', color: '#a7f3d0', fontSize: 15, fontWeight: 800 }}>{page.artist || 'Toosii Audio'}</div><div style={{ display: 'flex', color: '#e2e8f0', fontSize: 22, fontWeight: 800 }}>{page.title}</div><div style={{ display: 'flex', color: '#75d6ff', fontSize: 14 }}>{page.quality} · {page.duration || 'MP3 audio'} · Download ready</div></div>
+      </div>
+    )
+  }
+  if (page.layout === 'live-tv-detail') {
+    return (
+      <div style={{ display: 'flex', gap: 18, width: '100%', height: 150 }}>
+        {page.thumbnail ? <img src={page.thumbnail} alt="" style={{ display: 'flex', width: 220, height: 150, objectFit: 'cover', borderRadius: 12 }} /> : <div style={{ display: 'flex', width: 220, height: 150, borderRadius: 12, background: 'linear-gradient(145deg,#065f46,#111827)', alignItems: 'center', justifyContent: 'center', color: '#a7f3d0', fontSize: 18, fontWeight: 800 }}>LIVE TV</div>}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, justifyContent: 'center' }}><div style={{ display: 'flex', color: '#a7f3d0', fontSize: 15, fontWeight: 800 }}>● LIVE CHANNEL</div><div style={{ display: 'flex', color: '#e2e8f0', fontSize: 22, fontWeight: 800 }}>{page.title}</div><div style={{ display: 'flex', color: '#75d6ff', fontSize: 14 }}>{page.subtitle} · {page.country || page.language || page.category || 'Streaming'}</div></div>
+      </div>
+    )
+  }
+  if (page.layout === 'book-detail') {
+    return (
+      <div style={{ display: 'flex', gap: 18, width: '100%', height: 150 }}>
+        {page.thumbnail ? <img src={page.thumbnail} alt="" style={{ display: 'flex', width: 108, height: 150, objectFit: 'cover', borderRadius: 10 }} /> : <div style={{ display: 'flex', width: 108, height: 150, borderRadius: 10, background: 'linear-gradient(145deg,#4c1d95,#111827)', alignItems: 'center', justifyContent: 'center', color: '#e9d5ff', fontSize: 16, fontWeight: 800 }}>BOOK</div>}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, justifyContent: 'center' }}><div style={{ display: 'flex', color: '#e9d5ff', fontSize: 15, fontWeight: 800 }}>{page.author || 'Toosii Books'}</div><div style={{ display: 'flex', color: '#e2e8f0', fontSize: 22, fontWeight: 800 }}>{page.title}</div><div style={{ display: 'flex', color: '#75d6ff', fontSize: 14 }}>{page.subtitle} · {page.year || 'Shared title'}</div></div>
       </div>
     )
   }
