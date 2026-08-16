@@ -11,6 +11,9 @@ const nextConfig = {
   },
   experimental: {
     serverComponentsExternalPackages: ['gifted-baileys', 'pino'],
+    outputFileTracingIncludes: {
+      '/api/tools/vocal-remover': ['./node_modules/ffmpeg-static/ffmpeg'],
+    },
   },
 }
 

@@ -21,7 +21,7 @@ const endpoints = [
   { method: 'POST', path: '/api/tools/story', category: 'AI', description: 'Generate a creative story from a topic.' },
   { method: 'POST', path: '/api/tools/apk', category: 'Tools', description: 'Search public Android package metadata.' },
   { method: 'POST', path: '/api/tools/firelogo', category: 'Tools', description: 'Generate a fire-style logo image from short text.' },
-  { method: 'POST', path: '/api/tools/vocal-remover', category: 'Audio Tools', description: 'Submit a public audio URL for vocal separation.' },
+  { method: 'POST', path: '/api/tools/vocal-remover', category: 'Audio Tools', description: 'Separate an uploaded audio file or public audio URL into instrumental and vocal tracks.' },
   { method: 'GET', path: '/api/models', category: 'AI', description: 'List the AI models currently available through Toosii tools.' },
   { method: 'GET', path: '/api/tools/tempemail?count=1', category: 'Tools', description: 'Generate temporary email addresses for testing.' },
   { method: 'GET', path: '/api/qr', category: 'Bot', description: 'Request the current Toosii WhatsApp session QR payload.' },

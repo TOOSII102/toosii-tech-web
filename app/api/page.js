@@ -218,7 +218,7 @@ const endpoints = [
     category: 'Audio Tools',
     method: 'POST',
     title: 'Vocal remover',
-    description: 'Submit a public audio URL for vocal and instrumental separation.',
+    description: 'Separate an uploaded audio file or public audio URL into instrumental and vocal tracks.',
     path: '/api/tools/vocal-remover',
     params: [],
     body: { url: 'https://example.com/audio.mp3' },
