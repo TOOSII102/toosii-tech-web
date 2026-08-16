@@ -5,6 +5,37 @@ export const maxDuration = 120
     return m ? `https://img.youtube.com/vi/${m[1]}/hqdefault.jpg` : null
   }
 
+  async function getYoutubeMetadata(url) {
+    try {
+      const response = await fetch(
+        `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`,
+        { signal: AbortSignal.timeout(10000), cache: 'no-store' },
+      )
+      if (!response.ok) return {}
+      const data = await response.json()
+      return {
+        title: data.title || null,
+        author: data.author_name || null,
+        thumbnail: data.thumbnail_url || null,
+      }
+    } catch (e) {
+      console.error('[audio:metadata]', e.message)
+      return {}
+    }
+  }
+
+  function buildAudioFilename(title, author) {
+    const clean = value => String(value || '')
+      .replace(/[\\/:*?"<>|]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 80)
+    const safeTitle = clean(title)
+    const safeAuthor = clean(author)
+    if (safeTitle && safeAuthor && safeTitle.toLowerCase().includes(safeAuthor.toLowerCase())) return safeTitle
+    return [safeAuthor, safeTitle].filter(Boolean).join(' - ') || 'audio'
+  }
+
   function fmtDuration(raw) {
     if (!raw) return null
     const s = String(raw).trim()
@@ -68,6 +99,7 @@ async function convertToMp3(url) {
     // Step 1 — metadata
     const info = await ytdlpJson(url)
     const title     = info.title     || null
+    const author    = info.uploader || info.channel || info.artist || info.creator || null
     const thumbnail = info.thumbnail || null
     const duration  = info.duration  || null
 
@@ -85,14 +117,14 @@ async function convertToMp3(url) {
     // Step 3 — convert to MP3 with ffmpeg
     await execFileAsync('ffmpeg', [
       '-y', '-i', outM4a,
-      '-vn', '-ar', '44100', '-ac', '2', '-ab', '192k', '-f', 'mp3',
+      '-vn', '-ar', '44100', '-ac', '2', '-b:a', '128k', '-f', 'mp3',
       outMp3,
     ], { timeout: 60000 })
 
     if (!existsSync(outMp3)) return null
 
     const mp3Buffer = await readFile(outMp3)
-    return { buffer: mp3Buffer, title, thumbnail, duration, quality: '192kbps' }
+    return { buffer: mp3Buffer, title, author, thumbnail, duration, quality: '128kbps' }
   } catch (e) {
     console.error('[audio:convert]', e.message)
     return null
@@ -117,6 +149,7 @@ async function getAudioUrl(url) {
   return {
     download_url: streamUrl,
     title:        info.title     || null,
+    author:       info.uploader  || info.channel || info.artist || info.creator || null,
     thumbnail:    info.thumbnail || null,
     duration:     info.duration  || null,
     quality:      'M4A',
@@ -140,14 +173,18 @@ export async function POST(request) {
 
   // ── Path 0: reference downloader API — direct CDN MP3 URL ───────────────────
   try {
-    const reference = await referenceDownload(trimmed, 'audio')
+    const [reference, metadata] = await Promise.all([
+      referenceDownload(trimmed, 'audio'),
+      getYoutubeMetadata(trimmed),
+    ])
     if (reference?.download_url) {
       console.log('[audio:reference] success')
       return NextResponse.json({
         download_url: reference.download_url,
-        title: null,
-        thumbnail: null,
-        quality: reference.quality || 'MP3',
+        title: metadata.title,
+        author: metadata.author,
+        thumbnail: metadata.thumbnail || getYoutubeThumbnail(trimmed),
+        quality: reference.quality || '64kbps MP3',
         duration: null,
       })
     }
@@ -176,7 +213,7 @@ export async function POST(request) {
   try {
     const result = await convertToMp3(trimmed)
     if (result?.buffer) {
-      const safeName = (result.title || 'audio').replace(/[^\w\s-]/g, '').trim().slice(0, 80) || 'audio'
+      const safeName = buildAudioFilename(result.title, result.author)
       return new Response(result.buffer, {
         status: 200,
         headers: {
@@ -184,6 +221,7 @@ export async function POST(request) {
           'Content-Disposition': `attachment; filename="${safeName}.mp3"`,
           'Content-Length':      String(result.buffer.length),
           'X-Title':             result.title    || '',
+          'X-Author':            result.author   || '',
           'X-Thumbnail':         result.thumbnail || '',
           'X-Duration':          result.duration != null ? String(result.duration) : '',
           'X-Quality':           result.quality  || '',
@@ -202,6 +240,7 @@ export async function POST(request) {
       return NextResponse.json({
         download_url: urlResult.download_url,
         title:        urlResult.title,
+        author:       urlResult.author,
         thumbnail:    urlResult.thumbnail,
         quality:      urlResult.quality,
         duration:     urlResult.duration != null ? String(urlResult.duration) : null,

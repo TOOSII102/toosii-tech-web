@@ -6,8 +6,17 @@ import './audio.css'
 const GT = 'https://api.giftedtech.co.ke/api/download'
 const STEPS = ['Fetching video info…', 'Converting to MP3…', 'Finalising…']
 
-function proxyUrl(url, title) {
-  const name = (title ? title.replace(/[^a-z0-9\s-]/gi, '').trim().slice(0, 60) : 'audio') + '.mp3'
+function proxyUrl(url, title, author) {
+  const clean = value => String(value || '')
+    .replace(/[\\/:*?"<>|]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+  const safeTitle = clean(title)
+  const safeAuthor = clean(author)
+  const combined = safeTitle && safeAuthor && safeTitle.toLowerCase().includes(safeAuthor.toLowerCase())
+    ? safeTitle
+    : [safeAuthor, safeTitle].filter(Boolean).join(' - ')
+  const name = (combined || 'audio').slice(0, 120) + '.mp3'
   return `/api/download/proxy?url=${encodeURIComponent(url)}&name=${encodeURIComponent(name)}`
 }
 
@@ -78,7 +87,7 @@ export default function AudioDownloader() {
       const gtData = await (await fetch(`${GT}/ytmp3?apikey=gifted&url=${encodeURIComponent(trimmed)}`)).json()
       if (gtData.success && gtData.result?.download_url) {
         const d = gtData.result
-        setResult({ download_url: d.download_url, title: d.title, thumbnail: d.thumbnail || ytThumb(trimmed), duration: fmtDuration(d.duration), quality: d.quality || '128kbps' })
+        setResult({ download_url: d.download_url, title: d.title, author: d.author || d.artist || d.uploader || d.channel, thumbnail: d.thumbnail || ytThumb(trimmed), duration: fmtDuration(d.duration), quality: d.quality || '128kbps' })
         clearInterval(timer); setLoading(false); return
       }
       const msg = gtData.message || 'Could not extract audio. The conversion service is busy — please try again.'
@@ -235,7 +244,7 @@ export default function AudioDownloader() {
                   </div>
                   <p className="expire-note">⚡ Download now — this link expires soon</p>
                   <div className="dl-buttons">
-                    <a href={proxyUrl(result.download_url, result.title)} download className="btn-primary" style={{ width: 'fit-content' }}>⬇ Download MP3</a>
+                    <a href={proxyUrl(result.download_url, result.title, result.author)} download className="btn-primary" style={{ width: 'fit-content' }}>⬇ Download MP3</a>
                     {mode === 'search' && <button onClick={() => { setResult(null); setSelectedId(null) }} className="btn-outline" style={{ width: 'fit-content', fontSize: '0.85rem' }}>← Back</button>}
                   </div>
                 </div>
