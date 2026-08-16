@@ -610,3 +610,21 @@
   .trending-title { font-size: 1.1rem; }
   .trending-skeletons { grid-template-columns: 1fr 1fr; }
 }
+
+.player-share-btn,
+.rc-share-btn {
+  border: 1px solid rgba(117, 214, 255, 0.28);
+  border-radius: 8px;
+  background: rgba(117, 214, 255, 0.08);
+  color: #75d6ff;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.player-share-btn { padding: 0.35rem 0.7rem; }
+.rc-share-btn { padding: 0.25rem 0.5rem; }
+.player-share-btn:hover,
+.rc-share-btn:hover { background: rgba(117, 214, 255, 0.16); border-color: rgba(117, 214, 255, 0.5); }

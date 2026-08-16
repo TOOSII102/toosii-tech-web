@@ -1,5 +1,6 @@
 'use client'
   import { useState, useCallback, useEffect, useRef } from 'react'
+  import { shareOrCopy } from '../../../lib/clientShare'
   import '../tools.css'
   import './movies.css'
 
@@ -98,7 +99,7 @@
   }
 
   /* ── Detail + Player modal ── */
-  function Modal({ movie, onClose, onSelect }) {
+  function Modal({ movie, onClose, onSelect, onShare }) {
     const [detail,   setDetail]   = useState(null)
     const [loadInfo, setLoadInfo] = useState(true)
     const [playData, setPlayData] = useState(null)  /* { imdbId, seasons, isTV } */
@@ -204,9 +205,12 @@
                 </div>
                 <div style={{ marginTop: '1.1rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                   {!loadInfo && (
-                    <button className="mv-hero-play-btn" onClick={watchNow}>
-                      ▶ {tv ? 'Watch S' + se + ' E' + ep : 'Watch Movie'}
-                    </button>
+                    <>
+                      <button className="mv-hero-play-btn" onClick={watchNow}>
+                        ▶ {tv ? 'Watch S' + se + ' E' + ep : 'Watch Movie'}
+                      </button>
+                      {onShare && <button className="mv-hero-info-btn" onClick={() => onShare(movie)}>↗ Share</button>}
+                    </>
                   )}
                 </div>
               </div>
@@ -405,7 +409,7 @@
   /* ══════════════════════
      Main page
   ══════════════════════ */
-  export default function MoviesPage() {
+  export default function MoviesPage({ shared = null }) {
     const [trending,  setTrending]  = useState([])
     const [results,   setResults]   = useState([])
     const [hero,      setHero]      = useState(null)
@@ -414,6 +418,7 @@
     const [query,     setQuery]     = useState('')
     const [type,      setType]      = useState('')
     const [selected,  setSelected]  = useState(null)
+    const sharedLoaded = useRef(false)
 
     useEffect(() => {
       (async () => {
@@ -439,6 +444,48 @@
       } catch {}
       setSearching(false)
     }, [query, type])
+
+    useEffect(() => {
+      if (!shared || sharedLoaded.current) return
+      sharedLoaded.current = true
+
+      if (shared.query) {
+        setQuery(shared.query)
+        setSearching(true)
+        fetch(API + '?action=search&q=' + encodeURIComponent(shared.query) + (shared.type ? '&type=' + encodeURIComponent(shared.type) : ''))
+          .then(r => r.json())
+          .then(d => setResults(d?.data?.items || d?.data?.subjectList || []))
+          .catch(() => {})
+          .finally(() => setSearching(false))
+      }
+
+      if (shared.id) {
+        setSelected({
+          subjectId: shared.id,
+          title: shared.title || 'Shared title',
+          cover: shared.cover ? { url: shared.cover } : '',
+          subjectType: Number(shared.type) || 1,
+        })
+      }
+    }, [shared])
+
+    const shareMovie = async (movie = selected) => {
+      if (!movie?.subjectId) return
+      const link = new URL('/tools/movies/watch', window.location.origin)
+      link.searchParams.set('id', movie.subjectId)
+      link.searchParams.set('title', movie.title || 'Shared movie')
+      if (cover(movie)) link.searchParams.set('cover', cover(movie))
+      if (movie.subjectType) link.searchParams.set('type', movie.subjectType)
+      await shareOrCopy({ title: `${movie.title || 'Movie'} — Toosii Tech`, text: `Watch ${movie.title || 'this title'} on Toosii Tech`, url: link.toString() })
+    }
+
+    const shareMovieSearch = async () => {
+      if (!query.trim()) return
+      const link = new URL('/tools/movies/watch', window.location.origin)
+      link.searchParams.set('q', query.trim())
+      if (type) link.searchParams.set('type', type)
+      await shareOrCopy({ title: `Search movies for ${query.trim()} — Toosii Tech`, text: `Browse movie results for ${query.trim()}`, url: link.toString() })
+    }
 
     const display  = results.length > 0 ? results : trending
     const isSearch = results.length > 0
@@ -492,11 +539,13 @@
             </h2>
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
               {isSearch && (
-                <button onClick={() => { setResults([]); setQuery('') }}
+                                  <button onClick={() => { setResults([]); setQuery('') }}
+
                   style={{ fontSize: '0.8rem', color: '#a78bfa', background: 'none', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '7px', padding: '0.3rem 0.7rem', cursor: 'pointer' }}>
                   ✕ Clear
                 </button>
               )}
+              {isSearch && <button onClick={shareMovieSearch} className="mv-share-search-btn">↗ Share Search</button>}
               <span className="mv-count">{display.length} titles</span>
             </div>
           </div>
@@ -517,6 +566,7 @@
             movie={selected}
             onClose={() => setSelected(null)}
             onSelect={setSelected}
+            onShare={shareMovie}
           />
         )}
       </div>

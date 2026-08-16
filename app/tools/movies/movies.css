@@ -1110,3 +1110,15 @@
   color: #475569;
   white-space: nowrap;
 }
+
+.mv-share-search-btn {
+  border: 1px solid rgba(117, 214, 255, 0.3);
+  border-radius: 7px;
+  padding: 0.3rem 0.7rem;
+  background: rgba(117, 214, 255, 0.08);
+  color: #75d6ff;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.mv-share-search-btn:hover { background: rgba(117, 214, 255, 0.16); }

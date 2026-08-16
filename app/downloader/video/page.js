@@ -1,6 +1,7 @@
 'use client'
 import Layout from '../../../components/Layout'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { shareOrCopy } from '../../../lib/clientShare'
 import './video.css'
 
 const GT = 'https://api.giftedtech.co.ke/api/download'
@@ -40,14 +41,19 @@ function fmtDuration(raw) {
   return `${m}:${String(sec).padStart(2,'0')}`
 }
 
+function ytId(url) {
+  const m = String(url || '').match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/)
+  return m ? m[1] : null
+}
+
 function ytThumb(url) {
-  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
-  return m ? `https://img.youtube.com/vi/${m[1]}/hqdefault.jpg` : null
+  const id = ytId(url)
+  return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : null
 }
 
 const STEPS = ['Detecting platform…', 'Fetching video info…', 'Preparing download link…']
 
-export default function VideoDownloader() {
+export default function VideoDownloader({ shared = null }) {
   const [mode, setMode]               = useState('url')
   const [url, setUrl]                 = useState('')
   const [query, setQuery]             = useState('')
@@ -61,6 +67,8 @@ export default function VideoDownloader() {
   const [selectedId, setSelectedId]   = useState(null)
   const [playingId, setPlayingId]     = useState(null)
   const [playingTitle, setPlayingTitle] = useState('')
+  const [playingUrl, setPlayingUrl]   = useState('')
+  const sharedLoaded = useRef(false)
   const [trending, setTrending]       = useState([])
   const [trendingLoading, setTrendingLoading] = useState(true)
 
@@ -85,6 +93,35 @@ export default function VideoDownloader() {
     } catch { setSearchError('Search failed — check your connection and try again') }
     finally { setSearching(false) }
   }
+
+  useEffect(() => {
+    if (!shared || sharedLoaded.current) return
+    sharedLoaded.current = true
+
+    const sharedUrl = shared.url || ''
+    const sharedId = shared.id || ytId(sharedUrl)
+    if (sharedUrl) setUrl(sharedUrl)
+
+    if (shared.query) {
+      setMode('search')
+      setQuery(shared.query)
+      setSearching(true)
+      fetch(`/api/search/youtube?q=${encodeURIComponent(shared.query)}`)
+        .then(r => r.json())
+        .then(data => setSearchResults(data.results || []))
+        .catch(() => setSearchError('This shared search could not be loaded.'))
+        .finally(() => setSearching(false))
+    }
+
+    if (sharedUrl && sharedId) {
+      setPlayingId(sharedId)
+      setPlayingTitle(shared.title || 'Shared video')
+      setPlayingUrl(sharedUrl)
+      setMode('url')
+    } else if (sharedUrl) {
+      download(sharedUrl)
+    }
+  }, [shared])
 
   const download = async (overrideUrl) => {
     const trimmed = (overrideUrl || url).trim()
@@ -137,8 +174,19 @@ export default function VideoDownloader() {
   const playVideo = (item) => {
     setPlayingId(item.id)
     setPlayingTitle(item.title)
+    setPlayingUrl(item.url || `https://youtu.be/${item.id}`)
     setResult(null)
     setError('')
+  }
+
+  const shareVideo = async ({ url: sharedUrl = playingUrl || url, title = playingTitle || result?.title || 'Shared video', thumbnail = result?.thumbnail || ytThumb(sharedUrl), platform = result?.platform || detect(sharedUrl) || 'youtube' } = {}) => {
+    if (!sharedUrl) return setError('Open a video before sharing it')
+    const link = new URL('/downloader/video/share', window.location.origin)
+    link.searchParams.set('url', sharedUrl)
+    link.searchParams.set('title', title)
+    if (thumbnail) link.searchParams.set('thumbnail', thumbnail)
+    if (platform) link.searchParams.set('platform', platform)
+    await shareOrCopy({ title: `${title} — Toosii Tech`, text: `Watch ${title} on Toosii Tech`, url: link.toString() })
   }
 
   const switchMode = (m) => {
@@ -200,7 +248,10 @@ export default function VideoDownloader() {
                     <span className="player-now-label">Now Playing</span>
                     {playingTitle && <span className="player-title-text">{playingTitle}</span>}
                   </div>
-                  <button onClick={() => setPlayingId(null)} className="player-close-btn">✕ Close</button>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <button onClick={() => shareVideo()} className="player-share-btn">↗ Share</button>
+                    <button onClick={() => setPlayingId(null)} className="player-close-btn">✕ Close</button>
+                  </div>
                 </div>
                 <div className="player-frame-wrap">
                   <iframe
@@ -244,6 +295,7 @@ export default function VideoDownloader() {
                         {(item.views || item.uploaded) && <p className="rc-meta">{[item.views, item.uploaded].filter(Boolean).join(' · ')}</p>}
                         <div className="rc-actions">
                           <span className="rc-play-label">▶ Play</span>
+                          <button type="button" className="rc-share-btn" onClick={e => { e.stopPropagation(); shareVideo({ url: item.url || `https://youtu.be/${item.id}`, title: item.title, thumbnail: item.thumbnail, platform: 'youtube' }) }}>↗</button>
                           <button
                             className="rc-dl-btn"
                             onClick={e => !loading && pickResult(item, e)}
@@ -272,6 +324,7 @@ export default function VideoDownloader() {
                   <p className="expire-note">⚡ Download now — this link expires soon</p>
                   <div className="dl-buttons">
                     <a href={proxyUrl(result.download_url, result.title)} download className="btn-primary" style={{ width: 'fit-content' }}>⬇ Download {result.quality || 'Video'}</a>
+                    <button type="button" onClick={() => shareVideo({ url, title: result.title, thumbnail: result.thumbnail, platform: result.platform })} className="btn-secondary">↗ Share Video</button>
                     {result.download_url_sd && <a href={proxyUrl(result.download_url_sd, result.title ? result.title + ' SD' : null)} download className="btn-secondary" style={{ width: 'fit-content' }}>⬇ SD Quality</a>}
                     {mode === 'search' && <button onClick={() => { setResult(null); setSelectedId(null) }} className="btn-outline" style={{ width: 'fit-content', fontSize: '0.85rem' }}>← Back</button>}
                   </div>
@@ -320,6 +373,7 @@ export default function VideoDownloader() {
                         {(item.views || item.uploaded) && <p className="rc-meta">{[item.views, item.uploaded].filter(Boolean).join(' · ')}</p>}
                         <div className="rc-actions">
                           <span className="rc-play-label">▶ Play</span>
+                          <button type="button" className="rc-share-btn" onClick={e => { e.stopPropagation(); shareVideo({ url: item.url || `https://youtu.be/${item.id}`, title: item.title, thumbnail: item.thumbnail, platform: 'youtube' }) }}>↗</button>
                           <button
                             className="rc-dl-btn"
                             onClick={e => { e.stopPropagation(); !loading && pickResult(item, e) }}

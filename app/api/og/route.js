@@ -77,7 +77,22 @@ const pages = {
   },
 }
 
-function pageFor(path) {
+function pageFor(path, searchParams = new URLSearchParams()) {
+  if (path === '/tools/movies/watch') {
+    const query = searchParams.get('query') || searchParams.get('q') || ''
+    const title = searchParams.get('title') || (query ? `Search results for ${query}` : 'Shared movie')
+    const cover = searchParams.get('cover') || ''
+    if (query) {
+      return { eyebrow: 'MOVIES & SERIES · SEARCH', title, description: `Browse movie and series results for ${query} on Toosii Tech.`, accent: '#a78bfa', secondary: '#75d6ff', chips: [query, 'Search Results', 'Movies + Series'], layout: 'movies-search' }
+    }
+    return { eyebrow: 'TOOSII TECH MOVIES', title, description: `Watch ${title} with the Toosii Tech streaming experience.`, accent: '#a78bfa', secondary: '#75d6ff', chips: ['Watch Now', searchParams.get('type') === '2' ? 'Series' : 'Movie', 'HD Streaming'], layout: 'movie-detail', cover }
+  }
+  if (path === '/downloader/video/share') {
+    const title = searchParams.get('title') || 'Shared video'
+    const thumb = searchParams.get('thumb') || searchParams.get('thumbnail') || ''
+    const platform = searchParams.get('platform') || 'youtube'
+    return { eyebrow: `${platform.toUpperCase()} · SHARED VIDEO`, title, description: `Watch and download ${title} with Toosii Tech.`, accent: '#75d6ff', secondary: '#a78bfa', chips: ['Play Video', platform, 'Download'], layout: 'video-detail', thumb, platform }
+  }
   if (pages[path]) return pages[path]
   if (path.startsWith('/tools/apk')) return { eyebrow: 'APK SEARCH', title: 'Find your next app.', description: 'Search and download Android APK files without the Play Store.', accent: '#72f0ba', secondary: '#75d6ff', chips: ['APK Search', 'Android Apps', 'Free Download'], layout: 'tool' }
   if (path.startsWith('/tools/firelogo')) return { eyebrow: 'FIRE LOGO MAKER', title: 'Make it burn.', description: 'Create a striking fire-style logo in seconds.', accent: '#fb923c', secondary: '#fbbf24', chips: ['Text Logos', 'Fire Effect', 'Instant Download'], layout: 'tool' }
@@ -95,6 +110,27 @@ function pageFor(path) {
 }
 
 function MiniVisual({ page }) {
+  if (page.layout === 'movie-detail') {
+    return (
+      <div style={{ display: 'flex', gap: 18, width: '100%', height: 150 }}>
+        {page.cover ? <img src={page.cover} alt="" style={{ display: 'flex', width: 104, height: 150, objectFit: 'cover', borderRadius: 10 }} /> : <div style={{ display: 'flex', width: 104, height: 150, borderRadius: 10, background: 'linear-gradient(145deg,#4c1d95,#111827)', alignItems: 'center', justifyContent: 'center', color: '#c4b5fd', fontSize: 14, fontWeight: 800 }}>MOVIE</div>}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, justifyContent: 'center' }}><div style={{ display: 'flex', color: '#c4b5fd', fontSize: 15, fontWeight: 800 }}>Movie / Series</div><div style={{ display: 'flex', color: '#e2e8f0', fontSize: 19, fontWeight: 800 }}>{page.title}</div><div style={{ display: 'flex', color: '#a78bfa', fontSize: 14 }}>▶ Watch Now · HD Streaming</div></div>
+      </div>
+    )
+  }
+  if (page.layout === 'movies-search') {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: '100%' }}><div style={{ display: 'flex', padding: '14px 18px', borderRadius: 12, background: 'rgba(255,255,255,.06)', border: '1px solid rgba(167,139,250,.35)', color: '#cbd5e1', fontSize: 17 }}>Search movies, series…<span style={{ marginLeft: 'auto', display: 'flex', background: '#a78bfa', color: '#171329', padding: '9px 16px', borderRadius: 8, fontWeight: 800 }}>Search</span></div><div style={{ display: 'flex', gap: 12 }}><div style={{ display: 'flex', flex: 1, height: 92, borderRadius: 12, background: 'linear-gradient(145deg,#4c1d95,#111827)', border: '1px solid rgba(255,255,255,.14)', alignItems: 'flex-end', padding: 12, color: '#ede9fe', fontSize: 14, fontWeight: 800 }}>{page.title}</div><div style={{ display: 'flex', flex: 1, height: 92, borderRadius: 12, background: 'linear-gradient(145deg,#1e3a8a,#111827)', border: '1px solid rgba(255,255,255,.14)', alignItems: 'flex-end', padding: 12, color: '#dbeafe', fontSize: 14, fontWeight: 800 }}>Movie Results</div><div style={{ display: 'flex', flex: 1, height: 92, borderRadius: 12, background: 'linear-gradient(145deg,#14532d,#111827)', border: '1px solid rgba(255,255,255,.14)', alignItems: 'flex-end', padding: 12, color: '#dcfce7', fontSize: 14, fontWeight: 800 }}>Series Results</div></div></div>
+    )
+  }
+  if (page.layout === 'video-detail') {
+    return (
+      <div style={{ display: 'flex', gap: 18, width: '100%', height: 150 }}>
+        {page.thumb ? <img src={page.thumb} alt="" style={{ display: 'flex', width: 215, height: 150, objectFit: 'cover', borderRadius: 10 }} /> : <div style={{ display: 'flex', width: 215, height: 150, borderRadius: 10, background: 'linear-gradient(145deg,#0e7490,#111827)', alignItems: 'center', justifyContent: 'center', color: '#bae6fd', fontSize: 18, fontWeight: 800 }}>VIDEO</div>}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, justifyContent: 'center' }}><div style={{ display: 'flex', color: '#bae6fd', fontSize: 15, fontWeight: 800 }}>{page.platform.toUpperCase()} VIDEO</div><div style={{ display: 'flex', color: '#e2e8f0', fontSize: 19, fontWeight: 800 }}>{page.title}</div><div style={{ display: 'flex', color: '#75d6ff', fontSize: 14 }}>▶ Play Video · Download</div></div>
+      </div>
+    )
+  }
   if (page.layout === 'movies') {
     return (
       <div style={{ display: 'flex', gap: 14, width: '100%', height: 140 }}>
@@ -131,7 +167,7 @@ function MiniVisual({ page }) {
 export async function GET(request) {
   const { searchParams } = new URL(request.url)
   const path = searchParams.get('path') || '/'
-  const page = pageFor(path)
+  const page = pageFor(path, searchParams)
 
   return new ImageResponse(
     (
