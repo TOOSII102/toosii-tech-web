@@ -41,6 +41,21 @@ function fmtDuration(raw) {
   return `${m}:${String(sec).padStart(2,'0')}`
 }
 
+function formatBytes(bytes) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB']
+  const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  return `${(bytes / (1024 ** index)).toFixed(index === 0 ? 0 : 1)} ${units[index]}`
+}
+
+function formatEta(seconds) {
+  if (!Number.isFinite(seconds) || seconds < 0) return 'Calculating…'
+  if (seconds < 60) return `${Math.max(1, Math.ceil(seconds))}s left`
+  const minutes = Math.floor(seconds / 60)
+  const remaining = Math.ceil(seconds % 60)
+  return `${minutes}m ${String(remaining).padStart(2, '0')}s left`
+}
+
 export default function AudioDownloader() {
   const [mode, setMode]               = useState('url')
   const [url, setUrl]                 = useState('')
@@ -50,6 +65,7 @@ export default function AudioDownloader() {
   const [searchError, setSearchError] = useState('')
   const [result, setResult]           = useState(null)
   const [loading, setLoading]         = useState(false)
+  const [downloadState, setDownloadState] = useState({ phase: 'idle', loaded: 0, total: 0, percent: 0, speed: 0, eta: null })
   const [step, setStep]               = useState(0)
   const [error, setError]             = useState('')
   const [selectedId, setSelectedId]   = useState(null)
@@ -84,21 +100,101 @@ export default function AudioDownloader() {
     if (!trimmed) return setError('Paste a YouTube URL first')
     if (!/youtube\.com|youtu\.be/i.test(trimmed)) return setError('Only YouTube links are supported for MP3 download')
     setLoading(true); setError(''); setResult(null); setStep(0)
+    setDownloadState({ phase: 'preparing', loaded: 0, total: 0, percent: 0, speed: 0, eta: null })
     const timer = setInterval(() => setStep(s => Math.min(s + 1, STEPS.length - 1)), 7000)
     try {
       const serverData = await (await fetch('/api/download/audio', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: trimmed }) })).json()
-      if (serverData.download_url) { setResult(serverData); clearInterval(timer); setLoading(false); return }
+      if (serverData.download_url) {
+        setResult(serverData)
+        setDownloadState({ phase: 'ready', loaded: 0, total: 0, percent: 0, speed: 0, eta: null })
+        clearInterval(timer); setLoading(false); return
+      }
       setStep(1)
       const gtData = await (await fetch(`${GT}/ytmp3?apikey=gifted&url=${encodeURIComponent(trimmed)}`)).json()
       if (gtData.success && gtData.result?.download_url) {
         const d = gtData.result
         setResult({ download_url: d.download_url, title: d.title, author: d.author || d.artist || d.uploader || d.channel, thumbnail: d.thumbnail || ytThumb(trimmed), duration: fmtDuration(d.duration), quality: d.quality || '128kbps' })
+        setDownloadState({ phase: 'ready', loaded: 0, total: 0, percent: 0, speed: 0, eta: null })
         clearInterval(timer); setLoading(false); return
       }
       const msg = gtData.message || 'Could not extract audio. The conversion service is busy — please try again.'
       setError(msg.includes('Limit') ? 'Download service is temporarily overloaded. Please try again in a few minutes.' : msg)
     } catch { setError('Network error — please check your connection and try again.') }
     finally { clearInterval(timer); setLoading(false) }
+  }
+
+  const downloadFile = async () => {
+    if (!result?.download_url || downloadState.phase === 'downloading') return
+
+    const downloadUrl = proxyUrl(result.download_url, result.title, result.author, result.thumbnail)
+    const startedAt = performance.now()
+    setError('')
+    setDownloadState({ phase: 'downloading', loaded: 0, total: 0, percent: 0, speed: 0, eta: null })
+
+    try {
+      const response = await fetch(downloadUrl)
+      if (!response.ok) throw new Error(`Download failed (${response.status})`)
+
+      const total = Number(response.headers.get('content-length')) || 0
+      if (!response.body) {
+        const blob = await response.blob()
+        const objectUrl = URL.createObjectURL(blob)
+        const anchor = document.createElement('a')
+        anchor.href = objectUrl
+        anchor.download = 'audio.mp3'
+        anchor.click()
+        URL.revokeObjectURL(objectUrl)
+        setDownloadState({ phase: 'complete', loaded: blob.size, total: blob.size, percent: 100, speed: 0, eta: 0 })
+        return
+      }
+
+      const reader = response.body.getReader()
+      const chunks = []
+      let loaded = 0
+      let lastUpdate = startedAt
+      let lastLoaded = 0
+      let speed = 0
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        chunks.push(value)
+        loaded += value.byteLength
+
+        const now = performance.now()
+        const elapsed = (now - lastUpdate) / 1000
+        if (elapsed >= 0.25 || loaded === total) {
+          const instantSpeed = (loaded - lastLoaded) / Math.max(elapsed, 0.001)
+          speed = speed ? speed * 0.7 + instantSpeed * 0.3 : instantSpeed
+          const remaining = total > loaded && speed > 0 ? (total - loaded) / speed : null
+          setDownloadState({
+            phase: 'downloading',
+            loaded,
+            total,
+            percent: total ? Math.min(100, Math.round((loaded / total) * 100)) : 0,
+            speed,
+            eta: remaining,
+          })
+          lastUpdate = now
+          lastLoaded = loaded
+        }
+      }
+
+      const blob = new Blob(chunks, { type: response.headers.get('content-type') || 'audio/mpeg' })
+      const objectUrl = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = objectUrl
+      anchor.download = `${[result.author, result.title].filter(Boolean).join(' - ') || 'audio'}.mp3`
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      URL.revokeObjectURL(objectUrl)
+      setDownloadState({ phase: 'complete', loaded, total: total || loaded, percent: 100, speed, eta: 0 })
+    } catch (downloadError) {
+      console.error('[audio:download]', downloadError)
+      setDownloadState({ phase: 'error', loaded: 0, total: 0, percent: 0, speed: 0, eta: null })
+      setError('Download failed — please try again.')
+    }
   }
 
   const pickResult = (item, e) => {
@@ -120,6 +216,7 @@ export default function AudioDownloader() {
 
   const switchMode = (m) => {
     setMode(m); setResult(null); setError(''); setSearchError('')
+    setDownloadState({ phase: 'idle', loaded: 0, total: 0, percent: 0, speed: 0, eta: null })
     setSearchResults([]); setSelectedId(null); setPlayingId(null)
   }
 
@@ -248,8 +345,29 @@ export default function AudioDownloader() {
                     {result.duration && <span className="badge">⏱ {result.duration}</span>}
                   </div>
                   <p className="expire-note">⚡ Download now — this link expires soon</p>
+                  {downloadState.phase === 'downloading' && (
+                    <div className="audio-download-progress" role="status" aria-live="polite">
+                      <div className="audio-progress-heading">
+                        <span>Downloading MP3</span>
+                        <strong>{downloadState.total ? `${downloadState.percent}%` : 'Starting…'}</strong>
+                      </div>
+                      <div className="audio-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={downloadState.percent}>
+                        <span style={{ width: `${downloadState.total ? downloadState.percent : 4}%` }} />
+                      </div>
+                      <div className="audio-progress-stats">
+                        <span>{formatBytes(downloadState.loaded)}{downloadState.total ? ` / ${formatBytes(downloadState.total)}` : ''}</span>
+                        <span>{downloadState.speed > 0 ? `${formatBytes(downloadState.speed)}/s` : 'Connecting…'}</span>
+                        <span>{formatEta(downloadState.eta)}</span>
+                      </div>
+                    </div>
+                  )}
+                  {downloadState.phase === 'complete' && (
+                    <div className="audio-download-complete" role="status">✓ MP3 saved — {formatBytes(downloadState.loaded)}</div>
+                  )}
                   <div className="dl-buttons">
-                    <a href={proxyUrl(result.download_url, result.title, result.author, result.thumbnail)} download className="btn-primary" style={{ width: 'fit-content' }}>⬇ Download MP3</a>
+                    <button type="button" onClick={downloadFile} disabled={downloadState.phase === 'downloading'} className="btn-primary" style={{ width: 'fit-content' }}>
+                      {downloadState.phase === 'downloading' ? `Downloading ${downloadState.percent}%` : downloadState.phase === 'complete' ? '⬇ Download Again' : '⬇ Download MP3'}
+                    </button>
                     {mode === 'search' && <button onClick={() => { setResult(null); setSelectedId(null) }} className="btn-outline" style={{ width: 'fit-content', fontSize: '0.85rem' }}>← Back</button>}
                   </div>
                 </div>

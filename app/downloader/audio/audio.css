@@ -571,3 +571,65 @@
   .trending-title { font-size: 1.1rem; }
   .trending-skeletons { grid-template-columns: 1fr 1fr; }
 }
+
+/* ── Live download progress ── */
+.audio-download-progress {
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(37, 211, 102, 0.25);
+  border-radius: 12px;
+  background: rgba(37, 211, 102, 0.06);
+}
+
+.audio-progress-heading,
+.audio-progress-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: #a7f3d0;
+  font-size: 0.78rem;
+}
+
+.audio-progress-heading strong {
+  color: #72f0ba;
+  font-size: 0.85rem;
+}
+
+.audio-progress-track {
+  height: 8px;
+  margin: 0.75rem 0 0.55rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.1);
+}
+
+.audio-progress-track span {
+  display: block;
+  height: 100%;
+  min-width: 4px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #25d366, #72f0ba, #75d6ff);
+  box-shadow: 0 0 14px rgba(37,211,102,0.45);
+  transition: width 0.25s ease;
+}
+
+.audio-progress-stats {
+  color: #94a3b8;
+  font-size: 0.72rem;
+}
+
+.audio-download-complete {
+  margin-top: 1rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid rgba(37, 211, 102, 0.25);
+  border-radius: 9px;
+  color: #86efac;
+  background: rgba(37, 211, 102, 0.08);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 480px) {
+  .audio-progress-stats { flex-wrap: wrap; }
+  .audio-progress-stats span:last-child { width: 100%; }
+}
