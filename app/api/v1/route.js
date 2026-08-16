@@ -22,6 +22,7 @@ const endpoints = [
   { method: 'POST', path: '/api/tools/apk', category: 'Tools', description: 'Search public Android package metadata.' },
   { method: 'POST', path: '/api/tools/firelogo', category: 'Tools', description: 'Generate a fire-style logo image from short text.' },
   { method: 'POST', path: '/api/tools/vocal-remover', category: 'Audio Tools', description: 'Separate an uploaded audio file or public audio URL into instrumental and vocal tracks.' },
+  { method: 'POST', path: '/api/v1/config/inspect', category: 'Config', description: 'Inspect OpenVPN, Shadowsocks, V2Ray, sing-box, or JSON metadata with sensitive values redacted.' },
   { method: 'GET', path: '/api/models', category: 'AI', description: 'List the AI models currently available through Toosii tools.' },
   { method: 'GET', path: '/api/tools/tempemail?count=1', category: 'Tools', description: 'Generate temporary email addresses for testing.' },
   { method: 'GET', path: '/api/qr', category: 'Bot', description: 'Request the current Toosii WhatsApp session QR payload.' },

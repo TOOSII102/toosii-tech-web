@@ -224,6 +224,16 @@ const endpoints = [
     body: { url: 'https://example.com/audio.mp3' },
   },
   {
+    id: 'config-inspect',
+    category: 'Config',
+    method: 'POST',
+    title: 'Configuration inspector',
+    description: 'Inspect OpenVPN, Shadowsocks, V2Ray, sing-box, or JSON configuration metadata with sensitive values redacted.',
+    path: '/api/v1/config/inspect',
+    params: [],
+    body: { type: 'ovpn', filename: 'client.ovpn', content: 'client\\nremote vpn.example.com 443\\nproto udp\\ndev tun\\nverb 3' },
+  },
+  {
     id: 'base64-encode',
     category: 'Utilities',
     method: 'GET',
@@ -330,7 +340,7 @@ const endpoints = [
   },
 ]
 
-const categories = ['Core', 'Data', 'Media', 'Media Search', 'News', 'Education', 'Fun', 'Downloaders', 'AI', 'Audio Tools', 'Utilities', 'Tools', 'Bot', 'Sports']
+const categories = ['Core', 'Data', 'Media', 'Media Search', 'News', 'Education', 'Fun', 'Downloaders', 'AI', 'Audio Tools', 'Config', 'Utilities', 'Tools', 'Bot', 'Sports']
 const DEFAULT_API_ORIGIN = 'https://www.toosiitech.org'
 const buildPublicEndpointUrl = (origin, path) => `${origin}${path}`
 
