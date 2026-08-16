@@ -1,6 +1,7 @@
 'use client'
 import Layout from '../../../components/Layout'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { shareOrCopy } from '../../../lib/clientShare'
 import './audio.css'
 
 const GT = 'https://api.giftedtech.co.ke/api/download'
@@ -25,9 +26,14 @@ function proxyUrl(url, title, author, thumbnail) {
   return `/api/download/proxy?${params.toString()}`
 }
 
+function ytId(url) {
+  const m = String(url || '').match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/)
+  return m ? m[1] : null
+}
+
 function ytThumb(url) {
-  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
-  return m ? `https://img.youtube.com/vi/${m[1]}/hqdefault.jpg` : null
+  const id = ytId(url)
+  return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : null
 }
 
 function fmtDuration(raw) {
@@ -56,7 +62,7 @@ function formatEta(seconds) {
   return `${minutes}m ${String(remaining).padStart(2, '0')}s left`
 }
 
-export default function AudioDownloader() {
+export default function AudioDownloader({ shared = null }) {
   const [mode, setMode]               = useState('url')
   const [url, setUrl]                 = useState('')
   const [query, setQuery]             = useState('')
@@ -69,8 +75,12 @@ export default function AudioDownloader() {
   const [step, setStep]               = useState(0)
   const [error, setError]             = useState('')
   const [selectedId, setSelectedId]   = useState(null)
-  const [playingId, setPlayingId]     = useState(null)
+    const [playingId,     setPlayingId]     = useState(null)
   const [playingTitle, setPlayingTitle] = useState('')
+  const [playingArtist, setPlayingArtist] = useState('')
+  const [playingUrl,    setPlayingUrl]    = useState('')
+  const sharedLoaded = useRef(false)
+
   const [trending, setTrending]       = useState([])
   const [trendingLoading, setTrendingLoading] = useState(true)
 
@@ -81,6 +91,31 @@ export default function AudioDownloader() {
       .catch(() => {})
       .finally(() => setTrendingLoading(false))
   }, [])
+
+  useEffect(() => {
+    if (!shared || sharedLoaded.current) return
+    sharedLoaded.current = true
+
+    if (shared.query) {
+      setMode('search')
+      setQuery(shared.query)
+      setSearching(true)
+      fetch(`/api/search/youtube?q=${encodeURIComponent(shared.query)}`)
+        .then(r => r.json())
+        .then(data => setSearchResults(data.results || []))
+        .catch(() => setSearchError('This shared search could not be loaded.'))
+        .finally(() => setSearching(false))
+    }
+
+    if (shared.url) {
+      setUrl(shared.url)
+      setPlayingUrl(shared.url)
+      setPlayingId(shared.id || ytId(shared.url))
+      setPlayingTitle(shared.title || 'Shared song')
+      setPlayingArtist(shared.artist || '')
+      setMode('url')
+    }
+  }, [shared])
 
   const search = async () => {
     const q = query.trim()
@@ -210,8 +245,22 @@ export default function AudioDownloader() {
   const playVideo = (item) => {
     setPlayingId(item.id)
     setPlayingTitle(item.title)
+    setPlayingArtist(item.channel || '')
+    setPlayingUrl(item.url || `https://youtu.be/${item.id}`)
     setResult(null)
     setError('')
+  }
+
+  const shareAudio = async ({ sourceUrl = playingUrl || url, title = playingTitle || result?.title || 'Shared song', artist = playingArtist || result?.author || '', thumbnail = result?.thumbnail || ytThumb(sourceUrl), duration = result?.duration || '', quality = result?.quality || '' } = {}) => {
+    if (!sourceUrl) return setError('Open a song before sharing it')
+    const link = new URL('/downloader/audio/share', window.location.origin)
+    link.searchParams.set('url', sourceUrl)
+    link.searchParams.set('title', title)
+    if (artist) link.searchParams.set('artist', artist)
+    if (thumbnail) link.searchParams.set('thumbnail', thumbnail)
+    if (duration) link.searchParams.set('duration', duration)
+    if (quality) link.searchParams.set('quality', quality)
+    await shareOrCopy({ title: `${title} — Toosii Tech`, text: `Listen to ${title}${artist ? ` by ${artist}` : ''} on Toosii Tech`, url: link.toString() })
   }
 
   const switchMode = (m) => {
@@ -273,8 +322,12 @@ export default function AudioDownloader() {
                     <span className="player-live-dot" />
                     <span className="player-now-label">Preview</span>
                     {playingTitle && <span className="player-title-text">{playingTitle}</span>}
+                    {playingArtist && <span className="player-artist-text">by {playingArtist}</span>}
                   </div>
-                  <button onClick={() => setPlayingId(null)} className="player-close-btn">✕ Close</button>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <button onClick={() => shareAudio()} className="player-share-btn">↗ Share</button>
+                    <button onClick={() => setPlayingId(null)} className="player-close-btn">✕ Close</button>
+                  </div>
                 </div>
                 <div className="player-frame-wrap">
                   <iframe
@@ -287,7 +340,7 @@ export default function AudioDownloader() {
                 </div>
                 <div className="player-actions">
                   <button
-                    onClick={() => pickResult({ id: playingId, url: `https://youtu.be/${playingId}`, title: playingTitle })}
+                    onClick={() => pickResult({ id: playingId, url: playingUrl || `https://youtu.be/${playingId}`, title: playingTitle, channel: playingArtist })}
                     className="btn-primary"
                     disabled={loading}
                   >{loading ? 'Converting…' : '🎵 Download as MP3'}</button>
@@ -318,6 +371,7 @@ export default function AudioDownloader() {
                         {(item.views || item.uploaded) && <p className="rc-meta">{[item.views, item.uploaded].filter(Boolean).join(' · ')}</p>}
                         <div className="rc-actions">
                           <span className="rc-play-label">▶ Preview</span>
+                          <button type="button" className="rc-share-btn" onClick={e => { e.stopPropagation(); shareAudio({ sourceUrl: item.url || `https://youtu.be/${item.id}`, title: item.title, artist: item.channel, thumbnail: item.thumbnail, duration: item.duration }) }}>↗</button>
                           <button
                             className="rc-dl-btn"
                             onClick={e => !loading && pickResult(item, e)}
@@ -368,6 +422,7 @@ export default function AudioDownloader() {
                     <button type="button" onClick={downloadFile} disabled={downloadState.phase === 'downloading'} className="btn-primary" style={{ width: 'fit-content' }}>
                       {downloadState.phase === 'downloading' ? `Downloading ${downloadState.percent}%` : downloadState.phase === 'complete' ? '⬇ Download Again' : '⬇ Download MP3'}
                     </button>
+                    <button type="button" onClick={() => shareAudio({ sourceUrl: url, title: result.title, artist: result.author, thumbnail: result.thumbnail, duration: result.duration, quality: result.quality })} className="btn-secondary">↗ Share Song</button>
                     {mode === 'search' && <button onClick={() => { setResult(null); setSelectedId(null) }} className="btn-outline" style={{ width: 'fit-content', fontSize: '0.85rem' }}>← Back</button>}
                   </div>
                 </div>
@@ -409,6 +464,7 @@ export default function AudioDownloader() {
                         {(item.views || item.uploaded) && <p className="rc-meta">{[item.views, item.uploaded].filter(Boolean).join(' · ')}</p>}
                         <div className="rc-actions">
                           <span className="rc-play-label">▶ Preview</span>
+                          <button type="button" className="rc-share-btn" onClick={e => { e.stopPropagation(); shareAudio({ sourceUrl: item.url || `https://youtu.be/${item.id}`, title: item.title, artist: item.channel, thumbnail: item.thumbnail, duration: item.duration }) }}>↗</button>
                           <button
                             className="rc-dl-btn"
                             onClick={e => { e.stopPropagation(); !loading && pickResult(item, e) }}

@@ -93,6 +93,14 @@ function pageFor(path, searchParams = new URLSearchParams()) {
     const platform = searchParams.get('platform') || 'youtube'
     return { eyebrow: `${platform.toUpperCase()} · SHARED VIDEO`, title, description: `Watch and download ${title} with Toosii Tech.`, accent: '#75d6ff', secondary: '#a78bfa', chips: ['Play Video', platform, 'Download'], layout: 'video-detail', thumb, platform }
   }
+  if (path === '/downloader/audio/share') {
+    const title = searchParams.get('title') || 'Shared song'
+    const artist = searchParams.get('artist') || ''
+    const thumbnail = searchParams.get('thumbnail') || ''
+    const duration = searchParams.get('duration') || ''
+    const quality = searchParams.get('quality') || 'MP3'
+    return { eyebrow: 'MP3 DOWNLOADER · SHARED SONG', title, description: artist ? `Listen to ${title} by ${artist} on Toosii Tech.` : `Listen to ${title} on the Toosii Tech MP3 downloader.`, accent: '#72f0ba', secondary: '#75d6ff', chips: [artist || 'Audio', quality, duration || 'Ready to play'], layout: 'audio-detail', thumbnail, artist, duration, quality }
+  }
   if (pages[path]) return pages[path]
   if (path.startsWith('/tools/apk')) return { eyebrow: 'APK SEARCH', title: 'Find your next app.', description: 'Search and download Android APK files without the Play Store.', accent: '#72f0ba', secondary: '#75d6ff', chips: ['APK Search', 'Android Apps', 'Free Download'], layout: 'tool' }
   if (path.startsWith('/tools/firelogo')) return { eyebrow: 'FIRE LOGO MAKER', title: 'Make it burn.', description: 'Create a striking fire-style logo in seconds.', accent: '#fb923c', secondary: '#fbbf24', chips: ['Text Logos', 'Fire Effect', 'Instant Download'], layout: 'tool' }
@@ -137,6 +145,14 @@ function MiniVisual({ page }) {
         {['#4c1d95', '#1e3a8a', '#7c2d12', '#14532d'].map((color, index) => (
           <div key={color} style={{ flex: 1, borderRadius: 12, background: `linear-gradient(145deg, ${color}, #0f172a)`, border: '1px solid rgba(255,255,255,.14)', display: 'flex', alignItems: 'flex-end', padding: 14, color: 'rgba(255,255,255,.8)', fontSize: 13, fontWeight: 700 }}>0{index + 1}</div>
         ))}
+      </div>
+    )
+  }
+  if (page.layout === 'audio-detail') {
+    return (
+      <div style={{ display: 'flex', gap: 18, width: '100%', height: 150 }}>
+        {page.thumbnail ? <img src={page.thumbnail} alt="" style={{ display: 'flex', width: 150, height: 150, objectFit: 'cover', borderRadius: 12 }} /> : <div style={{ display: 'flex', width: 150, height: 150, borderRadius: 12, background: 'linear-gradient(145deg,#065f46,#111827)', alignItems: 'center', justifyContent: 'center', color: '#a7f3d0', fontSize: 16, fontWeight: 800 }}>MP3</div>}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, justifyContent: 'center' }}><div style={{ display: 'flex', color: '#a7f3d0', fontSize: 15, fontWeight: 800 }}>{page.artist || 'Toosii Audio'}</div><div style={{ display: 'flex', color: '#e2e8f0', fontSize: 22, fontWeight: 800 }}>{page.title}</div><div style={{ display: 'flex', color: '#75d6ff', fontSize: 14 }}>{page.quality} · {page.duration || 'MP3 audio'} · Download ready</div></div>
       </div>
     )
   }
