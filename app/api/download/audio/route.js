@@ -27,6 +27,7 @@ import { existsSync }   from 'fs'
 import path             from 'path'
 import os               from 'os'
 import { ytdlpJson, ytdlpGetUrl, findPython3, getYtdlpPath } from '../../../../lib/ytdlp'
+import { referenceDownload } from '../../../../lib/referenceDownloadApi'
 
 const execFileAsync = promisify(execFile)
 
@@ -137,7 +138,24 @@ export async function POST(request) {
     )
   }
 
-  // ── Path 0: EliteProTech — fastest, returns CDN MP3 URL immediately ─────────
+  // ── Path 0: reference downloader API — direct CDN MP3 URL ───────────────────
+  try {
+    const reference = await referenceDownload(trimmed, 'audio')
+    if (reference?.download_url) {
+      console.log('[audio:reference] success')
+      return NextResponse.json({
+        download_url: reference.download_url,
+        title: null,
+        thumbnail: null,
+        quality: reference.quality || 'MP3',
+        duration: null,
+      })
+    }
+  } catch (e) {
+    console.error('[audio:reference]', e.message)
+  }
+
+  // ── Path 1: EliteProTech — fastest legacy provider ─────────────────────────
   try {
     const ep = await eliteProtechMp3(trimmed)
     if (ep?.download_url) {

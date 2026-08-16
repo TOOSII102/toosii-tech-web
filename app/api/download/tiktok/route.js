@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { referenceDownload } from '../../../../lib/referenceDownloadApi'
 
 const GT_KEY = process.env.GIFTED_API_KEY || 'gifted'
 
@@ -49,6 +50,18 @@ export async function POST(request) {
       })
     }
   } catch (e) { console.error('[tiktok:gifted]', e.message) }
+
+  try {
+    const reference = await referenceDownload(trimmed, 'tiktok')
+    if (reference?.download_url) {
+      return NextResponse.json({
+        platform: 'tiktok',
+        download_url: reference.download_url,
+        title: null,
+        thumbnail: null,
+      })
+    }
+  } catch (e) { console.error('[tiktok:reference]', e.message) }
 
   return NextResponse.json(
     { error: 'Could not download TikTok video. Make sure the link is public and try again.' },

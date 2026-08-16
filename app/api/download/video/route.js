@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { execFile }     from 'child_process'
 import { promisify }    from 'util'
 import { findPython3, getYtdlpPath, ytdlpJson } from '../../../../lib/ytdlp'
+import { referenceDownload } from '../../../../lib/referenceDownloadApi'
 
   function fmtDuration(raw) {
     if (!raw) return null
@@ -360,6 +361,20 @@ export async function POST(request) {
   } catch (e) {
     console.error('[video]', platform, e.message)
   }
+
+    // ── Final fallback: reference downloader API ────────────────────────────
+    try {
+      const reference = await referenceDownload(trimmed, platform === 'youtube' ? 'video' : platform)
+      if (reference?.download_url) {
+        return NextResponse.json({
+          platform,
+          download_url: reference.download_url,
+          title: null,
+          thumbnail: null,
+          quality: reference.quality || null,
+        })
+      }
+    } catch (e) { console.error('[video:reference]', e.message) }
 
   return NextResponse.json(
     { error: `Could not download from ${platform}. The service may be temporarily rate-limited — please try again in a few minutes.` },
