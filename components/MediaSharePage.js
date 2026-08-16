@@ -38,7 +38,7 @@ export default function MediaSharePage({ kind = 'live-tv', item = {} }) {
   }
 
   return (
-    <main style={{ minHeight: '100vh', background: '#090b0f', color: '#f8fafc', padding: 'clamp(1.5rem, 5vw, 5rem) 1rem' }}>
+    <main style={{ minHeight: '100vh', background: '#090b0f', color: '#f8fafc', padding: 'clamp(1.5rem, 5vw, 5rem) 1rem 6rem' }}>
       <div style={{ maxWidth: 980, margin: '0 auto' }}>
         <div style={{ color: isBook ? '#c084fc' : '#72f0ba', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase' }}>
           {isBook ? 'Toosii Books · Shared item' : 'Toosii Live TV · Shared channel'}
@@ -56,7 +56,7 @@ export default function MediaSharePage({ kind = 'live-tv', item = {} }) {
               <a href={isBook ? '/tools' : '/tools'} style={{ border: '1px solid rgba(255,255,255,.2)', borderRadius: 10, padding: '0.8rem 1.1rem', color: '#e2e8f0', textDecoration: 'none', fontWeight: 700 }}>← Browse Toosii Tools</a>
             </div>
           </div>
-          {!isBook && item.url && <LivePlayer src={item.url} title={title} />}
+          {!isBook && item.url && <div style={{ flex: '1 1 100%', minWidth: 0 }}><LivePlayer src={item.url} title={title} /></div>}
         </section>
       </div>
     </main>
