@@ -1,0 +1,89 @@
+.dl-hero { padding: 4.5rem 0 2.5rem; }
+
+.dl-card {
+  max-width: 760px;
+  margin: 0 auto 2.5rem;
+  padding: 2rem;
+}
+
+.dl-input-row { display: flex; gap: 0.75rem; }
+
+.result-panel {
+  margin-top: 1.75rem;
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.thumb {
+  width: 160px; height: 100px;
+  object-fit: cover; border-radius: 8px; flex-shrink: 0;
+}
+
+.result-title { font-size: 0.95rem; font-weight: 700; color: white; margin-bottom: 0.65rem; line-height: 1.4; }
+.result-meta { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+.tips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 1.1rem;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.tip-card { padding: 1.35rem; display: flex; flex-direction: column; gap: 0.45rem; }
+.tip-icon { font-size: 1.6rem; }
+.tip-card h3 { font-size: 0.9rem; font-weight: 700; color: white; }
+.tip-card p { font-size: 0.82rem; color: #94a3b8; line-height: 1.55; }
+
+@media (max-width: 600px) {
+  .dl-input-row { flex-direction: column; }
+  .result-panel { flex-direction: column; }
+  .thumb { width: 100%; height: auto; max-height: 200px; }
+  .dl-card { padding: 1.25rem; }
+}
+
+@media (max-width: 480px) {
+  .tips-grid { grid-template-columns: 1fr; }
+}
+
+.result-author { font-size: 0.8rem; color: #64748b; margin: 0.2rem 0 0.5rem; }
+
+.progress-box {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  padding: 0.9rem 1.1rem;
+  background: rgba(59, 130, 246, 0.07);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 10px;
+  font-size: 0.875rem;
+  color: #93c5fd;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(59,130,246,0.3);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.expire-note {
+  font-size: 0.78rem;
+  color: #f59e0b;
+  margin-top: 0.75rem;
+}
+
+@media (max-width: 480px) {
+  .dl-input-row { flex-direction: column; }
+}
