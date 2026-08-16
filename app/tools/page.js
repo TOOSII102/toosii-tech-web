@@ -84,6 +84,13 @@ const categories = [
         href: '/tools/vocal-remover',
         label: 'Remove Vocals',
       },
+      {
+        icon: '🛡️',
+        title: 'Configuration Inspector',
+        desc: 'Inspect OpenVPN, Shadowsocks, V2Ray, sing-box, and JSON metadata with secrets redacted.',
+        href: '/tools/config-inspector',
+        label: 'Inspect Config',
+      },
     ],
   },
   {
@@ -129,7 +136,7 @@ const categories = [
 ]
 
 const stats = [
-  { num: '11+', label: 'Free Tools' },
+  { num: '12+', label: 'Free Tools' },
   { num: '100%', label: 'No Sign-Up' },
   { num: '0', label: 'Ads or Paywalls' },
   { num: '24/7', label: 'Always Available' },
@@ -142,8 +149,8 @@ export default function ToolsHub() {
       {/* Hero */}
       <section className="hero" style={{ paddingBottom: '2rem' }}>
         <div className="page-wrapper">
-          <div className="hero-badge badge">
-            <span>🛠️</span> 11 Free Tools — No Account Required
+              <div className="hero-badge badge">
+            <span>🛠️</span> 12 Free Tools — No Account Required
           </div>
           <h1 className="hero-title">
             Every Tool You Need.<br />

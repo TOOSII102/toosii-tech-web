@@ -20,6 +20,7 @@ const toolsNav = [
   { href: '/downloader/audio',    icon: '🎧', label: 'MP3 Downloader',     desc: 'YouTube to MP3 fast' },
   { href: '/downloader/spotify',  icon: '🎵', label: 'Spotify',            desc: 'Spotify tracks as MP3' },
   { href: '/tools/vocal-remover', icon: '🎤', label: 'Vocal Remover',      desc: 'Separate vocals & beat' },
+  { href: '/tools/config-inspector', icon: '🛡️', label: 'Config Inspector',  desc: 'Inspect configs safely' },
   { href: '/session',             icon: '🔑', label: 'Session Generator',  desc: 'WhatsApp session ID' },
   { href: '/tools/firelogo',      icon: '🔥', label: 'Fire Logo Maker',    desc: 'Striking fire logos' },
   { href: '/tools/story',         icon: '📖', label: 'Story Generator',    desc: 'Full story from prompt' },

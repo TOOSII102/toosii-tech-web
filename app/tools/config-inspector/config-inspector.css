@@ -1,0 +1,322 @@
+.config-inspector-page {
+  min-height: 70vh;
+}
+
+.config-inspector-hero {
+  padding-bottom: 2rem;
+}
+
+.config-inspector-badge {
+  border-color: rgba(117, 214, 255, 0.28);
+  background: rgba(117, 214, 255, 0.08);
+}
+
+.config-inspector-section {
+  padding-top: 1rem;
+}
+
+.config-inspector-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
+  gap: 1.25rem;
+  align-items: stretch;
+  max-width: 980px;
+  margin: 0 auto 1.5rem;
+}
+
+.config-upload-card,
+.config-safe-card {
+  max-width: none;
+  margin: 0;
+  padding: 1.6rem;
+}
+
+.config-card-heading,
+.config-inspector-page .tool-output-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.1rem;
+}
+
+.config-card-heading h2,
+.config-safe-card h2,
+.config-result h2 {
+  margin: 0.15rem 0 0;
+  color: #fff;
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+}
+
+.config-eyebrow {
+  margin: 0;
+  color: #75d6ff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.config-limit {
+  border: 1px solid rgba(114, 240, 186, 0.24);
+  border-radius: 999px;
+  color: #72f0ba;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.35rem 0.65rem;
+  white-space: nowrap;
+}
+
+.config-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.config-dropzone {
+  width: 100%;
+  min-height: 190px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 1.5rem;
+  border: 1px dashed rgba(117, 214, 255, 0.4);
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(117, 214, 255, 0.08), rgba(114, 240, 186, 0.04));
+  color: #f8fafc;
+  cursor: pointer;
+  font: inherit;
+  text-align: center;
+  transition: border-color 180ms ease-out, background 180ms ease-out, transform 180ms ease-out;
+}
+
+.config-dropzone:hover,
+.config-dropzone:focus-visible,
+.config-dropzone.is-dragging {
+  border-color: #72f0ba;
+  background: linear-gradient(145deg, rgba(117, 214, 255, 0.13), rgba(114, 240, 186, 0.1));
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.config-dropzone strong {
+  max-width: 100%;
+  overflow: hidden;
+  color: #f8fafc;
+  font-size: 0.98rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.config-dropzone > span:last-child {
+  color: #94a3b8;
+  font-size: 0.82rem;
+}
+
+.config-drop-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border: 1px solid rgba(114, 240, 186, 0.35);
+  border-radius: 50%;
+  color: #72f0ba;
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.config-format-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
+}
+
+.config-format-row span {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: #94a3b8;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.7rem;
+  padding: 0.28rem 0.45rem;
+}
+
+.config-warning {
+  margin-top: 0.95rem;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 10px;
+  background: rgba(251, 191, 36, 0.07);
+  color: #fcd34d;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  padding: 0.75rem 0.85rem;
+}
+
+.config-warning strong {
+  display: block;
+  margin-bottom: 0.15rem;
+}
+
+.config-inspect-btn {
+  width: 100%;
+  margin-top: 1rem;
+  justify-content: center;
+}
+
+.config-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 0.4rem;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: config-spin 0.8s linear infinite;
+  vertical-align: -2px;
+}
+
+@keyframes config-spin {
+  to { transform: rotate(360deg); }
+}
+
+.config-safe-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.config-safe-card h2 {
+  margin-bottom: 1.25rem;
+}
+
+.config-safe-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.config-safe-list > div {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+}
+
+.config-safe-list > div > span {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: rgba(114, 240, 186, 0.14);
+  color: #72f0ba;
+  font-size: 0.75rem;
+  font-weight: 900;
+}
+
+.config-safe-list p {
+  margin: 0;
+}
+
+.config-safe-list strong,
+.config-safe-list small {
+  display: block;
+}
+
+.config-safe-list strong {
+  color: #e2e8f0;
+  font-size: 0.82rem;
+}
+
+.config-safe-list small {
+  margin-top: 0.2rem;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.config-privacy-note {
+  margin-top: auto;
+  padding-top: 1.35rem;
+  color: #64748b;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.config-result {
+  max-width: 980px;
+  margin: 0 auto 1.5rem;
+  padding: 1.35rem;
+}
+
+.config-result-meta {
+  display: block;
+  margin-top: 0.3rem;
+  color: #72f0ba;
+  font-size: 0.72rem;
+}
+
+.config-result-code {
+  max-height: 520px;
+  margin: 0;
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.24);
+  color: #cbd5e1;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.78rem;
+  line-height: 1.65;
+  padding: 1rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.config-tips {
+  max-width: 980px;
+}
+
+@media (max-width: 760px) {
+  .config-inspector-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .config-safe-card {
+    min-height: 0;
+  }
+
+  .config-privacy-note {
+    margin-top: 1.25rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .config-upload-card,
+  .config-safe-card,
+  .config-result {
+    padding: 1.15rem;
+  }
+
+  .config-card-heading,
+  .config-inspector-page .tool-output-header {
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .config-limit {
+    align-self: flex-start;
+  }
+
+  .config-dropzone {
+    min-height: 165px;
+  }
+
+  .config-dropzone strong {
+    white-space: normal;
+  }
+}
