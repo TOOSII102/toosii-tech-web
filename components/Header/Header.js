@@ -9,6 +9,7 @@ const mainNav = [
   { href: '/about',   label: 'About' },
   { href: '/bot',     label: 'XD Bot' },
   { href: '/blog',    label: 'Blog' },
+  { href: '/api',     label: 'API' },
   { href: '/contact', label: 'Contact' },
 ]
 
