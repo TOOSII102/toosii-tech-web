@@ -1,0 +1,292 @@
+.dramabox-page {
+  min-height: 100vh;
+  color: #f4f7f8;
+  background: #090b0f;
+  padding: 5.5rem clamp(1rem, 4vw, 4rem) 5rem;
+}
+
+.dramabox-hero,
+.dramabox-catalogue {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+}
+
+.dramabox-hero {
+  padding: clamp(2rem, 7vw, 5.5rem) 0 3rem;
+}
+
+.dramabox-eyebrow,
+.dramabox-kicker {
+  color: #72f0ba;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.dramabox-hero h1 {
+  max-width: 760px;
+  margin: .85rem 0 1rem;
+  font-family: var(--font-display, "DM Sans", sans-serif);
+  font-size: clamp(2.6rem, 7vw, 5.6rem);
+  line-height: .98;
+  letter-spacing: -.06em;
+}
+
+.dramabox-hero h1 span {
+  color: #75d6ff;
+}
+
+.dramabox-hero p {
+  max-width: 620px;
+  margin: 0;
+  color: rgba(244, 247, 248, .68);
+  font-size: 1rem;
+  line-height: 1.75;
+}
+
+.dramabox-search {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  max-width: 720px;
+  margin-top: 2rem;
+  padding: .45rem .5rem .45rem 1rem;
+  border: 1px solid rgba(117, 214, 255, .22);
+  border-radius: 1rem;
+  background: rgba(20, 25, 31, .8);
+  box-shadow: 0 18px 70px rgba(0, 0, 0, .25);
+}
+
+.dramabox-search > span {
+  color: #75d6ff;
+  font-size: 1.55rem;
+}
+
+.dramabox-search input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+}
+
+.dramabox-search input::placeholder {
+  color: rgba(244, 247, 248, .4);
+}
+
+.dramabox-search button,
+.dramabox-open {
+  border: 0;
+  border-radius: .7rem;
+  background: #72f0ba;
+  color: #07110d;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.dramabox-search button {
+  padding: .85rem 1.25rem;
+}
+
+.dramabox-search button:disabled {
+  cursor: wait;
+  opacity: .55;
+}
+
+.dramabox-section-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.35rem;
+}
+
+.dramabox-section-head h2 {
+  margin: .25rem 0 0;
+  font-family: var(--font-display, "DM Sans", sans-serif);
+  font-size: clamp(1.45rem, 3vw, 2.2rem);
+  letter-spacing: -.04em;
+}
+
+.dramabox-count {
+  color: rgba(244, 247, 248, .5);
+  font-size: .85rem;
+  white-space: nowrap;
+}
+
+.dramabox-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.dramabox-card {
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 1rem;
+  background: linear-gradient(180deg, rgba(24, 30, 36, .94), rgba(13, 17, 21, .94));
+  transition: transform .2s ease, border-color .2s ease;
+}
+
+.dramabox-card:hover {
+  border-color: rgba(114, 240, 186, .5);
+  transform: translateY(-3px);
+}
+
+.dramabox-cover-wrap {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  background: #171d25;
+}
+
+.dramabox-cover,
+.dramabox-cover-placeholder {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.dramabox-cover-placeholder {
+  display: grid;
+  place-items: center;
+  color: rgba(117, 214, 255, .8);
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+.dramabox-episodes {
+  position: absolute;
+  right: .6rem;
+  bottom: .6rem;
+  padding: .3rem .5rem;
+  border-radius: .45rem;
+  background: rgba(9, 11, 15, .82);
+  color: #72f0ba;
+  font-size: .7rem;
+  font-weight: 800;
+}
+
+.dramabox-card-body {
+  padding: .9rem;
+}
+
+.dramabox-card h3 {
+  overflow: hidden;
+  margin: 0;
+  color: #fff;
+  font-size: 1rem;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dramabox-card p {
+  display: -webkit-box;
+  min-height: 3.55em;
+  overflow: hidden;
+  margin: .55rem 0 .8rem;
+  color: rgba(244, 247, 248, .56);
+  font-size: .78rem;
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.dramabox-meta,
+.dramabox-tags {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  overflow: hidden;
+  color: rgba(244, 247, 248, .46);
+  font-size: .7rem;
+  white-space: nowrap;
+}
+
+.dramabox-meta span + span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dramabox-tags {
+  margin-top: .65rem;
+}
+
+.dramabox-tags span {
+  overflow: hidden;
+  padding: .25rem .45rem;
+  border: 1px solid rgba(117, 214, 255, .2);
+  border-radius: .35rem;
+  color: rgba(117, 214, 255, .82);
+  text-overflow: ellipsis;
+}
+
+.dramabox-open {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: .9rem;
+  padding: .65rem .75rem;
+  font-size: .78rem;
+}
+
+.dramabox-open span {
+  font-size: 1rem;
+}
+
+.dramabox-open.is-disabled {
+  cursor: default;
+  background: rgba(255, 255, 255, .08);
+  color: rgba(244, 247, 248, .42);
+}
+
+.dramabox-state {
+  padding: 2.2rem 1rem;
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 1rem;
+  color: rgba(244, 247, 248, .62);
+  text-align: center;
+}
+
+.dramabox-error {
+  border-color: rgba(255, 105, 105, .25);
+  color: #ffadad;
+}
+
+.dramabox-skeletons {
+  min-height: 520px;
+}
+
+.dramabox-skeleton {
+  aspect-ratio: 3 / 4.8;
+  border-radius: 1rem;
+  background: linear-gradient(110deg, rgba(255,255,255,.04) 8%, rgba(255,255,255,.1) 18%, rgba(255,255,255,.04) 33%);
+  background-size: 200% 100%;
+  animation: dramabox-shimmer 1.3s linear infinite;
+}
+
+@keyframes dramabox-shimmer {
+  to { background-position-x: -200%; }
+}
+
+@media (max-width: 900px) {
+  .dramabox-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .dramabox-page { padding: 4.5rem 1rem 3rem; }
+  .dramabox-hero { padding-top: 2rem; }
+  .dramabox-search { border-radius: .85rem; }
+  .dramabox-search button { padding: .75rem .85rem; }
+  .dramabox-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+  .dramabox-card-body { padding: .75rem; }
+  .dramabox-card h3 { font-size: .9rem; }
+  .dramabox-section-head { align-items: start; flex-direction: column; }
+}

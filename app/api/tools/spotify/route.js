@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server'
 
-const EP = 'https://eliteprotech-apis.zone.id'
-
 export async function POST(req) {
   try {
     const { url } = await req.json()
@@ -9,23 +7,27 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Please provide a valid Spotify track URL.' }, { status: 400 })
     }
 
-    const ep = await fetch(`${EP}/spotify?url=${encodeURIComponent(url.trim())}`, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-      signal: AbortSignal.timeout(25000),
-    }).then(r => r.json())
+    const response = await fetch(new URL('/api/download/spotify', req.url), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: url.trim() }),
+      signal: AbortSignal.timeout(120000),
+    })
+    const data = await response.json()
 
-    if (!ep.success || !ep.data?.download) {
-      return NextResponse.json({ error: 'Could not fetch track. Make sure the link is a public Spotify track.' }, { status: 502 })
+    if (!response.ok || !data.download_url) {
+      return NextResponse.json({ error: data.error || 'Could not fetch track. Make sure the link is a public Spotify track.' }, { status: response.status >= 400 ? response.status : 502 })
     }
 
     return NextResponse.json({
-      title:    ep.data.metadata?.title    || 'Unknown Title',
-      artist:   ep.data.metadata?.artist   || 'Unknown Artist',
-      duration: ep.data.metadata?.duration || '--:--',
-      cover:    ep.data.metadata?.images   || null,
-      download: ep.data.download,
+      title: data.title || 'Unknown Title',
+      artist: data.artist || data.author || 'Unknown Artist',
+      duration: data.duration || '--:--',
+      cover: data.thumbnail || null,
+      download: data.download_url,
     })
-  } catch (e) {
-    return NextResponse.json({ error: 'Service unavailable. Please try again.' }, { status: 500 })
+  } catch (error) {
+    console.error('[tools:spotify]', error.message)
+    return NextResponse.json({ error: 'Spotify service unavailable. Please try again.' }, { status: 502 })
   }
 }

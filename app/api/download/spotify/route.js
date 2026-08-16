@@ -3,6 +3,40 @@ import { referenceDownload } from '../../../../lib/referenceDownloadApi'
 
 const EP = 'https://eliteprotech-apis.zone.id'
 
+async function downloadViaYouTube(req, spotifyUrl) {
+  const oembedResponse = await fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(spotifyUrl)}`, {
+    signal: AbortSignal.timeout(12000),
+  })
+  if (!oembedResponse.ok) throw new Error(`Spotify metadata ${oembedResponse.status}`)
+  const oembed = await oembedResponse.json()
+  const searchTitle = String(oembed.title || '').trim()
+  if (!searchTitle) throw new Error('Spotify title unavailable')
+
+  const searchResponse = await fetch(new URL(`/api/search/youtube?q=${encodeURIComponent(searchTitle)}`, req.url), {
+    signal: AbortSignal.timeout(20000),
+  })
+  const searchData = await searchResponse.json()
+  const youtubeUrl = searchData.results?.[0]?.url
+  if (!youtubeUrl) throw new Error('No matching YouTube result')
+
+  const audioResponse = await fetch(new URL('/api/download/audio', req.url), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url: youtubeUrl }),
+    signal: AbortSignal.timeout(90000),
+  })
+  const audioData = await audioResponse.json()
+  if (!audioResponse.ok || !audioData.download_url) throw new Error(audioData.error || 'Audio conversion unavailable')
+
+  return {
+    ...audioData,
+    title: audioData.title || searchTitle,
+    thumbnail: audioData.thumbnail || oembed.thumbnail_url || null,
+    platform: 'spotify',
+    source: 'Toosii Tech Spotify fallback',
+  }
+}
+
 export async function POST(req) {
   try {
     const { url } = await req.json()
@@ -49,7 +83,14 @@ export async function POST(req) {
       console.error('[spotify:reference]', referenceError.message)
     }
 
-    return NextResponse.json({ error: 'Download failed. Try again later.' }, { status: 500 })
+    try {
+      const fallback = await downloadViaYouTube(req, url)
+      return NextResponse.json(fallback)
+    } catch (fallbackError) {
+      console.error('[spotify:youtube-fallback]', fallbackError.message)
+    }
+
+    return NextResponse.json({ error: 'Download failed. Try again later.' }, { status: 502 })
   } catch (error) {
     console.error('[spotify]', error.message)
     return NextResponse.json({ error: 'Download failed. Try again later.' }, { status: 500 })

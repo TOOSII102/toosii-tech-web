@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { brandPublicResponse } from '../../../../lib/brandPublicResponse'
 
 const BASE = 'https://movieapi.xcasper.space'
 const SITE = 'https://xcasper.space'
@@ -73,7 +74,8 @@ export async function GET(req) {
       }
       return new Response(upstream.body, { status: upstream.status, headers: out })
     } catch (e) {
-      return NextResponse.json({ error: e.message }, { status: 502 })
+      console.error('[movies:stream]', e.message)
+      return NextResponse.json({ error: 'Movie stream is temporarily unavailable. Try another server or try again shortly.' }, { status: 502 })
     }
   }
 
@@ -149,21 +151,23 @@ export async function GET(req) {
 
       return NextResponse.json({ data: { isTV, imdbId, seasons } })
     } catch (e) {
-      return NextResponse.json({ error: e.message }, { status: 502 })
+      console.error('[movies:play]', e.message)
+      return NextResponse.json({ error: 'Movie playback information is temporarily unavailable. Try again shortly.' }, { status: 502 })
     }
   }
 
   /* ── Standard xcasper API actions ── */
   try {
     switch (action) {
-      case 'trending':  return NextResponse.json(await xc('/api/trending'))
-      case 'hot':       return NextResponse.json(await xc('/api/hot'))
-      case 'search':    return NextResponse.json(await xc('/api/search?keyword=' + encodeURIComponent(q) + (type ? '&type=' + type : '')))
-      case 'detail':    return NextResponse.json(await xc('/api/rich-detail?subjectId=' + encodeURIComponent(id)))
-      case 'recommend': return NextResponse.json(await xc('/api/recommend?subjectId=' + encodeURIComponent(id) + '&page=1&perPage=12'))
+      case 'trending':  return NextResponse.json(brandPublicResponse(await xc('/api/trending')))
+      case 'hot':       return NextResponse.json(brandPublicResponse(await xc('/api/hot')))
+      case 'search':    return NextResponse.json(brandPublicResponse(await xc('/api/search?keyword=' + encodeURIComponent(q) + (type ? '&type=' + type : ''))))
+      case 'detail':    return NextResponse.json(brandPublicResponse(await xc('/api/rich-detail?subjectId=' + encodeURIComponent(id))))
+      case 'recommend': return NextResponse.json(brandPublicResponse(await xc('/api/recommend?subjectId=' + encodeURIComponent(id) + '&page=1&perPage=12')))
       default:          return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
     }
-  } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 502 })
+    } catch (e) {
+    console.error('[movies]', e.message)
+    return NextResponse.json({ error: 'Movies service is temporarily unavailable. Try again shortly.' }, { status: 502 })
   }
 }

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { brandPublicResponse } from '../../../../lib/brandPublicResponse'
 
 const BASE = Buffer.from('aHR0cHM6Ly9hcGlzLnhjYXNwZXIuc3BhY2UvYXBpL2RyYW1hYm94', 'base64').toString()
 const CDN_HEADERS = {
@@ -136,15 +137,38 @@ export async function GET(req) {
     if (page)    url += `&page=${encodeURIComponent(page)}`
     if (episode) url += `&episode=${encodeURIComponent(episode)}`
 
-    const res  = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } })
-    if (!res.ok) throw new Error(`Upstream ${res.status}`)
-    const data = await res.json()
-
-    if (!data.success) {
-      return NextResponse.json({ error: data.message || 'Request failed.' }, { status: 502 })
+    let data
+    try {
+      const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(15000) })
+      if (!res.ok) throw new Error(`Upstream ${res.status}`)
+      data = await res.json()
+    } catch (upstreamError) {
+      if (action !== 'hot') throw upstreamError
+      const fallback = await fetch(`${BASE}?action=trending&page=${encodeURIComponent(page)}`, { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(15000) })
+      if (!fallback.ok) throw upstreamError
+      data = await fallback.json()
+      data = { ...data, action: 'hot', fallback: true }
     }
 
-    return NextResponse.json(data)
+    if (!data.success) {
+      return NextResponse.json({ error: 'DramaBox request failed. Try again shortly.' }, { status: 502 })
+    }
+
+    if (action === 'search' && Array.isArray(data.results) && data.results.length === 0) {
+      try {
+        const fallbackResponse = await fetch(`${BASE}?action=trending&page=${encodeURIComponent(page)}`, { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(15000) })
+        if (fallbackResponse.ok) {
+          const fallback = await fallbackResponse.json()
+          const queryText = q.trim().toLowerCase()
+          const catalogue = [fallback.featured, fallback.latest, fallback.trending, fallback.for_you, fallback.forYou]
+            .flatMap(value => Array.isArray(value) ? value : [])
+          const results = catalogue.filter(item => `${item.title || ''} ${item.introduction || ''} ${(item.tags || []).join(' ')}`.toLowerCase().includes(queryText))
+          data = { ...data, results, total_results: results.length, total_pages: results.length ? 1 : 0, source: 'Toosii Tech catalogue fallback' }
+        }
+      } catch (_) {}
+    }
+
+    return NextResponse.json(brandPublicResponse(data))
   } catch (e) {
     console.error('[dramabox]', e.message)
     return NextResponse.json({ error: 'DramaBox service unavailable. Try again.' }, { status: 500 })

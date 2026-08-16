@@ -8,6 +8,35 @@ function wrapPrompt(q) {
   return `${IDENTITY}\n\nUser: ${q}\n\nToosii AI:`
 }
 
+async function requestLocalChat(req, prompt) {
+  const response = await fetch(new URL('/api/chat', req.url), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        { role: 'system', content: IDENTITY },
+        { role: 'user', content: prompt },
+      ],
+    }),
+    signal: AbortSignal.timeout(45000),
+  })
+  if (!response.ok) throw new Error(`Local chat ${response.status}`)
+
+  const raw = await response.text()
+  const reply = raw
+    .split(/\r?\n/)
+    .filter(line => line.startsWith('data: '))
+    .map(line => {
+      try { return JSON.parse(line.slice(6)).content || '' } catch { return '' }
+    })
+    .join('')
+    .trim()
+
+  if (!reply) throw new Error('Local chat returned no content')
+  return reply
+}
+
 export async function POST(req) {
   try {
     const { prompt } = await req.json()
@@ -18,7 +47,13 @@ export async function POST(req) {
     const q = prompt.trim()
     const wrapped = wrapPrompt(q)
 
-    // Primary: source A
+    // Primary: use Toosii's working same-origin chat route.
+    try {
+      const reply = await requestLocalChat(req, q)
+      return NextResponse.json({ reply, model: 'Toosii AI' })
+    } catch (_) {}
+
+    // Legacy provider fallbacks.
     try {
       const r1 = await fetch(`${EP}/chatgpt?prompt=${encodeURIComponent(wrapped)}`, {
         signal: AbortSignal.timeout(20000),
@@ -41,12 +76,15 @@ export async function POST(req) {
     } catch (_) {}
 
     // Fallback 2: source C
-    const r3 = await fetch(`${EP}/copilot?q=${encodeURIComponent(wrapped)}`, {
-      signal: AbortSignal.timeout(20000),
-    })
-    if (!r3.ok) throw new Error(`upstream ${r3.status}`)
-    const d3 = await r3.json()
-    if (d3.success && d3.text) return NextResponse.json({ reply: d3.text, model: 'Toosii AI' })
+    try {
+      const r3 = await fetch(`${EP}/copilot?q=${encodeURIComponent(wrapped)}`, {
+        signal: AbortSignal.timeout(20000),
+      })
+      if (r3.ok) {
+        const d3 = await r3.json()
+        if (d3.success && d3.text) return NextResponse.json({ reply: d3.text, model: 'Toosii AI' })
+      }
+    } catch (_) {}
 
     return NextResponse.json({ error: 'No response from AI. Please try again.' }, { status: 502 })
   } catch (e) {
