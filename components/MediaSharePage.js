@@ -1,6 +1,7 @@
 'use client'
 
 import { shareOrCopy } from '../lib/clientShare'
+import LivePlayer from './LivePlayer'
 
 function clean(value, fallback = '') {
   return String(value || fallback).trim()
@@ -55,6 +56,7 @@ export default function MediaSharePage({ kind = 'live-tv', item = {} }) {
               <a href={isBook ? '/tools' : '/tools'} style={{ border: '1px solid rgba(255,255,255,.2)', borderRadius: 10, padding: '0.8rem 1.1rem', color: '#e2e8f0', textDecoration: 'none', fontWeight: 700 }}>← Browse Toosii Tools</a>
             </div>
           </div>
+          {!isBook && item.url && <LivePlayer src={item.url} title={title} />}
         </section>
       </div>
     </main>
