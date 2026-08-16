@@ -3,6 +3,24 @@ import { execFile }     from 'child_process'
 import { promisify }    from 'util'
 import { findPython3, getYtdlpPath, ytdlpJson } from '../../../../lib/ytdlp'
 
+  function fmtDuration(raw) {
+    if (!raw) return null
+    const s = String(raw).trim()
+    if (/^\d+:\d+/.test(s)) return s
+    const secs = Math.floor(Number(s))
+    if (isNaN(secs) || secs < 0) return null
+    const h = Math.floor(secs / 3600)
+    const m = Math.floor((secs % 3600) / 60)
+    const sec = secs % 60
+    if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`
+    return `${m}:${String(sec).padStart(2,'0')}`
+  }
+
+  function getYoutubeThumbnail(url) {
+    const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
+    return m ? `https://img.youtube.com/vi/${m[1]}/hqdefault.jpg` : null
+  }
+  
 const execFileAsync = promisify(execFile)
 
 const GT_BASE = 'https://api.giftedtech.co.ke/api/download'
@@ -46,8 +64,8 @@ async function youtubeViaYtdlp(url) {
   return {
     download_url: picked.url,
     title:        info.title     || null,
-    thumbnail:    info.thumbnail || null,
-    duration:     info.duration  ? `${info.duration}s` : null,
+    thumbnail: info.thumbnail || getYoutubeThumbnail(url),
+    duration: fmtDuration(info.duration),
     quality:      picked.height  ? `${picked.height}p` : 'SD',
     platform:     'youtube',
   }
@@ -87,7 +105,7 @@ export async function POST(request) {
             download_url: d.play,
             title: d.title, thumbnail: d.cover,
             author: d.author?.nickname || null,
-            duration: d.duration ? `${d.duration}s` : null,
+            duration: fmtDuration(d.duration),
           })
         }
       } catch {}
@@ -102,7 +120,7 @@ export async function POST(request) {
             title: d.result.title || null,
             thumbnail: d.result.thumbnail || null,
             author: d.result.author || null,
-            duration: d.result.duration || null,
+            duration: fmtDuration(d.result.duration),
           })
         }
       } catch {}
@@ -118,9 +136,9 @@ export async function POST(request) {
               platform,
               download_url: dlUrl,
               title: info.title || null,
-              thumbnail: info.thumbnail || null,
+              thumbnail: info.thumbnail || getYoutubeThumbnail(url),
               author: info.uploader || null,
-              duration: info.duration ? `${info.duration}s` : null,
+              duration: fmtDuration(info.duration),
             })
           }
         }
@@ -160,7 +178,7 @@ export async function POST(request) {
             platform,
             download_url: d.result.download_url,
             title: d.result.title, thumbnail: d.result.thumbnail,
-            quality: d.result.quality, duration: d.result.duration,
+            quality: d.result.quality, duration: fmtDuration(d.result.duration),
           })
         }
       } catch {}
@@ -208,7 +226,7 @@ export async function POST(request) {
             platform,
             download_url: dlUrl,
             title: info.title || 'Instagram Video',
-            thumbnail: info.thumbnail || null,
+            thumbnail: info.thumbnail || getYoutubeThumbnail(url),
           })
         }
       } catch (e) { console.error('[video:instagram:ytdlp]', e.message) }
@@ -264,7 +282,7 @@ export async function POST(request) {
             download_url:    d.result.hd_video || d.result.sd_video,
             download_url_sd: d.result.sd_video || null,
             title: d.result.title, thumbnail: d.result.thumbnail,
-            duration: d.result.duration, quality: d.result.hd_video ? 'HD' : 'SD',
+            duration: fmtDuration(d.result.duration), quality: d.result.hd_video ? 'HD' : 'SD',
           })
         }
       } catch {}
@@ -279,7 +297,7 @@ export async function POST(request) {
             platform,
             download_url: dlUrl,
             title: info.title || null,
-            thumbnail: info.thumbnail || null,
+            thumbnail: info.thumbnail || getYoutubeThumbnail(url),
           })
         }
       } catch (e) { console.error('[video:facebook:ytdlp]', e.message) }
@@ -333,7 +351,7 @@ export async function POST(request) {
             platform,
             download_url: dlUrl,
             title: info.title || 'Twitter / X Video',
-            thumbnail: info.thumbnail || null,
+            thumbnail: info.thumbnail || getYoutubeThumbnail(url),
           })
         }
       } catch (e) { console.error('[video:twitter:ytdlp]', e.message) }

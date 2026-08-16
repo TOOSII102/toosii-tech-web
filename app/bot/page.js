@@ -3,8 +3,8 @@ import Link from 'next/link'
 import './bot.css'
 
 export const metadata = {
-  title: 'TOOSII XD ULTRA Bot — Features & Commands',
-  description: 'Explore 150+ commands across AI, media, sports, group management and more.',
+  title: 'TOOSII XD ULTRA — Full Command Suite',
+  description: 'Explore 150+ commands spanning AI, media downloads, sports scores, group management, and developer tools — all in one WhatsApp bot.',
 }
 
 const categories = [
@@ -76,11 +76,11 @@ export default function BotPage() {
           </div>
           <h1 className="section-title" style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)' }}>
             150+ Commands.<br />
-            <span className="gradient-text">One Bot.</span>
+            <span className="gradient-text">One Bot. Zero Compromises.</span>
           </h1>
           <p className="section-sub">
-            Built on gifted-baileys for full multi-device WhatsApp support.
-            Self-hosted, always-on, and updated regularly with new features.
+            Engineered on gifted-baileys for rock-solid multi-device WhatsApp support.
+            Self-hosted, always-on, open-source, and continuously improved with new features every week.
           </p>
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '2rem' }}>
             <Link href="/session" className="btn-primary">Get Session Key →</Link>
@@ -91,8 +91,8 @@ export default function BotPage() {
 
       <section className="section">
         <div className="page-wrapper">
-          <p className="section-label">Commands</p>
-          <h2 className="section-title" style={{ fontSize: '2rem', marginBottom: '3rem' }}>Browse by category</h2>
+          <p className="section-label">Full Command Reference</p>
+          <h2 className="section-title" style={{ fontSize: '2rem', marginBottom: '3rem' }}>Everything the bot can do</h2>
           <div className="commands-grid">
             {categories.map(cat => (
               <div key={cat.title} className="command-card glass-card">
@@ -117,11 +117,11 @@ export default function BotPage() {
       <section className="section">
         <div className="page-wrapper">
           <div className="deploy-box glass-card">
-            <h2>Ready to deploy?</h2>
-            <p>Fork the repo, generate a session key, and you're running your own instance in minutes.</p>
+            <h2>Ready to run your own instance?</h2>
+            <p>Download the source, generate a session key, and your bot is live in minutes — no complex setup, no cloud subscription required. Free, forever.</p>
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '1.75rem' }}>
-              <Link href="/session" className="btn-primary">Generate Session Key</Link>
-              <a href="https://github.com/TOOSII102/TOOSII-XD-ULTRA" target="_blank" rel="noopener noreferrer" className="btn-outline">Fork on GitHub</a>
+              <Link href="/session" className="btn-primary">Generate Session Key →</Link>
+              <a href="https://github.com/TOOSII102/TOOSII-XD-ULTRA" target="_blank" rel="noopener noreferrer" className="btn-outline">View Source on GitHub</a>
             </div>
           </div>
         </div>

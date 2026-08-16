@@ -2,6 +2,7 @@ import Layout from '../../components/Layout'
 
 export const metadata = {
   title: 'Privacy Policy — Toosii Tech',
+  description: 'How Toosii Tech handles your data across all tools. No accounts, no tracking, no stored data.',
 }
 
 export default function PrivacyPolicy() {

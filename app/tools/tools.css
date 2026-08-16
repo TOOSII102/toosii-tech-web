@@ -111,7 +111,8 @@
 }
 .thumb {
   width: 140px; height: 140px;
-  object-fit: cover; border-radius: 8px; flex-shrink: 0;
+  object-fit: cover; border-radius: 10px; flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
 }
 .result-title { font-size: 0.95rem; font-weight: 700; color: white; margin-bottom: 0.5rem; line-height: 1.4; }
 .result-artist { font-size: 0.82rem; color: #94a3b8; margin-bottom: 0.6rem; }
@@ -185,3 +186,63 @@
   .tips-grid { grid-template-columns: 1fr; }
   .ai-bubble { max-width: 100%; }
 }
+
+  /* ── Professional search bar ── */
+  .dl-search-wrapper {
+    display: flex;
+    align-items: center;
+    background: rgba(255,255,255,0.05);
+    border: 1.5px solid rgba(255,255,255,0.13);
+    border-radius: 14px;
+    overflow: hidden;
+    transition: border-color 0.25s, box-shadow 0.25s;
+    gap: 0;
+  }
+  .dl-search-wrapper:focus-within {
+    border-color: #25d366;
+    box-shadow: 0 0 0 4px rgba(37,211,102,0.1);
+  }
+  .dl-search-icon {
+    padding: 0 0.9rem 0 1.25rem;
+    font-size: 1.1rem;
+    color: #4a5568;
+    flex-shrink: 0;
+    user-select: none;
+    line-height: 1;
+  }
+  .dl-search-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #f1f5f9;
+    font-size: 1rem;
+    padding: 1.05rem 0.5rem;
+    min-width: 0;
+    height: 58px;
+    font-family: inherit;
+  }
+  .dl-search-input::placeholder { color: #4a5568; }
+  .dl-search-input:disabled { opacity: 0.6; }
+  .dl-search-btn {
+    flex-shrink: 0;
+    height: 58px;
+    padding: 0 1.75rem;
+    background: linear-gradient(135deg, #25d366 0%, #16a34a 100%);
+    color: #fff;
+    font-weight: 800;
+    font-size: 0.95rem;
+    border: none;
+    cursor: pointer;
+    transition: filter 0.2s, box-shadow 0.2s;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    font-family: inherit;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.15);
+  }
+  .dl-search-btn:hover:not(:disabled) {
+    filter: brightness(1.1);
+    box-shadow: 0 4px 16px rgba(37,211,102,0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+  }
+  .dl-search-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+  

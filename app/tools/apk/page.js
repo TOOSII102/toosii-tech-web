@@ -35,26 +35,27 @@ export default function ApkSearch() {
       <section className="tool-hero">
         <div className="page-wrapper">
           <div className="badge" style={{ marginBottom: '1.5rem' }}><span>📦</span> APK Downloader</div>
-          <h1 className="section-title">Search & Download APK Files</h1>
-          <p className="section-sub">Find any Android app and download the APK directly. No Play Store needed.</p>
+          <h1 className="section-title">Any Android App. <span className="gradient-text">Direct APK Download.</span></h1>
+          <p className="section-sub">Search any app by name and download the APK file directly — no Play Store, no region locks, no account needed. Fast and always free.</p>
         </div>
       </section>
 
       <section className="section" style={{ paddingTop: '1rem' }}>
         <div className="page-wrapper">
           <div className="tool-card glass-card">
-            <div className="tool-input-row">
+            <div className="dl-search-wrapper">
+              <span className="dl-search-icon">🔍</span>
               <input
                 type="text"
                 placeholder="Search for an app (e.g. WhatsApp, TikTok…)"
                 value={query}
                 onChange={e => { setQuery(e.target.value); setError('') }}
-                className="text-input"
+                className="dl-search-input"
                 onKeyDown={e => e.key === 'Enter' && !loading && search()}
                 disabled={loading}
               />
-              <button onClick={search} disabled={loading} className="btn-primary">
-                {loading ? 'Searching…' : 'Search'}
+              <button onClick={search} disabled={loading} className="dl-search-btn">
+                {loading ? 'Searching…' : '🔍 Search'}
               </button>
             </div>
 

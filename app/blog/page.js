@@ -68,7 +68,7 @@ const blogPosts = [
       </ul>
       
       <h3>What This Means for Developers</h3>
-      <p>Build for the actual user, not the imagined one. A feature that works perfectly on fiber internet in Nairobi CBD might break in Kisumu on 3G. Test on old Android devices. Keep responses short. Make every KB count.</p>
+      <p>Build for the actual user, not the imagined one. A feature that works perfectly on fiber internet in the city might break on 3G in a rural area. Test on old Android devices. Keep responses short. Make every KB count.</p>
     `
   },
   {
@@ -78,7 +78,7 @@ const blogPosts = [
     author: "Toosii Tech",
     date: "February 10, 2026",
     readTime: "5 min read",
-    excerpt: "Things I wish someone had told me when I was learning to code from YouTube videos in Nairobi. The real lessons that only come from shipping actual software.",
+    excerpt: "Things I wish someone had told me when I was learning to code from YouTube videos in Kenya. The real lessons that only come from shipping actual software.",
     featured: false,
     content: `
       <h2>It's Not About the Language</h2>
@@ -138,6 +138,35 @@ const blogPosts = [
         <li>Test with different video lengths — 3-minute songs and 3-hour streams behave differently</li>
         <li>Respect rate limits — aggressive polling gets you IP-banned</li>
       </ul>
+    `
+  },
+  {
+    id: 6,
+    title: "How I Built a Free Movie Streaming Platform with No CDN Budget",
+    category: "Web Development",
+    author: "Toosii Tech",
+    date: "March 24, 2026",
+    readTime: "7 min read",
+    excerpt: "Toosii Movies streams full Hollywood and international films for free — multiple quality options, direct downloads, bot-protection bypass, and a Netflix-style UI. Here's exactly how I built it.",
+    featured: false,
+    content: `
+      <h2>The Goal</h2>
+      <p>I wanted to add a movie streaming feature to Toosii Tech that felt premium — full movies, multiple quality options (360p to 1080p), one-click downloads, real search, and a clean UI. No subscription, no sign-up, no ads.</p>
+
+      <h3>Bypassing Bot Protection</h3>
+      <p>The movies API blocks automated server-to-server requests with a 403 "Automated requests not allowed" error. The fix is to make our Next.js API route impersonate a real browser — setting <code>Origin</code> and <code>Referer</code> headers to the API's own domain, plus a realistic Chrome User-Agent string. From the API's perspective, every request looks like it's coming from their own documentation page.</p>
+
+      <h3>Multi-Quality Streams and Direct Downloads</h3>
+      <p>The <code>/api/play</code> endpoint returns a <code>streams</code> array with one entry per quality level. Each entry has both a <code>proxyUrl</code> (for streaming) and a <code>downloadUrl</code> (which triggers a real file download). I render quality tabs — 360p, 480p, 720p, 1080p — and switch the HTML5 video source when the user picks one. Downloads link directly to the API's own download endpoint, so the file goes straight to the user's device.</p>
+
+      <h3>State, History, and the Back Button</h3>
+      <p>Clicking a movie card calls <code>history.pushState</code> to inject a history entry. Closing the modal calls <code>history.back()</code>. A <code>popstate</code> listener closes the modal when the user presses the device back button. This means navigation feels completely native — no full-page reloads, no broken back-button behaviour on mobile.</p>
+
+      <h3>Recommendations and Search</h3>
+      <p>Every movie detail view fetches related titles from the <code>/api/recommend</code> endpoint in parallel with the stream and detail calls — all three fire simultaneously with <code>Promise.all</code>. Search uses a 500ms debounce on the input so it only fires when the user pauses typing, keeping API calls minimal while still feeling live.</p>
+
+      <h3>What's Next</h3>
+      <p>TV series support — the API supports series with episode lists — is the next feature on the roadmap. Subtitles are also available from the API; I plan to overlay them using a WebVTT parser directly in the browser player.</p>
     `
   },
   {
@@ -217,8 +246,8 @@ export default function Blog() {
       <section className="blog-hero">
         <div className="page-wrapper">
           <p className="section-label">Blog</p>
-          <h1 className="section-title">Thoughts, Builds & Lessons</h1>
-          <p className="section-sub">Writing about WhatsApp bots, self-taught development, web tools, and the African tech scene. Real experience, no fluff.</p>
+          <h1 className="section-title">Thoughts, Builds & <span className="gradient-text">Lessons</span></h1>
+          <p className="section-sub">Real-world writing from a self-taught developer — covering WhatsApp bots, AI tools, the African tech scene, and everything learned by actually shipping things.</p>
         </div>
       </section>
 

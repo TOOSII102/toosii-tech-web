@@ -163,6 +163,22 @@
   .timeline-item { gap: 1.25rem; }
 }
 
+/* ── Highlights stats row ── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.stats-grid .glass-card {
+  transition: border-color 0.2s, transform 0.2s;
+}
+.stats-grid .glass-card:hover {
+  border-color: rgba(37,211,102,0.25);
+  transform: translateY(-2px);
+}
+
 @media (max-width: 480px) {
   .timeline::before { display: none; }
   .timeline-year {

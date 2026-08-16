@@ -43,8 +43,8 @@ export default function StoryGenerator() {
       <section className="tool-hero">
         <div className="page-wrapper">
           <div className="badge" style={{ marginBottom: '1.5rem' }}><span>📖</span> Story Generator</div>
-          <h1 className="section-title">AI Story Generator</h1>
-          <p className="section-sub">Enter any topic or idea — get a full creative story in seconds, powered by AI.</p>
+          <h1 className="section-title">Your Idea. <span className="gradient-text">A Full Story.</span></h1>
+          <p className="section-sub">Type any topic, genre, or prompt and get a complete, ready-to-share creative story in under 20 seconds — powered by AI, written for humans.</p>
         </div>
       </section>
 

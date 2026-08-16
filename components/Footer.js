@@ -8,13 +8,13 @@ export default function Footer() {
       <div className="footer-inner">
         <div className="footer-brand">
           <div className="footer-logo">
-            <div className="footer-icon">T</div>
+            <img src="/logo.png" alt="Toosii Tech" className="footer-logo-img" />
             <span>Toosii Tech</span>
           </div>
-          <p className="footer-tagline">Self-taught developer from Nairobi, Kenya. Building WhatsApp bots and web tools that actually work.</p>
+          <p className="footer-tagline">Building tools, bots, and digital experiences for the world — from Kenya.</p>
           <div className="footer-contact-direct">
-            <a href="mailto:toosiitechcompany@gmail.com" className="email-direct">📧 Email Us Directly</a>
-            <p className="response-note">Usually respond within 2 hours during business hours</p>
+            <a href="mailto:toosiitechcompany@gmail.com" className="email-direct">📧 Email Directly</a>
+            <p className="response-note">⚡ Usually responds within 24 hours</p>
           </div>
           <div className="footer-socials">
             <a href="https://github.com/TOOSII102" target="_blank" rel="noopener noreferrer" aria-label="GitHub" title="GitHub">
@@ -39,25 +39,31 @@ export default function Footer() {
         </div>
 
         <div className="footer-links">
-          <h4>Pages</h4>
+          <h4>Platform</h4>
           <ul>
             <li><Link href="/">Home</Link></li>
-            <li><Link href="/about">About Me</Link></li>
-            <li><Link href="/bot">XD Ultra Bot</Link></li>
+            <li><Link href="/about">About</Link></li>
+            <li><Link href="/bot">TOOSII XD ULTRA Bot</Link></li>
+            <li><Link href="/projects">Portfolio</Link></li>
             <li><Link href="/blog">Blog</Link></li>
-            <li><Link href="/projects">Projects</Link></li>
             <li><Link href="/team">Team</Link></li>
             <li><Link href="/contact">Contact</Link></li>
           </ul>
         </div>
 
         <div className="footer-links">
-          <h4>Tools</h4>
+          <h4>Free Tools</h4>
           <ul>
-            <li><Link href="/session">Session Generator</Link></li>
+            <li><Link href="/tools/ai">Toosii AI</Link></li>
+            <li><Link href="/tools/dramabox">DramaBox Streaming</Link></li>
             <li><Link href="/downloader/video">Video Downloader</Link></li>
             <li><Link href="/downloader/audio">MP3 Downloader</Link></li>
-            <li><a href="https://github.com/TOOSII102/TOOSII-XD-ULTRA" target="_blank" rel="noopener noreferrer">Bot GitHub →</a></li>
+            <li><Link href="/downloader/spotify">Spotify Downloader</Link></li>
+            <li><Link href="/tools/vocal-remover">Vocal Remover</Link></li>
+            <li><Link href="/session">Session Generator</Link></li>
+            <li><Link href="/tools/firelogo">Fire Logo Maker</Link></li>
+            <li><Link href="/tools/story">AI Story Generator</Link></li>
+            <li><Link href="/tools/tempemail">Temp Email</Link></li>
           </ul>
         </div>
 
@@ -68,12 +74,12 @@ export default function Footer() {
           <a href="https://wa.me/254746677793" target="_blank" rel="noopener noreferrer">+254 746 677 793</a>
           <a href="https://wa.me/254788781373" target="_blank" rel="noopener noreferrer">+254 788 781 373</a>
           <a href="https://t.me/toosiitech" target="_blank" rel="noopener noreferrer">@toosiitech (Telegram)</a>
-          <span>📍 Nairobi, Kenya</span>
+          <span>📍 Kenya</span>
         </div>
       </div>
 
       <div className="footer-bottom">
-        <p>© {year} Toosii Tech. All rights reserved.</p>
+        <p>© {year} Toosii Tech — Built in Kenya. All rights reserved.</p>
         <Link href="/privacy-policy">Privacy Policy</Link>
       </div>
     </footer>

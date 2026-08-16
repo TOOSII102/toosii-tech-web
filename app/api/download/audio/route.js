@@ -1,5 +1,24 @@
 export const maxDuration = 120
 
+  function getYoutubeThumbnail(url) {
+    const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
+    return m ? `https://img.youtube.com/vi/${m[1]}/hqdefault.jpg` : null
+  }
+
+  function fmtDuration(raw) {
+    if (!raw) return null
+    const s = String(raw).trim()
+    if (/^\d+:\d+/.test(s)) return s
+    const secs = Math.floor(Number(s))
+    if (isNaN(secs) || secs < 0) return null
+    const h = Math.floor(secs / 3600)
+    const m = Math.floor((secs % 3600) / 60)
+    const sec = secs % 60
+    if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`
+    return `${m}:${String(sec).padStart(2,'0')}`
+  }
+
+  
 import { NextResponse } from 'next/server'
 import { execFile }     from 'child_process'
 import { promisify }    from 'util'
@@ -23,9 +42,10 @@ async function eliteProtechMp3(url) {
       return {
         download_url: d.result.download,
         title:        d.result.title    || null,
-        thumbnail:    null,
-        duration:     d.result.duration || null,
-        quality:      'MP3',
+        thumbnail: d.result?.thumbnail || getYoutubeThumbnail(url),
+        duration: fmtDuration(d.result?.duration),
+        quality: 'MP3',
+      platform: 'youtube',
       }
     }
   } catch (e) {

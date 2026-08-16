@@ -10,10 +10,13 @@ export async function GET(request) {
   }
 
   try {
+    const isXcasper = fileUrl.includes('xcasper.space')
+    const xcasperHdrs = isXcasper ? { 'Referer': 'https://xcasper.space/', 'Origin': 'https://xcasper.space' } : {}
     const res = await fetch(fileUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'Accept':     '*/*',
+        ...xcasperHdrs,
       },
       signal: AbortSignal.timeout(120000),
     })
