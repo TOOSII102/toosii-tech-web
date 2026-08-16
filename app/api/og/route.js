@@ -82,10 +82,17 @@ function pageFor(path, searchParams = new URLSearchParams()) {
     const query = searchParams.get('query') || searchParams.get('q') || ''
     const title = searchParams.get('title') || (query ? `Search results for ${query}` : 'Shared movie')
     const cover = searchParams.get('cover') || ''
+    const season = searchParams.get('season') || ''
+    const episode = searchParams.get('episode') || ''
     if (query) {
       return { eyebrow: 'MOVIES & SERIES · SEARCH', title, description: `Browse movie and series results for ${query} on Toosii Tech.`, accent: '#a78bfa', secondary: '#75d6ff', chips: [query, 'Search Results', 'Movies + Series'], layout: 'movies-search' }
     }
-    return { eyebrow: 'TOOSII TECH MOVIES', title, description: `Watch ${title} with the Toosii Tech streaming experience.`, accent: '#a78bfa', secondary: '#75d6ff', chips: ['Watch Now', searchParams.get('type') === '2' ? 'Series' : 'Movie', 'HD Streaming'], layout: 'movie-detail', cover }
+    const typeLabel = searchParams.get('type') === '2' ? 'Series' : 'Movie'
+    const position = typeLabel === 'Series' && season ? `S${season}${episode ? ` E${episode}` : ''}` : ''
+    const hasSeason = season && new RegExp(`\\bS${season}\\b`, 'i').test(title)
+    const hasEpisode = !episode || new RegExp(`\\bE${episode}\\b`, 'i').test(title)
+    const displayTitle = `${title}${season && !hasSeason ? ` S${season}` : ''}${episode && !hasEpisode ? ` E${episode}` : ''}`
+    return { eyebrow: 'TOOSII TECH MOVIES', title: displayTitle, description: `Watch ${displayTitle} with the Toosii Tech streaming experience.`, accent: '#a78bfa', secondary: '#75d6ff', chips: ['Watch Now', position || typeLabel, 'HD Streaming'], layout: 'movie-detail', cover }
   }
   if (path === '/downloader/video/share') {
     const title = searchParams.get('title') || 'Shared video'
@@ -118,7 +125,8 @@ function pageFor(path, searchParams = new URLSearchParams()) {
 }
 
 function MiniVisual({ page }) {
-  if (page.layout === 'movie-detail') {
+      if (page.layout === 'movie-detail') {
+
     return (
       <div style={{ display: 'flex', gap: 18, width: '100%', height: 150 }}>
         {page.cover ? <img src={page.cover} alt="" style={{ display: 'flex', width: 104, height: 150, objectFit: 'cover', borderRadius: 10 }} /> : <div style={{ display: 'flex', width: 104, height: 150, borderRadius: 10, background: 'linear-gradient(145deg,#4c1d95,#111827)', alignItems: 'center', justifyContent: 'center', color: '#c4b5fd', fontSize: 14, fontWeight: 800 }}>MOVIE</div>}

@@ -1122,3 +1122,22 @@
   cursor: pointer;
 }
 .mv-share-search-btn:hover { background: rgba(117, 214, 255, 0.16); }
+
+.mv-card-share {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  z-index: 3;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(117, 214, 255, 0.4);
+  border-radius: 8px;
+  background: rgba(7, 7, 14, 0.78);
+  color: #75d6ff;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+}
+.mv-card-share:hover { background: rgba(117, 214, 255, 0.2); }

@@ -14,6 +14,14 @@
   const dur    = s => { if (!s) return ''; const h = Math.floor(s/3600), m = Math.floor((s%3600)/60); return h ? h+'h '+m+'m' : m+'m' }
   const isTV   = m => (m?.subjectType || 1) === 2
 
+  function positionedTitle(title, season, episode) {
+    const base = String(title || 'Shared movie').trim()
+    if (!season) return base
+    const hasSeason = new RegExp(`\\bS${season}\\b`, 'i').test(base)
+    const hasEpisode = !episode || new RegExp(`\\bE${episode}\\b`, 'i').test(base)
+    return `${base}${!hasSeason ? ` S${season}` : ''}${episode && !hasEpisode ? ` E${episode}` : ''}`
+  }
+
   /* VidSrc server list — each uses different scrapers/sources */
   const VS_SERVERS = [
     {
@@ -77,7 +85,7 @@
   }
 
   /* ── Movie card ── */
-  function Card({ movie, onClick }) {
+  function Card({ movie, onClick, onShare }) {
     return (
       <div className="mv-card" onClick={() => onClick(movie)}>
         <div className="mv-poster-wrap">
@@ -86,6 +94,7 @@
           <div className="mv-poster-overlay"><div className="mv-play-icon">▶</div></div>
           {movie.imdbRatingValue && <span className="mv-rating-badge">⭐ {movie.imdbRatingValue}</span>}
           <span className="mv-type-badge">{isTV(movie) ? '📺 Series' : '🎬 Movie'}</span>
+          {onShare && <button type="button" className="mv-card-share" onClick={e => { e.stopPropagation(); onShare(movie) }}>↗</button>}
         </div>
         <div className="mv-card-info">
           <p className="mv-card-title">{movie.title}</p>
@@ -106,8 +115,8 @@
     const [recs,     setRecs]     = useState([])
 
     /* player */
-    const [se,       setSe]       = useState(1)
-    const [ep,       setEp]       = useState(1)
+    const [se,       setSe]       = useState(Number(movie.season) || 1)
+    const [ep,       setEp]       = useState(Number(movie.episode) || 1)
     const [res,      setRes]      = useState(720)
     const [playing,  setPlaying]  = useState(false)
     const [player,   setPlayer]   = useState('direct') /* 'direct' | 'proxy' | 'vs1'|'vs2'|'vs3' */
@@ -130,6 +139,8 @@
 
     /* fetch detail + play data in parallel */
     useEffect(() => {
+      setSe(Number(movie.season) || 1)
+      setEp(Number(movie.episode) || 1)
       setDetail(null); setPlayData(null); setLoadInfo(true); setPlaying(false)
       const sid = movie.subjectId
       ;(async () => {
@@ -209,7 +220,7 @@
                       <button className="mv-hero-play-btn" onClick={watchNow}>
                         ▶ {tv ? 'Watch S' + se + ' E' + ep : 'Watch Movie'}
                       </button>
-                      {onShare && <button className="mv-hero-info-btn" onClick={() => onShare(movie)}>↗ Share</button>}
+                      {onShare && <button className="mv-hero-info-btn" onClick={() => onShare(movie, tv ? se : null, tv ? ep : null)}>↗ Share</button>}
                     </>
                   )}
                 </div>
@@ -392,8 +403,9 @@
                   <div style={{ marginTop: '2.5rem' }}>
                     <h4 className="mv-modal-sub">You May Also Like</h4>
                     <div className="mv-grid">
-                      {recs.map(r => (
-                        <Card key={r.subjectId} movie={r} onClick={m => { onClose(); setTimeout(() => onSelect(m), 50) }} />
+                      {                        recs.map(r => (
+                        <Card key={r.subjectId} movie={r} onClick={m => { onClose(); setTimeout(() => onSelect(m), 50) }} onShare={onShare} />
+
                       ))}
                     </div>
                   </div>
@@ -465,18 +477,24 @@
           title: shared.title || 'Shared title',
           cover: shared.cover ? { url: shared.cover } : '',
           subjectType: Number(shared.type) || 1,
+          season: Number(shared.season) || 1,
+          episode: Number(shared.episode) || 1,
         })
       }
     }, [shared])
 
-    const shareMovie = async (movie = selected) => {
+    const shareMovie = async (movie = selected, season = movie?.season, episode = movie?.episode) => {
       if (!movie?.subjectId) return
       const link = new URL('/tools/movies/watch', window.location.origin)
       link.searchParams.set('id', movie.subjectId)
       link.searchParams.set('title', movie.title || 'Shared movie')
       if (cover(movie)) link.searchParams.set('cover', cover(movie))
       if (movie.subjectType) link.searchParams.set('type', movie.subjectType)
-      await shareOrCopy({ title: `${movie.title || 'Movie'} — Toosii Tech`, text: `Watch ${movie.title || 'this title'} on Toosii Tech`, url: link.toString() })
+      if (season && Number(movie.subjectType) === 2) link.searchParams.set('season', season)
+      if (episode && Number(movie.subjectType) === 2) link.searchParams.set('episode', episode)
+      const shareTitle = Number(movie.subjectType) === 2 ? positionedTitle(movie.title || 'Movie', season, episode) : (movie.title || 'Movie')
+      link.searchParams.set('title', shareTitle)
+      await shareOrCopy({ title: `${shareTitle} — Toosii Tech`, text: `Watch ${shareTitle} on Toosii Tech`, url: link.toString() })
     }
 
     const shareMovieSearch = async () => {
@@ -555,7 +573,7 @@
               ? Array.from({ length: 20 }).map((_, i) => <Skeleton key={i} />)
               : display.length === 0
                 ? <div className="mv-empty"><span className="mv-empty-icon">🎬</span><p>No results found</p></div>
-                : display.map(m => <Card key={m.subjectId} movie={m} onClick={setSelected} />)
+                : display.map(m => <Card key={m.subjectId} movie={m} onClick={setSelected} onShare={shareMovie} />)
             }
           </div>
         </div>
