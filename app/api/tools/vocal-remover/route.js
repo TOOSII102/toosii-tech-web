@@ -115,7 +115,7 @@ function resolveFfmpegPath() {
   return candidates.find(candidate => existsSync(candidate)) || null
 }
 
-async function separateLocally(inputBuffer, inputName = 'audio.mp3') {
+async function separateLocally(inputBuffer, inputName = 'audio.mp3', requestedTrack = null) {
   const binaryPath = resolveFfmpegPath()
   if (!binaryPath) throw new Error('The local audio processor is unavailable.')
 
@@ -138,16 +138,17 @@ async function separateLocally(inputBuffer, inputName = 'audio.mp3') {
 
   try {
     await writeFile(inputPath, inputBuffer)
-    await Promise.all([
-      execFileAsync(binaryPath, [...commonArgs, '-af', instrumentalFilter, instrumentalPath], { timeout: FFMPEG_TIMEOUT_MS }),
-      execFileAsync(binaryPath, [...commonArgs, '-af', vocalFilter, vocalPath], { timeout: FFMPEG_TIMEOUT_MS }),
-    ])
+    const jobs = []
+    if (!requestedTrack || requestedTrack === 'instrumental') {
+      jobs.push(execFileAsync(binaryPath, [...commonArgs, '-af', instrumentalFilter, instrumentalPath], { timeout: FFMPEG_TIMEOUT_MS }))
+    }
+    if (!requestedTrack || requestedTrack === 'vocal') {
+      jobs.push(execFileAsync(binaryPath, [...commonArgs, '-af', vocalFilter, vocalPath], { timeout: FFMPEG_TIMEOUT_MS }))
+    }
+    await Promise.all(jobs)
 
-    const [instrumental, vocal] = await Promise.all([
-      readFile(instrumentalPath),
-      readFile(vocalPath),
-    ])
-
+    const instrumental = requestedTrack === 'vocal' ? null : await readFile(instrumentalPath)
+    const vocal = requestedTrack === 'instrumental' ? null : await readFile(vocalPath)
     return { instrumental, vocal, method: 'Toosii local stereo separation' }
   } finally {
     await rm(workDir, { recursive: true, force: true }).catch(() => {})
@@ -201,6 +202,41 @@ export async function POST(req) {
   try {
     const contentType = req.headers.get('content-type') || ''
 
+    if (!track) {
+      if (contentType.includes('application/json')) {
+        const body = await req.json()
+        sourceUrl = body?.url?.trim()
+        if (!sourceUrl || !/^https?:\/\//i.test(sourceUrl)) {
+          return jsonError('Please enter a valid audio URL starting with https://.', 400)
+        }
+        return NextResponse.json({
+          ready: true,
+          tracks: { instrumental: true, vocal: true },
+          original: sourceUrl,
+          method: 'Toosii local stereo separation',
+          provider: 'Toosii Tech',
+        })
+      }
+      if (contentType.includes('multipart/form-data')) {
+        const formData = await req.formData()
+        const file = formData.get('file')
+        if (!file || typeof file.arrayBuffer !== 'function') {
+          return jsonError('No file received. Please select an audio file and try again.', 400)
+        }
+        const size = Number(file.size || 0)
+        if (size < 1000) return jsonError('The selected file is empty or corrupted.', 400)
+        if (size > MAX_BYTES) return jsonError('File is larger than the 4 MB upload limit. Use a smaller file or paste a public direct audio URL.', 413)
+        return NextResponse.json({
+          ready: true,
+          tracks: { instrumental: true, vocal: true },
+          original: null,
+          method: 'Toosii local stereo separation',
+          provider: 'Toosii Tech',
+        })
+      }
+      return jsonError('Unsupported request format. Use an audio file upload or a JSON audio URL.', 400)
+    }
+
     if (contentType.includes('application/json')) {
       const body = await req.json()
       sourceUrl = body?.url?.trim()
@@ -231,7 +267,7 @@ export async function POST(req) {
     let separated
 
     try {
-      separated = await separateLocally(sourceBuffer, sourceName)
+      separated = await separateLocally(sourceBuffer, sourceName, track)
     } catch (localError) {
       console.warn('[vocal-remover] local separation failed:', localError.message)
       if (!sourceUrl) {
