@@ -1,11 +1,14 @@
 import Layout from '../../components/Layout'
 import Link from 'next/link'
 import '../home.css'
+import { createShareMetadata } from '../../lib/shareMetadata'
 
-export const metadata = {
+export const metadata = createShareMetadata({
   title: 'Free Tools — Toosii Tech',
   description: 'Browse all free tools by Toosii Tech — AI chat, movie streaming & downloads, video & MP3 downloaders, Spotify downloader, vocal remover, fire logo maker, story AI, temp email, and more.',
-}
+  path: '/tools',
+})
+
 
 const categories = [
   {

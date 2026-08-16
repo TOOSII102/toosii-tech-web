@@ -1,9 +1,11 @@
 import Layout from '../../components/Layout'
+import { createShareMetadata } from '../../lib/shareMetadata'
 
-export const metadata = {
+export const metadata = createShareMetadata({
   title: 'Privacy Policy — Toosii Tech',
   description: 'How Toosii Tech handles your data across all tools. No accounts, no tracking, no stored data.',
-}
+  path: '/privacy-policy',
+})
 
 export default function PrivacyPolicy() {
   return (

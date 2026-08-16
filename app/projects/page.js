@@ -2,10 +2,13 @@ import Layout from '../../components/Layout'
 import Link from 'next/link'
 import './projects.css'
 
-export const metadata = {
+import { createShareMetadata } from '../../lib/shareMetadata'
+
+export const metadata = createShareMetadata({
   title: 'Portfolio — Toosii Tech',
   description: 'Real projects, real users. Explore the portfolio of tools, bots, and platforms built by Toosii Tech from Kenya.',
-}
+  path: '/projects',
+})
 
 const projects = [
   {

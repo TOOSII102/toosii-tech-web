@@ -2,10 +2,13 @@ import Layout from '../../components/Layout'
 import Link from 'next/link'
 import './about.css'
 
-export const metadata = {
+import { createShareMetadata } from '../../lib/shareMetadata'
+
+export const metadata = createShareMetadata({
   title: 'About — Toosii Tech',
   description: 'The story behind Toosii Tech — a self-taught developer from Kenya building tools, bots, and digital experiences that reach thousands.',
-}
+  path: '/about',
+})
 
 const skills = [
   { name: 'JavaScript / Node.js', pct: 90 },

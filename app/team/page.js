@@ -1,7 +1,13 @@
 import Layout from '../../components/Layout'
 import './team.css'
+import { createShareMetadata } from '../../lib/shareMetadata'
 
-export const metadata = { title: 'Team — Toosii Tech', description: 'The people behind Toosii Tech and TOOSII XD ULTRA.' }
+export const metadata = createShareMetadata({
+  title: 'Team — Toosii Tech',
+  description: 'The people behind Toosii Tech and TOOSII XD ULTRA.',
+  path: '/team',
+})
+
 
 const team = [
   {

@@ -2,10 +2,13 @@ import Layout from '../../components/Layout'
 import Link from 'next/link'
 import './bot.css'
 
-export const metadata = {
+import { createShareMetadata } from '../../lib/shareMetadata'
+
+export const metadata = createShareMetadata({
   title: 'TOOSII XD ULTRA — Full Command Suite',
   description: 'Explore 150+ commands spanning AI, media downloads, sports scores, group management, and developer tools — all in one WhatsApp bot.',
-}
+  path: '/bot',
+})
 
 const categories = [
   {

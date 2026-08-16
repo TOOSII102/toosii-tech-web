@@ -1,10 +1,13 @@
 import Layout from '../../components/Layout'
 import './contact.css'
 
-export const metadata = {
+import { createShareMetadata } from '../../lib/shareMetadata'
+
+export const metadata = createShareMetadata({
   title: 'Contact — Toosii Tech',
   description: 'Reach out to Toosii Tech for collaborations, custom projects, bot support, or any enquiries.',
-}
+  path: '/contact',
+})
 
 const whatsappNumbers = [
   { label: 'WhatsApp', number: '+254 748 340 864', raw: '254748340864' },

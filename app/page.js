@@ -3,23 +3,14 @@ import Link from 'next/link'
 import SupportSection from '../components/SupportSection'
 import './home.css'
 
-export const metadata = {
+import { createShareMetadata } from '../lib/shareMetadata'
+
+export const metadata = createShareMetadata({
   title: 'Toosii Tech — Free Tools, WhatsApp Bot & Movie Streaming',
-  description: 'A developer platform from Kenya. 11+ free web tools, a WhatsApp bot with 150+ commands, HD movie streaming, video & MP3 downloads, vocal removal, temp email, and more — no account, always free.',
+  description: '11+ free tools, a WhatsApp bot with 150+ commands, HD movie streaming, and free developer utilities — no account, no cost, always free.',
   keywords: 'Toosii Tech, free web tools, WhatsApp bot Kenya, movie streaming free, video downloader, MP3 downloader, vocal remover, temp email, APK download, AI chat free, Kenya developer',
-  openGraph: {
-    title: 'Toosii Tech — Free Tools, WhatsApp Bot & Movie Streaming',
-    description: '11+ free tools, a WhatsApp bot with 150+ commands, HD movie streaming — no account, no cost, always free.',
-    url: 'https://toosiitechdevelopertools.zone.id',
-    siteName: 'Toosii Tech',
-    type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Toosii Tech — Free Tools, WhatsApp Bot & Movie Streaming',
-    description: '11+ free tools, WhatsApp bot with 150+ commands, HD movie streaming — always free.',
-  },
-}
+  path: '/',
+})
 
 export default function Home() {
 
