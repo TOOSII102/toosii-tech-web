@@ -59,6 +59,7 @@ import path             from 'path'
 import os               from 'os'
 import { ytdlpJson, ytdlpGetUrl, findPython3, getYtdlpPath } from '../../../../lib/ytdlp'
 import { referenceDownload } from '../../../../lib/referenceDownloadApi'
+import { tagMp3Buffer } from '../../../../lib/id3'
 
 const execFileAsync = promisify(execFile)
 
@@ -124,7 +125,13 @@ async function convertToMp3(url) {
     if (!existsSync(outMp3)) return null
 
     const mp3Buffer = await readFile(outMp3)
-    return { buffer: mp3Buffer, title, author, thumbnail, duration, quality: '128kbps' }
+    const taggedBuffer = await tagMp3Buffer(mp3Buffer, {
+      title,
+      artist: author,
+      album: 'Toosii Downloads',
+      thumbnail,
+    })
+    return { buffer: taggedBuffer, title, author, thumbnail, duration, quality: '128kbps' }
   } catch (e) {
     console.error('[audio:convert]', e.message)
     return null

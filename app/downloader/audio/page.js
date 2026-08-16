@@ -6,7 +6,7 @@ import './audio.css'
 const GT = 'https://api.giftedtech.co.ke/api/download'
 const STEPS = ['Fetching video info…', 'Converting to MP3…', 'Finalising…']
 
-function proxyUrl(url, title, author) {
+function proxyUrl(url, title, author, thumbnail) {
   const clean = value => String(value || '')
     .replace(/[\\/:*?"<>|]/g, '')
     .replace(/\s+/g, ' ')
@@ -17,7 +17,12 @@ function proxyUrl(url, title, author) {
     ? safeTitle
     : [safeAuthor, safeTitle].filter(Boolean).join(' - ')
   const name = (combined || 'audio').slice(0, 120) + '.mp3'
-  return `/api/download/proxy?url=${encodeURIComponent(url)}&name=${encodeURIComponent(name)}`
+  const params = new URLSearchParams({ url, name })
+  if (title) params.set('title', title)
+  if (author) params.set('artist', author)
+  if (thumbnail) params.set('thumbnail', thumbnail)
+  params.set('album', 'Toosii Downloads')
+  return `/api/download/proxy?${params.toString()}`
 }
 
 function ytThumb(url) {
@@ -244,7 +249,7 @@ export default function AudioDownloader() {
                   </div>
                   <p className="expire-note">⚡ Download now — this link expires soon</p>
                   <div className="dl-buttons">
-                    <a href={proxyUrl(result.download_url, result.title, result.author)} download className="btn-primary" style={{ width: 'fit-content' }}>⬇ Download MP3</a>
+                    <a href={proxyUrl(result.download_url, result.title, result.author, result.thumbnail)} download className="btn-primary" style={{ width: 'fit-content' }}>⬇ Download MP3</a>
                     {mode === 'search' && <button onClick={() => { setResult(null); setSelectedId(null) }} className="btn-outline" style={{ width: 'fit-content', fontSize: '0.85rem' }}>← Back</button>}
                   </div>
                 </div>
