@@ -249,17 +249,26 @@ export async function GET(req) {
     }
 
     const isDownload = action === 'download'
+    const daveMediaUrls = isDownload
+      ? [daveDownloadUrl(id, res, season, episode, title), daveStreamUrl(id, res, season, episode)]
+      : [daveStreamUrl(id, res, season, episode)]
     try {
-      const mediaUrl = isDownload
-        ? daveDownloadUrl(id, res, season, episode, title)
-        : daveStreamUrl(id, res, season, episode)
-      return await fetchMedia(mediaUrl, req, {
-        download: isDownload,
-        filename,
-        headers: DAVE_JSON_HEADERS,
-      })
+      let lastError = null
+      for (const mediaUrl of daveMediaUrls) {
+        try {
+          return await fetchMedia(mediaUrl, req, {
+            download: isDownload,
+            filename,
+            headers: DAVE_JSON_HEADERS,
+          })
+        } catch (error) {
+          lastError = error
+          console.error('[movies:dave-media]', mediaUrl.includes('/download') ? 'download ' + error.message : 'bff ' + error.message)
+        }
+      }
+      throw lastError || new Error('media unavailable')
     } catch (error) {
-      console.error('[movies:dave-media]', error.message)
+      console.error('[movies:dave-media-final]', error.message)
       try {
         return await fetchMedia(legacyStreamUrl(id, res, season, episode), req, {
           download: isDownload,
