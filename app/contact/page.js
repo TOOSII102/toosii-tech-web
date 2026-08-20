@@ -1,5 +1,6 @@
 import Layout from '../../components/Layout'
 import './contact.css'
+import FeedbackForm from '../../components/FeedbackForm'
 
 import { createShareMetadata } from '../../lib/shareMetadata'
 
@@ -103,6 +104,7 @@ export default function Contact() {
             <p className="contact-response">⚡ Typically responds within 24 hours.</p>
           </div>
         </div>
+        <div className="page-wrapper contact-feedback-wrap"><FeedbackForm /></div>
       </section>
     </Layout>
   )

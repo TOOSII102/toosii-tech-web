@@ -150,10 +150,27 @@
   padding-top: 1.25rem;
 }
 
+.contact-feedback-wrap { margin-top: 2rem; }
+.feedback-form { padding: clamp(1.2rem, 3vw, 2rem); border: 1px solid rgba(114,240,186,.18); border-radius: 20px; background: linear-gradient(135deg,rgba(114,240,186,.06),rgba(117,214,255,.04)); }
+.feedback-form-head { display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; margin-bottom:1.25rem; }
+.feedback-form-head h2 { margin:.35rem 0 0; color:#fff; font-size:clamp(1.3rem,3vw,1.8rem); }
+.feedback-form-badge { color:#72f0ba; border:1px solid rgba(114,240,186,.25); border-radius:999px; padding:.35rem .65rem; font-size:.7rem; white-space:nowrap; }
+.feedback-form-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.85rem; }
+.feedback-form label { display:flex; flex-direction:column; gap:.4rem; color:#b2bdc9; font-size:.8rem; font-weight:700; margin-bottom:.9rem; }
+.feedback-form input,.feedback-form select,.feedback-form textarea { width:100%; border:1px solid rgba(255,255,255,.12); border-radius:10px; background:rgba(0,0,0,.18); color:#fff; padding:.75rem .8rem; font:inherit; outline:none; }
+.feedback-form textarea { min-height:130px; resize:vertical; line-height:1.55; }
+.feedback-form input:focus,.feedback-form select:focus,.feedback-form textarea:focus { border-color:#72f0ba; box-shadow:0 0 0 3px rgba(114,240,186,.1); }
+.feedback-form-foot { display:flex; justify-content:space-between; align-items:center; gap:1rem; }
+.feedback-form-foot button { border:0; border-radius:10px; padding:.75rem 1rem; background:linear-gradient(135deg,#72f0ba,#75d6ff); color:#07100d; font:inherit; font-weight:900; cursor:pointer; }
+.feedback-form-foot button:disabled { opacity:.65; cursor:wait; }
+.feedback-notice { margin:0; color:#788696; font-size:.78rem; line-height:1.5; }
+.feedback-notice.success { color:#72f0ba; }.feedback-notice.error { color:#fca5a5; }.feedback-notice.fallback { color:#75d6ff; }
+.feedback-honeypot { position:absolute!important; left:-10000px!important; width:1px!important; height:1px!important; opacity:0!important; pointer-events:none!important; }
 @media (max-width: 768px) {
   .contact-grid { grid-template-columns: 1fr; }
 }
 
+@media (max-width: 620px) { .feedback-form-head,.feedback-form-foot { flex-direction:column; align-items:stretch; } .feedback-form-grid { grid-template-columns:1fr; } .feedback-form-badge { align-self:flex-start; } .feedback-form-foot button { width:100%; } }
 @media (max-width: 480px) {
   .wa-card-inner { padding: 0.9rem 1rem; }
   .wa-number { font-size: 0.95rem; }

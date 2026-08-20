@@ -6,16 +6,19 @@ import './header.css'
 
 const mainNav = [
   { href: '/',        label: 'Home' },
+  { href: '/search',  label: 'Search' },
   { href: '/about',   label: 'About' },
   { href: '/bot',     label: 'XD Bot' },
   { href: '/blog',    label: 'Blog' },
   { href: '/api',     label: 'API' },
+  { href: '/library', label: 'My Library' },
   { href: '/contact', label: 'Feedback' },
 ]
 
 const toolsNav = [
   { href: '/tools/ai',            icon: '🤖', label: 'Toosii AI',         desc: 'GPT-4o & Gemini chat' },
   { href: '/tools/movies',        icon: '🎬', label: 'Movies & Streams',    desc: 'Stream & download free movies' },
+  { href: '/tools/movies?catalog=animeTrending', icon: '✨', label: 'Anime & Live TV', desc: 'Anime episodes and live events' },
   { href: '/downloader/video',    icon: '🎬', label: 'Video Downloader',   desc: 'YouTube, TikTok & more' },
   { href: '/downloader/audio',    icon: '🎧', label: 'MP3 Downloader',     desc: 'YouTube to MP3 fast' },
   { href: '/downloader/spotify',  icon: '🎵', label: 'Spotify',            desc: 'Spotify tracks as MP3' },
@@ -33,11 +36,24 @@ export default function Header() {
   const [mobileOpen, setMobileOpen]   = useState(false)
   const [toolsOpen, setToolsOpen]     = useState(false)
   const [mobileTools, setMobileTools] = useState(false)
+  const [installEvent, setInstallEvent] = useState(null)
   const pathname = usePathname()
   const dropRef  = useRef()
 
   const isActive      = (href) => href === '/' ? pathname === '/' : pathname.startsWith(href)
   const isToolsActive = toolsNav.some(t => isActive(t.href))
+
+  useEffect(() => {
+    const captureInstall = event => { event.preventDefault(); setInstallEvent(event) }
+    window.addEventListener('beforeinstallprompt', captureInstall)
+    return () => window.removeEventListener('beforeinstallprompt', captureInstall)
+  }, [])
+
+  const installApp = async () => {
+    if (!installEvent) return
+    await installEvent.prompt()
+    setInstallEvent(null)
+  }
 
   /* close desktop dropdown on outside click */
   useEffect(() => {
@@ -193,6 +209,8 @@ export default function Header() {
 
           <div className="mobile-menu-footer">
             <p className="mobile-nav-label" style={{padding:'0.5rem 0.75rem 0.35rem'}}>More</p>
+            <Link href="/library" className="mobile-link">My Library</Link>
+            {installEvent && <button type="button" className="mobile-link mobile-install-link" onClick={installApp}>Install Toosii App</button>}
             <Link href="/team" className="mobile-link">Team</Link>
             <Link href="/projects" className="mobile-link">Portfolio</Link>
           </div>

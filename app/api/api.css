@@ -497,6 +497,10 @@
   align-items: center;
   gap: 0.38rem;
 }
+.api-status-filters { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:.4rem; margin-top:.7rem; }
+.api-status-filters button { border:1px solid rgba(148,163,184,.18); border-radius:999px; padding:.35rem .6rem; background:rgba(15,23,42,.45); color:#94a3b8; font:inherit; font-size:.68rem; font-weight:800; cursor:pointer; }
+.api-status-filters button:hover,.api-status-filters button:focus-visible { border-color:rgba(125,211,252,.55); color:#e0f2fe; }
+.api-status-filters button.active { background:rgba(52,211,153,.14); border-color:rgba(52,211,153,.46); color:#6ee7b7; }
 
 .api-workspace {
   display: grid;

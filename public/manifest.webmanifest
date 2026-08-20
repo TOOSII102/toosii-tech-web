@@ -1,0 +1,20 @@
+{
+  "name": "Toosii Tech",
+  "short_name": "Toosii Tech",
+  "description": "Toosii Tech tools, API, ToosiiFlix, anime, Live TV, and download utilities.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#090b0f",
+  "theme_color": "#090b0f",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    { "name": "ToosiiFlix", "short_name": "Movies", "url": "/tools/movies", "icons": [{ "src": "/logo.png", "sizes": "192x192" }] },
+    { "name": "My Library", "short_name": "Library", "url": "/library", "icons": [{ "src": "/logo.png", "sizes": "192x192" }] },
+    { "name": "API Portal", "short_name": "API", "url": "/api", "icons": [{ "src": "/logo.png", "sizes": "192x192" }] }
+  ]
+}

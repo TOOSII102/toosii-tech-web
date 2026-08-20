@@ -70,6 +70,33 @@ const endpoints = [
     params: [{ name: 'action', type: 'string', required: false, description: 'trending, search, detail, play, or stream. Defaults to trending.' }],
   },
   {
+    id: 'anime-catalogue',
+    category: 'Media',
+    method: 'GET',
+    title: 'Anime catalogue',
+    description: 'Browse anime home rails, trending titles, episodes, captions, and downloads through ToosiiFlix.',
+    path: '/api/tools/movies?action=anime-home',
+    params: [{ name: 'action', type: 'string', required: false, description: 'anime-home, anime-trending, anime-browse, anime-info, anime-play, anime-downloads, or anime-captions.' }],
+  },
+  {
+    id: 'live-catalogue',
+    category: 'Media',
+    method: 'GET',
+    title: 'Live TV catalogue',
+    description: 'Browse Live TV events and replays and retrieve stream metadata for browser playback.',
+    path: '/api/tools/movies?action=live',
+    params: [{ name: 'action', type: 'string', required: false, description: 'live, live-search, live-stream-meta, or stream with kind=live.' }],
+  },
+  {
+    id: 'media-library',
+    category: 'Media',
+    method: 'GET',
+    title: 'Media library',
+    description: 'Open the browser-persisted Recently Watched, My List, and download activity experience.',
+    path: '/library',
+    params: [],
+  },
+  {
     id: 'dramabox-catalogue',
     category: 'Media',
     method: 'GET',
@@ -372,6 +399,7 @@ export default function ApiPortal() {
   const [previewedId, setPreviewedId] = useState('')
   const [previewTab, setPreviewTab] = useState('request')
   const [filter, setFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
   const [portalStatus, setPortalStatus] = useState('loading')
   const [endpointStatus, setEndpointStatus] = useState({})
   const [monitorState, setMonitorState] = useState('checking')
@@ -444,14 +472,12 @@ export default function ApiPortal() {
 
   const visibleEndpoints = useMemo(() => {
     const query = filter.trim().toLowerCase()
-    if (!query) return endpoints
-    return endpoints.filter(endpoint =>
-      [endpoint.title, endpoint.description, endpoint.category, endpoint.path]
-        .join(' ')
-        .toLowerCase()
-        .includes(query),
-    )
-  }, [filter])
+    return endpoints.filter(endpoint => {
+      const matchesQuery = !query || [endpoint.title, endpoint.description, endpoint.category, endpoint.path].join(' ').toLowerCase().includes(query)
+      const matchesStatus = statusFilter === 'all' || (endpointStatus[endpoint.id] || 'unknown') === statusFilter
+      return matchesQuery && matchesStatus
+    })
+  }, [filter, statusFilter, endpointStatus])
 
   const statusCounts = useMemo(() => endpoints.reduce((counts, endpoint) => {
     const status = endpointStatus[endpoint.id] || 'unknown'
@@ -628,6 +654,9 @@ export default function ApiPortal() {
                   <span><i className="api-status-dot live" /> Live</span>
                   <span><i className="api-status-dot dead" /> Dead</span>
                   <span><i className="api-status-dot unknown" /> Not tested</span>
+                </div>
+                <div className="api-status-filters" role="group" aria-label="Filter endpoints by status">
+                  {['all', 'live', 'dead', 'unknown'].map(value => <button type="button" key={value} className={statusFilter === value ? 'active' : ''} onClick={() => setStatusFilter(value)}>{value === 'all' ? 'All routes' : value === 'unknown' ? 'Not tested' : value[0].toUpperCase() + value.slice(1)}</button>)}
                 </div>
               </div>
             </div>

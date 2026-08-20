@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { shareOrCopy } from '../../../lib/clientShare'
+import { isInMyList, recordDownload, recordWatched, toggleMyList } from '../../../lib/clientMediaState'
 import '../tools.css'
 import './movies.css'
 
@@ -104,10 +105,10 @@ function Rail({ title, items, onSelect, onShare }) {
   )
 }
 
-function DownloadButton({ href, label, size, filename }) {
+function DownloadButton({ href, label, size, filename, item, season, episode, mediaKind: kind }) {
   const fallbackName = `${String(label || 'movie').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'movie'}.mp4`
   return (
-    <a className="mv-download-btn" href={href} download={filename || fallbackName} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">
+    <a className="mv-download-btn" href={href} download={filename || fallbackName} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" onClick={() => item && recordDownload(item, { season, episode, mediaKind: kind, filename: filename || fallbackName, resolution: label })}>
       <span>⬇ {label}</span>
       {size ? <span className="mv-download-size">{size}</span> : null}
     </a>
@@ -170,6 +171,7 @@ function Modal({ movie, onClose, onSelect, onShare }) {
   const [resolution, setResolution] = useState(720)
   const [playing, setPlaying] = useState(false)
   const [player, setPlayer] = useState('direct')
+  const [saved, setSaved] = useState(false)
   const historyRef = useRef(false)
 
   useEffect(() => {
@@ -188,6 +190,7 @@ function Modal({ movie, onClose, onSelect, onShare }) {
   useEffect(() => {
     let active = true
     const id = movie.subjectId
+    setSaved(isInMyList(movie, { season: movie.season, episode: movie.episode }))
     const animeHint = isAnime(movie)
     const liveHint = isLive(movie)
     const tvHint = isTV(movie) || animeHint
@@ -248,6 +251,7 @@ function Modal({ movie, onClose, onSelect, onShare }) {
 
   const watchEpisode = (nextSeason, nextEpisode) => {
     setSeason(nextSeason); setEpisode(nextEpisode); setPlayer('direct'); setPlaying(true)
+    recordWatched(movie, { season: nextSeason, episode: nextEpisode, mediaKind: kind })
     setTimeout(() => document.querySelector('.mv-player-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
   }
 
@@ -273,7 +277,8 @@ function Modal({ movie, onClose, onSelect, onShare }) {
                 {String(d.genre || '').split(',').slice(0, 3).filter(Boolean).map(genre => <span key={genre} style={{ color: '#a78bfa' }}>{genre.trim()}</span>)}
               </div>
               {!loadInfo && <div className="mv-modal-hero-actions">
-                <button className="mv-hero-play-btn" onClick={() => { setPlaying(true); setPlayer('direct') }}>▶ {live ? 'Watch Live' : episodic ? `Watch S${season} E${episode}` : 'Watch Movie'}</button>
+                <button className="mv-hero-play-btn" onClick={() => { setPlaying(true); setPlayer('direct'); recordWatched(movie, { season: episodic ? season : '', episode: episodic ? episode : '', mediaKind: kind }) }}>▶ {live ? 'Watch Live' : episodic ? `Watch S${season} E${episode}` : 'Watch Movie'}</button>
+                {!live && <button type="button" className={`mv-modal-save-btn${saved ? ' active' : ''}`} onClick={() => { const next = toggleMyList(movie, { season: episodic ? season : '', episode: episodic ? episode : '', mediaKind: kind }); setSaved(next.some(entry => entry.subjectId === String(movie.subjectId) && Number(entry.season || 0) === Number(season || 0) && Number(entry.episode || 0) === Number(episode || 0))) }}>{saved ? '✓ Saved' : '+ My List'}</button>}
                 {trailerUrl && <button className="mv-modal-trailer-btn" onClick={() => document.querySelector('.mv-trailer-section')?.scrollIntoView({ behavior: 'smooth' })}>▶ Trailer</button>}
                 {onShare && <button className="mv-hero-info-btn" onClick={() => onShare(movie, episodic ? season : null, episodic ? episode : null)}>↗ Share</button>}
               </div>}
@@ -298,7 +303,7 @@ function Modal({ movie, onClose, onSelect, onShare }) {
                 <button className={player === 'direct' ? 'mv-source-btn active' : 'mv-source-btn'} onClick={() => { setPlayer('direct'); setPlaying(true) }}>⚡ Toosii</button>
                 <button className={player === 'proxy' ? 'mv-source-btn active' : 'mv-source-btn'} onClick={() => { setPlayer('proxy'); setPlaying(true) }}>▶ Safe stream</button>
               </div>
-              <div className="mv-quality-row"><span className="mv-quality-label">Quality</span>{RESOLUTIONS.map(value => <button key={value} className={`mv-quality-btn${resolution === value ? ' active' : ''}`} onClick={() => setResolution(value)}>{value}p</button>)}{!live && <DownloadButton href={directDownload} label={`Download ${resolution}p`} filename={`${positionedTitle(d.title, episodic ? season : '', episodic ? episode : '')}-${resolution}p.mp4`} />}</div>
+              <div className="mv-quality-row"><span className="mv-quality-label">Quality</span>{RESOLUTIONS.map(value => <button key={value} className={`mv-quality-btn${resolution === value ? ' active' : ''}`} onClick={() => setResolution(value)}>{value}p</button>)}{!live && <DownloadButton href={directDownload} label={`Download ${resolution}p`} filename={`${positionedTitle(d.title, episodic ? season : '', episodic ? episode : '')}-${resolution}p.mp4`} item={d} season={episodic ? season : ''} episode={episodic ? episode : ''} mediaKind={kind} />}</div>
               {playing ? (player === 'direct' ? <StableVideo src={stream} captions={captions} poster={cover(d)} /> : <video className="mv-video" src={stream} controls autoPlay playsInline preload="metadata" />) : <div className="mv-video-wrap mv-video-placeholder" onClick={() => setPlaying(true)}><img src={cover(d)} alt="" /><div className="mv-placeholder-content"><span className="mv-play-large">▶</span><span>{live ? 'Click to watch live' : episodic ? `Select an episode or play S${season} E${episode}` : 'Click to stream'}</span></div></div>}
               <p className="mv-stream-caption">⚡ Toosii API · {resolution}p range-aware MP4{live ? ' · live relay' : episodic ? ` · S${season} E${episode}` : ''}</p>
             </section>
@@ -308,7 +313,7 @@ function Modal({ movie, onClose, onSelect, onShare }) {
               <div className="mv-eps-strip">{currentEpisodes.map(value => <button key={value} className={`mv-eps-ep${Number(episode) === Number(value) && playing ? ' active' : ''}`} onClick={() => watchEpisode(season, value)}><span className="mv-eps-ep-num">E{value}</span><span className="mv-eps-ep-label">Episode {value}</span></button>)}</div>
             </section>}
 
-            {!live && downloads.length > 0 && <section className="mv-download-section"><div className="mv-download-head">⬇ Available downloads <span className="mv-count">{downloads.length} files</span></div><div className="mv-download-grid">{downloads.map(file => <DownloadButton key={`${file.resourceId}-${file.resolution}`} href={file.downloadUrl} label={`${file.resolution || resolution}p`} filename={file.filename} size={file.size ? `${Math.round(Number(file.size) / 1048576)} MB` : ''} />)}</div></section>}
+            {!live && downloads.length > 0 && <section className="mv-download-section"><div className="mv-download-head">⬇ Available downloads <span className="mv-count">{downloads.length} files</span></div><div className="mv-download-grid">{downloads.map(file => <DownloadButton key={`${file.resourceId}-${file.resolution}`} href={file.downloadUrl} label={`${file.resolution || resolution}p`} filename={file.filename} size={file.size ? `${Math.round(Number(file.size) / 1048576)} MB` : ''} item={d} season={episodic ? season : ''} episode={episodic ? episode : ''} mediaKind={kind} />)}</div></section>}
 
             <div className="mv-detail-grid">
               <DetailChips title="Available dubs" items={dubs} className="mv-dub-chip" />
@@ -363,6 +368,11 @@ export default function MoviesPage({ shared = null }) {
       setLoading(false)
     })
     return () => { active = false }
+  }, [])
+
+  useEffect(() => {
+    const requestedCatalog = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('catalog') : ''
+    if (requestedCatalog && ['moviePopular', 'movieNew', 'movieTop', 'tvPopular', 'tvTrending', 'tvNew', 'animeTrending', 'animeBrowse', 'live'].includes(requestedCatalog)) setCatalogMode(requestedCatalog)
   }, [])
 
   useEffect(() => {
@@ -423,6 +433,7 @@ export default function MoviesPage({ shared = null }) {
         <div className="mv-hero-content"><div className="mv-hero-badge">🔥 Trending Now</div><h1 className="mv-hero-title">{hero.title}</h1><div className="mv-hero-meta">{year(hero) && <span>📅 {year(hero)}</span>}{hero.imdbRatingValue && <span>⭐ {hero.imdbRatingValue}</span>}{hero.genre && <span>🎭 {String(hero.genre).split(',')[0]}</span>}<span>{isLive(hero) ? '🔴 Live' : isAnime(hero) ? '✨ Anime' : isTV(hero) ? '📺 Series' : '🎬 Movie'}</span></div><div className="mv-hero-btns"><button className="mv-hero-play-btn" onClick={event => { event.stopPropagation(); setSelected(hero) }}>▶ Play Now</button><button className="mv-hero-info-btn" onClick={event => { event.stopPropagation(); setSelected(hero) }}>ℹ More Info</button></div></div>
       </div>}
 
+      <div className="mv-utility-nav"><a href="/search">⌕ Global Search</a><a href="/library">✦ My Library</a><a href="/tools/movies?catalog=animeTrending">✨ Anime</a><a href="/tools/movies?catalog=live">🔴 Live TV</a></div>
       <div className="mv-search-wrap"><form className="mv-search-row" onSubmit={handleSearch}><span className="mv-search-icon">🔍</span><input className="mv-search-input" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search movies, series, anime, live…" aria-label="Search movies, series, anime, and live events" /><select className="mv-search-type" value={type} onChange={event => setType(event.target.value)} aria-label="Content type"><option value="">All</option><option value="1">Movies</option><option value="2">Series</option><option value="anime">Anime</option><option value="live">Live</option></select><button type="submit" className="mv-search-btn">Search</button></form>{suggestions.length > 0 && <div className="mv-suggestions">{suggestions.map((suggestion, index) => <button key={`${suggestion.subjectId || suggestion.title || index}`} type="button" onClick={() => { setQuery(suggestion.title || suggestion.name || ''); setSuggestions([]) }}>{suggestion.title || suggestion.name || 'Suggestion'}</button>)}</div>}</div>
 
       {results.length > 0 ? <section className="mv-section"><div className="mv-section-head"><h2 className="mv-section-title"><span className="mv-section-bar" />Results for “{query}”</h2><div className="mv-section-actions"><button className="mv-share-search-btn" onClick={shareMovieSearch}>↗ Share Search</button><button className="mv-clear-btn" onClick={() => { setResults([]); setQuery('') }}>✕ Clear</button><span className="mv-count">{results.length} titles</span></div></div><div className="mv-grid">{results.map(movie => <Card key={movie.subjectId} movie={movie} onClick={setSelected} onShare={shareMovie} />)}</div></section> : <>

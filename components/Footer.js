@@ -80,7 +80,7 @@ export default function Footer() {
 
       <div className="footer-bottom">
         <p>© {year} Toosii Tech — Built in Kenya. All rights reserved.</p>
-        <Link href="/privacy-policy">Privacy Policy</Link>
+        <span className="footer-legal-links"><Link href="/library">My Library</Link><Link href="/privacy-policy">Privacy Policy</Link><Link href="/terms">Terms</Link><Link href="/copyright">Copyright</Link></span>
       </div>
     </footer>
   )
