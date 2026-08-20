@@ -309,11 +309,11 @@
                           <p style={{ color: '#94a3b8', margin: '0.5rem 0 0' }}>IMDB ID not found for this title</p>
                         </div>
                       )}
-                      {/* xcasper direct — auto-retry on stall/error */}
-                       {player === 'direct' && (
-                         <StableVideo key={xcSrc} src={xcSrc} />
-                       )}
-                      {/* xcasper proxy — Option B, Range-aware */}
+                      {/* Toosii API stream — auto-retry on stall/error */}
+                      {player === 'direct' && (
+                        <StableVideo key={pxSrc} src={pxSrc} />
+                      )}
+                      {/* Toosii API same-origin stream — range-aware */}
                       {player === 'proxy' && (
                         <video key={pxSrc}
                           className="mv-video"
@@ -588,7 +588,7 @@
     )
   }
  
-/* ── StableVideo: auto-resumes xcasper stream on stall or error ── */
+/* ── StableVideo: auto-resumes the Toosii API stream on stall or error ── */
 function StableVideo({ src }) {
   const videoRef = useRef(null)
   const retryRef = useRef(null)
@@ -647,7 +647,7 @@ function StableVideo({ src }) {
 }
 
 
-/* ── Browser-side download: fetches directly from xcasper so no server proxy needed ── */
+/* ── Browser-side download through the Toosii same-origin route ── */
 function DlButton({ downloadSrc, res }) {
   const [dlState, setDlState] = useState('idle') // 'idle' | 'loading' | 'error'
   const [pct, setPct] = useState(0)
