@@ -423,7 +423,7 @@ export default function ToosiiAI() {
                 </button>
             }
           </div>
-          <p className="tai-footer-note">Groq · Gemini · OpenAI · Claude · Grok — streaming · .zip · vision · voice</p>
+          <p className="tai-footer-note">Toosii fallback · Groq · Gemini · OpenAI · Claude · Grok — streaming · .zip · vision · voice</p>
         </div>
       </div>
     </div>

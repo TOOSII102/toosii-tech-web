@@ -12,7 +12,6 @@ export const metadata = createShareMetadata({
   description: 'A developer platform from Kenya. 11+ free web tools, a WhatsApp bot with 150+ commands, HD movie streaming, video & MP3 downloads, vocal removal, and more — no account, no cost, always free.',
   keywords: 'Toosii Tech, free web tools, WhatsApp bot, movie streaming, video downloader, MP3 downloader, vocal remover, temp email, APK download, developer platform, Kenya, African tech',
   manifest: '/manifest.webmanifest',
-  themeColor: '#090b0f',
   path: '/',
 })
 

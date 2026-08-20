@@ -4,6 +4,8 @@ import Anthropic from '@anthropic-ai/sdk'
 export const dynamic = 'force-dynamic'
 
 const GROQ_MODELS = new Set(['llama-3.3-70b-versatile','llama-3.1-8b-instant','mixtral-8x7b-32768','gemma2-9b-it'])
+const REFERENCE_AI_MODEL = 'toosii-gptlogic'
+const REFERENCE_AI_ENDPOINT = 'https://r-bots-free-apis.co08.art/api/gptlogic'
 const VISION_MODELS = new Set(['gpt-4o','gpt-4o-mini','claude-3-5-sonnet-20241022','claude-3-5-haiku-20241022','grok-2-vision-1212','gemini-2.0-flash','gemini-1.5-flash','gemini-1.5-pro'])
 const VISION_PRIORITY = [
   { id: 'gemini-2.0-flash',          key: 'GEMINI_API_KEY' },
@@ -21,11 +23,13 @@ const GENERAL_MODEL_PRIORITY = [
   { id: 'gemini-1.5-flash',          key: 'GEMINI_API_KEY' },
   { id: 'gpt-4o-mini',               key: 'OPENAI_API_KEY' },
   { id: 'claude-3-5-haiku-20241022', key: 'ANTHROPIC_API_KEY' },
-  { id: 'grok-3-mini',               key: 'XAI_API_KEY' },
+    { id: 'grok-3-mini',              key: 'XAI_API_KEY' },
+  { id: REFERENCE_AI_MODEL,          key: null },
 ]
 const CONTEXT_BUDGET = { groq: 24_000, default: 120_000 }
 
 function getProvider(model) {
+  if (model === REFERENCE_AI_MODEL) return 'reference'
   if (model.startsWith('claude-'))  return 'anthropic'
   if (model.startsWith('grok-'))    return 'grok'
   if (model.startsWith('gemini-'))  return 'gemini'
@@ -33,6 +37,7 @@ function getProvider(model) {
   return 'openai'
 }
 function getClient(provider) {
+  if (provider === 'reference') return null
   if (provider === 'anthropic') {
     const k = process.env.ANTHROPIC_API_KEY; if (!k) throw new Error('ANTHROPIC_API_KEY not configured')
     return new Anthropic({ apiKey: k })
@@ -62,6 +67,34 @@ function buildOAIMessages(msgs, vision) {
     return { role: m.role, content: m.content ?? '' }
   })
 }
+function buildReferenceRequest(msgs) {
+  const conversation = msgs.filter(m => m.role !== 'system').slice(-8).map(m => `${m.role}: ${String(m.content || '').slice(0, 1400)}`).join('\n')
+  const latest = [...msgs].reverse().find(m => m.role === 'user')?.content || 'Hello'
+  const prompt = [
+    'You are Toosii AI, a concise and professional coding assistant built by Toosii Tech.',
+    'Answer the latest user request directly. Use markdown when code is needed.',
+    conversation ? `Conversation context:\n${conversation}` : '',
+  ].filter(Boolean).join('\n\n').slice(0, 7200)
+  const params = new URLSearchParams({ q: String(latest).slice(0, 2400), prompt })
+  return `${REFERENCE_AI_ENDPOINT}?${params.toString()}`
+}
+
+function extractReferenceText(payload) {
+  if (typeof payload === 'string') return payload.trim()
+  const candidates = [payload?.response, payload?.answer, payload?.result, payload?.data?.response, payload?.data?.answer, payload?.data?.result]
+  const value = candidates.find(item => typeof item === 'string' && item.trim())
+  return value ? value.trim() : ''
+}
+
+async function requestReferenceAI(msgs) {
+  const res = await fetch(buildReferenceRequest(msgs), { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(30_000) })
+  const payload = await res.json().catch(() => null)
+  if (!res.ok || payload?.status === false) throw new Error('Toosii AI fallback is temporarily unavailable')
+  const text = extractReferenceText(payload)
+  if (!text) throw new Error('Toosii AI fallback returned an empty response')
+  return text
+}
+
 function buildAnthropicMessages(msgs, vision) {
   return msgs.filter(m => m.role !== 'system').map(m => {
     if (m.imageBase64 && vision) return { role: m.role, content: [...(m.content ? [{ type: 'text', text: m.content }] : []), { type: 'image', source: { type: 'base64', media_type: m.imageMimeType || 'image/jpeg', data: m.imageBase64 } }] }
@@ -84,7 +117,7 @@ export async function POST(req) {
   if (hasImage && !VISION_MODELS.has(model)) { const best = VISION_PRIORITY.find(v => process.env[v.key])?.id; if (best) model = best }
 
   const priorityList = hasImage ? VISION_PRIORITY : GENERAL_MODEL_PRIORITY
-  const fallbacks = priorityList.filter(v => process.env[v.key]).map(v => v.id).filter(id => id !== model)
+  const fallbacks = priorityList.filter(v => !v.key || process.env[v.key]).map(v => v.id).filter(id => id !== model)
   const modelsToAttempt = [model, ...fallbacks]
 
   const stream = new ReadableStream({
@@ -95,10 +128,15 @@ export async function POST(req) {
       try {
         for (const attemptModel of modelsToAttempt) {
           const ap = getProvider(attemptModel)
-          let client; try { client = getClient(ap) } catch (err) { lastKeyErr = err.message; continue }
           const msgs = trimMessages(rawMessages, CONTEXT_BUDGET[ap] ?? CONTEXT_BUDGET.default)
           const vision = VISION_MODELS.has(attemptModel)
           try {
+            if (ap === 'reference') {
+              const text = await requestReferenceAI(msgs)
+              if (attemptModel !== originalModel) send({ modelSwitch: attemptModel })
+              send({ content: text }); contentSent = true; succeeded = true; break
+            }
+            let client; try { client = getClient(ap) } catch (err) { lastKeyErr = err.message; continue }
             if (ap === 'anthropic') {
               const sys = msgs.filter(m => m.role === 'system').map(m => m.content).join('\n\n') || undefined
               const s = client.messages.stream({ model: attemptModel, max_tokens: 16000, system: sys, messages: buildAnthropicMessages(msgs, vision) })

@@ -16,6 +16,7 @@ const MODELS = [
   { id: 'gpt-4o-mini',                label: 'GPT-4o Mini',        group: 'OpenAI'        },
   { id: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet',  group: 'Anthropic'     },
   { id: 'claude-3-5-haiku-20241022',  label: 'Claude 3.5 Haiku',   group: 'Anthropic'     },
+  { id: 'toosii-gptlogic',             label: 'Toosii AI Fallback', group: 'Toosii (Free)'  },
 ]
 
 export async function GET() {
