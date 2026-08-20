@@ -31,6 +31,9 @@ const LEGACY_JSON_HEADERS = {
   'Sec-Fetch-Mode': 'cors',
 }
 
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 function asNumber(value, fallback = 0) {
   const number = Number(value)
   return Number.isFinite(number) ? number : fallback
@@ -335,12 +338,28 @@ async function daveMediaMetadata(id, res, season, episode, title, resourceId = '
 async function legacyMediaOrFallback({ id, res, season, episode, title, resourceId, request, download }) {
   const filename = safeFilename(title, res, season, episode)
   try {
-    return await fetchMedia(legacyStreamUrl(id, res, season, episode), request, { download, filename, headers: LEGACY_BROWSER_HEADERS, timeout: 20000 })
+    // Keep the existing provider primary, but do not make a dead upstream hold the browser for a Vercel function timeout.
+    return await fetchMedia(legacyStreamUrl(id, res, season, episode), request, { download, filename, headers: LEGACY_BROWSER_HEADERS, timeout: 8000 })
   } catch (error) {
     console.warn('[movies:legacy-primary-media]', error.message)
   }
 
-  const candidates = [daveBffStreamUrl(id, res, season, episode)]
+  const daveBffUrl = daveBffStreamUrl(id, res, season, episode)
+  // Dave's BFF returns a verified 206 MP4 range contract. A browser redirect preserves its Range requests and avoids
+  // the zero-byte ReadableStream behavior observed when Vercel relays this large upstream body server-side.
+  if (!download) {
+    return new Response(null, {
+      status: 307,
+      headers: {
+        Location: daveBffUrl,
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Access-Control-Allow-Origin': '*',
+        'Referrer-Policy': 'no-referrer',
+      },
+    })
+  }
+
+  const candidates = [daveBffUrl]
   if (download) {
     candidates.push(...await daveMediaMetadata(id, res, season, episode, title, resourceId || request.headers.get('x-resource-id') || ''))
   }
