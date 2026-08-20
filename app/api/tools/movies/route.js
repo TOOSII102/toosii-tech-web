@@ -132,6 +132,19 @@ function daveBffStreamUrl(id, res, season, episode) {
   return DAVEX_BASE + '/bff/stream/' + encodeURIComponent(id) + '?' + params.toString()
 }
 
+function daveDownloadProxyUrl(id, res, season, episode, title) {
+  const params = new URLSearchParams({
+    subjectId: String(id),
+    resolution: String(res || 720),
+    filename: safeFilename(title, res, season, episode),
+  })
+  if (season && episode) {
+    params.set('season', String(season))
+    params.set('episode', String(episode))
+  }
+  return DAVEX_BASE + '/proxy/download?' + params.toString()
+}
+
 function isSafeMediaUrl(value) {
   try {
     const url = new URL(String(value))
@@ -359,27 +372,18 @@ async function legacyMediaOrFallback({ id, res, season, episode, title, resource
     })
   }
 
-  const candidates = [daveBffUrl]
-  if (download) {
-    candidates.push(...await daveMediaMetadata(id, res, season, episode, title, resourceId || request.headers.get('x-resource-id') || ''))
-  }
-  if (!download) {
-    const streamPath = season && episode
-      ? '/tv/episode/stream/' + encodeURIComponent(id) + '?season=' + encodeURIComponent(season) + '&episode=' + encodeURIComponent(episode) + '&resolution=' + encodeURIComponent(res || 720)
-      : '/movie/stream/' + encodeURIComponent(id) + '?resolution=' + encodeURIComponent(res || 720)
-    try { candidates.push(...mediaUrls(await daveJson(streamPath))) } catch (error) { console.warn('[movies:davex-stream-metadata]', error.message) }
-  }
+  // Downloads must use Dave's attachment proxy rather than the streaming BFF. It emits Content-Disposition and
+  // a real MP4 body, while a serverless relay can report 206 with a zero-byte body for this large object.
+  return new Response(null, {
+    status: 307,
+    headers: {
+      Location: daveDownloadProxyUrl(id, res, season, episode, title),
+      'Cache-Control': 'no-store, no-cache, must-revalidate',
+      'Access-Control-Allow-Origin': '*',
+      'Referrer-Policy': 'no-referrer',
+    },
+  })
 
-  let lastError = null
-  for (const mediaUrl of [...new Set(candidates)]) {
-    try {
-      return await fetchMedia(mediaUrl, request, { download, filename, headers: DAVE_JSON_HEADERS, timeout: 20000 })
-    } catch (error) {
-      lastError = error
-      console.warn('[movies:davex-fallback-media]', error.message)
-    }
-  }
-  throw lastError || new Error('media unavailable')
 }
 
 export async function GET(req) {
