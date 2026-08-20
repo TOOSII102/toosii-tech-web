@@ -21,6 +21,7 @@ export const metadata = createShareMetadata({
     width: 'device-width',
     initialScale: 1,
     maximumScale: 5,
+    themeColor: '#090b0f',
   }
 
   export default function RootLayout({ children }) {
