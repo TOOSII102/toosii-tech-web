@@ -83,7 +83,7 @@ function extractReferenceText(payload) {
   if (typeof payload === 'string') return payload.trim()
   const candidates = [payload?.response, payload?.answer, payload?.result, payload?.data?.response, payload?.data?.answer, payload?.data?.result]
   const value = candidates.find(item => typeof item === 'string' && item.trim())
-  return value ? value.trim() : ''
+  return value ? value.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/<\/?think>/gi, '').trim() : ''
 }
 
 async function requestReferenceAI(msgs) {
