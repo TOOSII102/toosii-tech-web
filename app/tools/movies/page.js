@@ -1,716 +1,414 @@
 'use client'
-  import { useState, useCallback, useEffect, useRef } from 'react'
-  import { shareOrCopy } from '../../../lib/clientShare'
-  import '../tools.css'
-  import './movies.css'
 
-  const API  = '/api/tools/movies'
-  const RESS = [1080, 720, 480, 360]
+import { useState, useCallback, useEffect, useRef } from 'react'
+import { shareOrCopy } from '../../../lib/clientShare'
+import '../tools.css'
+import './movies.css'
 
-  /* ── utils ── */
-  const cover  = m => m?.cover?.url || m?.cover || ''
-  const year   = m => (m?.releaseDate || '').slice(0, 4)
-  const dur    = s => { if (!s) return ''; const h = Math.floor(s/3600), m = Math.floor((s%3600)/60); return h ? h+'h '+m+'m' : m+'m' }
-  const isTV   = m => (m?.subjectType || 1) === 2
+const API = '/api/tools/movies'
+const RESOLUTIONS = [1080, 720, 480, 360]
+const PLACEHOLDER = 'https://placehold.co/300x450/0d0d1a/8b5cf6?text=Toosii'
 
-  function positionedTitle(title, season, episode) {
-    const base = String(title || 'Shared movie').trim()
-    if (!season) return base
-    const hasSeason = new RegExp(`\\bS${season}\\b`, 'i').test(base)
-    const hasEpisode = !episode || new RegExp(`\\bE${episode}\\b`, 'i').test(base)
-    return `${base}${!hasSeason ? ` S${season}` : ''}${episode && !hasEpisode ? ` E${episode}` : ''}`
+const request = async (action, params = {}) => {
+  const query = new URLSearchParams({ action })
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') query.set(key, String(value))
+  })
+  const response = await fetch(API + '?' + query.toString())
+  const payload = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(payload?.error || 'Movies service unavailable')
+  return payload
+}
+
+const cover = movie => movie?.cover?.url || movie?.cover || PLACEHOLDER
+const year = movie => String(movie?.releaseDate || '').slice(0, 4)
+const isTV = movie => Number(movie?.subjectType || 1) === 2
+const duration = value => {
+  if (!value) return ''
+  const seconds = Number(value)
+  if (!Number.isFinite(seconds)) return String(value)
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  return hours ? `${hours}h ${minutes}m` : `${minutes}m`
+}
+
+function positionedTitle(title, season, episode) {
+  const base = String(title || 'Shared movie').trim()
+  if (!season) return base
+  const hasSeason = new RegExp(`\\bS${season}\\b`, 'i').test(base)
+  const hasEpisode = !episode || new RegExp(`\\bE${episode}\\b`, 'i').test(base)
+  return `${base}${!hasSeason ? ` S${season}` : ''}${episode && !hasEpisode ? ` E${episode}` : ''}`
+}
+
+function mediaUrl(id, resolution, season, episode, action = 'stream', title = '') {
+  const params = new URLSearchParams({ action, id: String(id), res: String(resolution || 720) })
+  if (season && episode) {
+    params.set('se', String(season))
+    params.set('ep', String(episode))
   }
+  if (title) params.set('title', title)
+  return API + '?' + params.toString()
+}
 
-  /* VidSrc server list — each uses different scrapers/sources */
-  const VS_SERVERS = [
-    {
-      id:    'vs1',
-      label: 'Server 1',
-      movie: id        => 'https://vidsrc.to/embed/movie/' + id,
-      tv:    (id,s,e)  => 'https://vidsrc.to/embed/tv/' + id + '/' + s + '/' + e,
-    },
-    {
-      id:    'vs2',
-      label: 'Server 2',
-      movie: id        => 'https://vidsrc.xyz/embed/movie/' + id,
-      tv:    (id,s,e)  => 'https://vidsrc.xyz/embed/tv/' + id + '?season=' + s + '&episode=' + e,
-    },
-    {
-      id:    'vs3',
-      label: 'Server 3',
-      movie: id        => 'https://vidsrc.me/embed/movie/' + id,
-      tv:    (id,s,e)  => 'https://vidsrc.me/embed/tv/' + id + '?s=' + s + '&e=' + e,
-    },
-  ]
+function Skeleton() {
+  return (
+    <div className="mv-card mv-card-skeleton">
+      <div className="mv-poster-wrap skeleton-img" />
+      <div className="mv-card-info">
+        <div className="skeleton-line" style={{ width: '80%', height: 11, marginBottom: 6 }} />
+        <div className="skeleton-line" style={{ width: '50%', height: 9 }} />
+      </div>
+    </div>
+  )
+}
 
-  function embedUrl(serverId, imdbId, se, ep) {
-    if (!imdbId) return ''
-    const srv = VS_SERVERS.find(s => s.id === serverId) || VS_SERVERS[0]
-    return (se && ep) ? srv.tv(imdbId, se, ep) : srv.movie(imdbId)
-  }
-
-  /* Toosii API media URLs. The server route keeps the provider hidden, forwards ranges, and falls back safely. */
-  function streamUrl(subjectId, res, se, ep) {
-    let u = API + '?action=stream&id=' + encodeURIComponent(subjectId) + '&res=' + res
-    if (se && ep) u += '&se=' + se + '&ep=' + ep
-    return u
-  }
-
-  function downloadUrl(subjectId, res, se, ep, title) {
-    let u = API + '?action=download&id=' + encodeURIComponent(subjectId) + '&res=' + res
-    if (se && ep) u += '&se=' + se + '&ep=' + ep
-    if (title) u += '&title=' + encodeURIComponent(title)
-    return u
-  }
-
-  /* ── Skeleton ── */
-  function Skeleton() {
-    return (
-      <div className="mv-card mv-card-skeleton">
-        <div className="mv-poster-wrap skeleton-img" />
-        <div className="mv-card-info">
-          <div className="skeleton-line" style={{ width: '80%', height: 11, marginBottom: 6 }} />
-          <div className="skeleton-line" style={{ width: '50%', height: 9 }} />
+function Card({ movie, onClick, onShare }) {
+  if (!movie?.subjectId) return null
+  return (
+    <article className="mv-card" onClick={() => onClick(movie)}>
+      <div className="mv-poster-wrap">
+        <img src={cover(movie)} alt={movie.title || 'Movie'} className="mv-poster" loading="lazy" onError={event => { event.currentTarget.src = PLACEHOLDER }} />
+        <div className="mv-poster-overlay"><div className="mv-play-icon">▶</div></div>
+        {movie.imdbRatingValue && <span className="mv-rating-badge">⭐ {movie.imdbRatingValue}</span>}
+        <span className="mv-type-badge">{isTV(movie) ? '📺 Series' : '🎬 Movie'}</span>
+        {onShare && <button type="button" className="mv-card-share" onClick={event => { event.stopPropagation(); onShare(movie) }} aria-label={`Share ${movie.title || 'movie'}`}>↗</button>}
+      </div>
+      <div className="mv-card-info">
+        <p className="mv-card-title">{movie.title || 'Untitled'}</p>
+        <div className="mv-card-meta">
+          {year(movie) && <span className="mv-card-year">{year(movie)}</span>}
+          {movie.genre && <span className="mv-card-genre">{String(movie.genre).split(',')[0].trim()}</span>}
         </div>
       </div>
-    )
-  }
+    </article>
+  )
+}
 
-  /* ── Movie card ── */
-  function Card({ movie, onClick, onShare }) {
-    return (
-      <div className="mv-card" onClick={() => onClick(movie)}>
-        <div className="mv-poster-wrap">
-          <img src={cover(movie)} alt={movie.title} className="mv-poster" loading="lazy"
-            onError={e => { e.target.src = 'https://placehold.co/300x450/0d0d1a/8b5cf6?text=🎬' }} />
-          <div className="mv-poster-overlay"><div className="mv-play-icon">▶</div></div>
-          {movie.imdbRatingValue && <span className="mv-rating-badge">⭐ {movie.imdbRatingValue}</span>}
-          <span className="mv-type-badge">{isTV(movie) ? '📺 Series' : '🎬 Movie'}</span>
-          {onShare && <button type="button" className="mv-card-share" onClick={e => { e.stopPropagation(); onShare(movie) }}>↗</button>}
-        </div>
-        <div className="mv-card-info">
-          <p className="mv-card-title">{movie.title}</p>
-          <div className="mv-card-meta">
-            <span className="mv-card-year">{year(movie)}</span>
-            {movie.genre && <span className="mv-card-genre">{movie.genre.split(',')[0].trim()}</span>}
-          </div>
-        </div>
+function Rail({ title, items, onSelect, onShare }) {
+  if (!items?.length) return null
+  return (
+    <section className="mv-rail">
+      <div className="mv-section-head">
+        <h2 className="mv-section-title"><span className="mv-section-bar" />{title}</h2>
+        <span className="mv-count">{items.length} titles</span>
       </div>
-    )
-  }
-
-  /* ── Detail + Player modal ── */
-  function Modal({ movie, onClose, onSelect, onShare }) {
-    const [detail,   setDetail]   = useState(null)
-    const [loadInfo, setLoadInfo] = useState(true)
-    const [playData, setPlayData] = useState(null)  /* { imdbId, seasons, isTV } */
-    const [recs,     setRecs]     = useState([])
-
-    /* player */
-    const [se,       setSe]       = useState(Number(movie.season) || 1)
-    const [ep,       setEp]       = useState(Number(movie.episode) || 1)
-    const [res,      setRes]      = useState(720)
-    const [playing,  setPlaying]  = useState(false)
-    const [player,   setPlayer]   = useState('direct') /* 'direct' | 'proxy' | 'vs1'|'vs2'|'vs3' */
-    const histRef = useRef(false)
-
-    /* scroll lock + back button */
-    useEffect(() => {
-      document.body.style.overflow = 'hidden'
-      window.history.pushState({ mv: true }, '')
-      histRef.current = true
-      const onPop = () => { histRef.current = false; onClose() }
-      window.addEventListener('popstate', onPop)
-      return () => { document.body.style.overflow = ''; window.removeEventListener('popstate', onPop) }
-    }, [onClose])
-
-    const close = useCallback(() => {
-      if (histRef.current) { histRef.current = false; window.history.back() }
-      else onClose()
-    }, [onClose])
-
-    /* fetch detail + play data in parallel */
-    useEffect(() => {
-      setSe(Number(movie.season) || 1)
-      setEp(Number(movie.episode) || 1)
-      setDetail(null); setPlayData(null); setLoadInfo(true); setPlaying(false)
-      const sid = movie.subjectId
-      ;(async () => {
-        try {
-          const [dR, pR, rR] = await Promise.all([
-            fetch(API + '?action=detail&id='    + sid),
-            fetch(API + '?action=play&id='      + sid),
-            fetch(API + '?action=recommend&id=' + sid),
-          ])
-          const [dD, pD, rD] = await Promise.all([dR.json(), pR.json(), rR.json()])
-          setDetail(dD?.data || null)
-          setPlayData(pD?.data || null)
-          setRecs((rD?.data?.subjectList || rD?.data?.items || []).slice(0, 12))
-        } catch {}
-        setLoadInfo(false)
-      })()
-    }, [movie.subjectId])
-
-    const d      = detail || movie
-    const tv     = isTV(d)
-    const poster = cover(d)
-
-    /* Season and episode data: use Dave’s real availability, then keep a safe fallback for older titles. */
-    const seasons = playData?.seasons?.length ? playData.seasons : (tv ? [1] : [])
-    const seasonDetails = Array.isArray(playData?.seasonDetails) ? playData.seasonDetails : []
-    const episodesForSeason = season => {
-      const details = seasonDetails.find(item => Number(item?.number) === Number(season))
-      return details?.episodes?.length ? details.episodes : Array.from({ length: 24 }, (_, index) => index + 1)
-    }
-    const currentEpisodes = episodesForSeason(se)
-    const EP_PER = currentEpisodes.length
-
-    function scrollToPlayer() {
-      setTimeout(() => document.querySelector('.mv-player-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
-    }
-
-    function watchEp(s, e) {
-      setSe(s); setEp(e); setPlaying(true); setPlayer('direct')
-      scrollToPlayer()
-    }
-
-    function watchNow() {
-      setPlaying(true); setPlayer('direct')
-      scrollToPlayer()
-    }
-
-    /* derive current player src */
-    const imdbId  = playData?.imdbId || null
-    const vsSrc   = imdbId ? embedUrl(player, imdbId, tv ? se : null, tv ? ep : null) : null
-    const pxSrc   = streamUrl(movie.subjectId, res, tv ? se : '', tv ? ep : '')
-    const dlSrc   = downloadUrl(movie.subjectId, res, tv ? se : '', tv ? ep : '', d.title)
-
-    return (
-      <div className="mv-modal-backdrop" onClick={e => { if (e.target === e.currentTarget) close() }}>
-        <div className="mv-modal">
-          <button className="mv-modal-close" onClick={close} aria-label="Close">✕</button>
-
-          {/* ── Hero ── */}
-          <div className="mv-modal-hero">
-            <div className="mv-modal-hero-bg" style={{ backgroundImage: 'url(' + poster + ')' }} />
-            <div className="mv-modal-hero-grad" />
-            <div className="mv-modal-hero-inner">
-              <img src={poster} alt={d.title} className="mv-modal-poster"
-                onError={e => { e.target.src = 'https://placehold.co/260x390/0d0d1a/8b5cf6?text=🎬' }} />
-              <div className="mv-modal-info">
-                <div className="mv-modal-badges">
-                  <span className="mv-modal-badge mv-badge-purple">{tv ? '📺 Series' : '🎬 Movie'}</span>
-                  {d.countryName && <span className="mv-modal-badge mv-badge-blue">📍 {d.countryName}</span>}
-                  {d.imdbRatingValue && <span className="mv-modal-badge mv-badge-amber">⭐ {d.imdbRatingValue}</span>}
-                </div>
-                <h2 className="mv-modal-title">{d.title}</h2>
-                <div className="mv-modal-meta">
-                  {year(d) && <span>📅 {year(d)}</span>}
-                  {dur(d.duration) && <span>⏱ {dur(d.duration)}</span>}
-                  {(d.genre || '').split(',').slice(0, 3).filter(Boolean).map(g => (
-                    <span key={g} style={{ color: '#a78bfa' }}>{g.trim()}</span>
-                  ))}
-                </div>
-                <div style={{ marginTop: '1.1rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                  {!loadInfo && (
-                    <>
-                      <button className="mv-hero-play-btn" onClick={watchNow}>
-                        ▶ {tv ? 'Watch S' + se + ' E' + ep : 'Watch Movie'}
-                      </button>
-                      {onShare && <button className="mv-hero-info-btn" onClick={() => onShare(movie, tv ? se : null, tv ? ep : null)}>↗ Share</button>}
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ── Body ── */}
-          <div className="mv-modal-body">
-            {loadInfo && (
-              <div className="mv-spinner">
-                <div className="mv-spin" />
-                <p style={{ color: '#64748b', margin: '0.75rem 0 0', fontSize: '0.85rem' }}>Loading…</p>
-              </div>
-            )}
-
-            {!loadInfo && (
-              <>
-                {d.description && <p className="mv-modal-desc">{d.description}</p>}
-
-
-
-                {/* ── Player ── */}
-                <div className="mv-player-section">
-                  <div className="mv-player-head">
-                    <span className="mv-player-label">
-                      <span className="mv-player-dot" />
-                      {tv ? 'S' + se + ' E' + ep + ' — Stream Now' : 'Full Movie — Stream Now'}
-                    </span>
-                  </div>
-
-                  {/* Player source tabs */}
-                  <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.72rem', color: '#475569', marginRight: '0.25rem' }}>Player:</span>
-                    {[
-                      { id: 'direct', label: '⚡ Toosii',  title: 'Toosii API range-aware MP4 stream' },
-                      { id: 'proxy',  label: '▶ Safe stream',  title: 'Toosii API same-origin media stream' },
-                    ].map(opt => (
-                      <button key={opt.id} title={opt.title}
-                        onClick={() => { setPlayer(opt.id); if (!playing) setPlaying(true) }}
-                        style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.3rem 0.75rem', borderRadius: '8px', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                          background: player === opt.id ? 'linear-gradient(135deg,#25d366,#16a34a)' : 'rgba(37,211,102,0.08)',
-                          color: player === opt.id ? '#fff' : '#4ade80' }}>
-                        {opt.label}
-                      </button>
-                    ))}
-                    {imdbId && (
-                      <span style={{ fontSize: '0.72rem', color: '#475569', marginLeft: '0.25rem' }}>Backup:</span>
-                    )}
-                    {imdbId && VS_SERVERS.map(srv => (
-                      <button key={srv.id} title="Embedded player (may have ads)"
-                        onClick={() => { setPlayer(srv.id); if (!playing) setPlaying(true) }}
-                        style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.3rem 0.7rem', borderRadius: '8px', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                          background: player === srv.id ? 'rgba(139,92,246,0.8)' : 'rgba(139,92,246,0.08)',
-                          color: player === srv.id ? '#fff' : '#a78bfa' }}>
-                        {srv.label}
-                      </button>
-                    ))}
-                  </div>
-                  {/* Quality + Download row */}
-                  <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.9rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.72rem', color: '#475569', marginRight: '0.25rem' }}>Quality:</span>
-                    {RESS.map(r => (
-                      <button key={r} className={'mv-quality-btn' + (res === r ? ' active' : '')}
-                        onClick={() => setRes(r)}>
-                        {r}p
-                      </button>
-                    ))}
-                    <DlButton downloadSrc={dlSrc} res={res} />
-                  </div>
-
-                  {playing ? (
-                    <div className="mv-video-wrap">
-                      {/* VidSrc embed iframes (Server 1/2/3) */}
-                      {VS_SERVERS.some(s => s.id === player) && vsSrc && (
-                        <iframe
-                          key={vsSrc}
-                          src={vsSrc}
-                          className="mv-video"
-                          allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-                          allowFullScreen
-                          referrerPolicy="origin"
-                          style={{ border: 'none' }}
-                        />
-                      )}
-                      {VS_SERVERS.some(s => s.id === player) && !vsSrc && (
-                        <div className="mv-video-placeholder">
-                          <span className="mv-video-placeholder-icon">⚠️</span>
-                          <p style={{ color: '#94a3b8', margin: '0.5rem 0 0' }}>IMDB ID not found for this title</p>
-                        </div>
-                      )}
-                      {/* Toosii API stream — auto-retry on stall/error */}
-                      {player === 'direct' && (
-                        <StableVideo key={pxSrc} src={pxSrc} />
-                      )}
-                      {/* Toosii API same-origin stream — range-aware */}
-                      {player === 'proxy' && (
-                        <video key={pxSrc}
-                          className="mv-video"
-                          src={pxSrc}
-                          controls autoPlay playsInline preload="metadata"
-                        />
-                      )}
-                    </div>
-                  ) : (
-                    <div className="mv-video-wrap mv-video-placeholder" onClick={watchNow}
-                      style={{ cursor: 'pointer' }}>
-                      <img src={poster} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.12 }} />
-                      <div style={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
-                        <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(139,92,246,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', boxShadow: '0 8px 32px rgba(139,92,246,0.5)' }}>
-                          <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
-                        </div>
-                        <span style={{ fontSize: '0.9rem', color: '#94a3b8' }}>
-                          {tv ? 'Select an episode or click to play S' + se + 'E' + ep : 'Click to stream'}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  <p style={{ fontSize: '0.72rem', color: '#334155', margin: '0.6rem 0 0', padding: '0 0.25rem' }}>
-                    {player === 'vidsrc' ? '▶ VidSrc stream' : player === 'direct' ? '⚡ Toosii API · ' + res + 'p (range-aware)' : '🔀 Toosii API · ' + res + 'p (same-origin)'}
-                    {tv ? ' · S' + se + ' E' + ep : ''}
-                    {VS_SERVERS.some(s => s.id === player) && !imdbId && ' · IMDB ID unavailable for this title'}
-                  </p>
-                </div>
-
-                {/* ── Episodes (below player) ── */}
-                {tv && seasons.length > 0 && (
-                  <div className="mv-eps-panel">
-                    {/* Header row: title + season tabs + prev/next */}
-                    <div className="mv-eps-head">
-                      <div className="mv-eps-title">
-                        <span className="mv-player-dot" />
-                        Season
-                        <div className="mv-eps-seasons">
-                          {seasons.map(s => (
-                            <button key={s}
-                              className={'mv-eps-season-btn' + (se === s ? ' active' : '')}
-                              onClick={() => { setSe(s); setEp(1) }}>
-                              S{s}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="mv-eps-nav">
-                        <span className="mv-eps-now">S{se} · E{ep}</span>
-                        <button className="mv-eps-nav-btn"
-                          disabled={ep <= 1 && se <= seasons[0]}
-                          onClick={() => {
-                            if (ep > 1) { const next = ep - 1; setEp(next); watchEp(se, next) }
-                            else if (se > seasons[0]) { const ps = seasons[seasons.indexOf(se) - 1]; const previousEpisode = episodesForSeason(ps).length; setSe(ps); setEp(previousEpisode); watchEp(ps, previousEpisode) }
-                          }}>
-                          ← Prev
-                        </button>
-                        <button className="mv-eps-nav-btn mv-eps-next"
-                          onClick={() => {
-                            if (ep < EP_PER) { const next = ep + 1; setEp(next); watchEp(se, next) }
-                            else { const idx = seasons.indexOf(se); if (idx < seasons.length - 1) { const ns = seasons[idx + 1]; setSe(ns); setEp(1); watchEp(ns, 1) } }
-                          }}>
-                          Next →
-                        </button>
-                      </div>
-                    </div>
-                    {/* Scrollable episode strip */}
-                    <div className="mv-eps-strip">
-                      {currentEpisodes.map(e => (
-                        <button key={e}
-                          className={'mv-eps-ep' + (ep === e && playing ? ' active' : '')}
-                          onClick={() => watchEp(se, e)}>
-                          <span className="mv-eps-ep-num">E{e}</span>
-                          <span className="mv-eps-ep-label">Episode {e}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* ── Recommendations ── */}
-                {recs.length > 0 && (
-                  <div style={{ marginTop: '2.5rem' }}>
-                    <h4 className="mv-modal-sub">You May Also Like</h4>
-                    <div className="mv-grid">
-                      {                        recs.map(r => (
-                        <Card key={r.subjectId} movie={r} onClick={m => { onClose(); setTimeout(() => onSelect(m), 50) }} onShare={onShare} />
-
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </div>
+      <div className="mv-rail-track">
+        {items.map(movie => <Card key={`${title}-${movie.subjectId}`} movie={movie} onClick={onSelect} onShare={onShare} />)}
       </div>
-    )
-  }
+    </section>
+  )
+}
 
-  /* ══════════════════════
-     Main page
-  ══════════════════════ */
-  export default function MoviesPage({ shared = null }) {
-    const [trending,  setTrending]  = useState([])
-    const [results,   setResults]   = useState([])
-    const [hero,      setHero]      = useState(null)
-    const [loading,   setLoading]   = useState(true)
-    const [searching, setSearching] = useState(false)
-    const [query,     setQuery]     = useState('')
-    const [type,      setType]      = useState('')
-    const [selected,  setSelected]  = useState(null)
-    const sharedLoaded = useRef(false)
+function DownloadButton({ href, label, size }) {
+  return (
+    <a className="mv-download-btn" href={href} download>
+      <span>⬇ {label}</span>
+      {size ? <span className="mv-download-size">{size}</span> : null}
+    </a>
+  )
+}
 
-    useEffect(() => {
-      (async () => {
-        try {
-          const r = await fetch(API + '?action=trending')
-          const d = await r.json()
-          const list = d?.data?.subjectList || []
-          setTrending(list)
-          setHero(list[Math.floor(Math.random() * Math.min(5, list.length))] || list[0] || null)
-        } catch {}
-        setLoading(false)
-      })()
-    }, [])
-
-    const handleSearch = useCallback(async e => {
-      e?.preventDefault()
-      if (!query.trim()) { setResults([]); return }
-      setSearching(true)
-      try {
-        const r = await fetch(API + '?action=search&q=' + encodeURIComponent(query) + (type ? '&type=' + type : ''))
-        const d = await r.json()
-        setResults(d?.data?.items || d?.data?.subjectList || [])
-      } catch {}
-      setSearching(false)
-    }, [query, type])
-
-    useEffect(() => {
-      if (!shared || sharedLoaded.current) return
-      sharedLoaded.current = true
-
-      if (shared.query) {
-        setQuery(shared.query)
-        setSearching(true)
-        fetch(API + '?action=search&q=' + encodeURIComponent(shared.query) + (shared.type ? '&type=' + encodeURIComponent(shared.type) : ''))
-          .then(r => r.json())
-          .then(d => setResults(d?.data?.items || d?.data?.subjectList || []))
-          .catch(() => {})
-          .finally(() => setSearching(false))
-      }
-
-      if (shared.id) {
-        setSelected({
-          subjectId: shared.id,
-          title: shared.title || 'Shared title',
-          cover: shared.cover ? { url: shared.cover } : '',
-          subjectType: Number(shared.type) || 1,
-          season: Number(shared.season) || 1,
-          episode: Number(shared.episode) || 1,
-        })
-      }
-    }, [shared])
-
-    const shareMovie = async (movie = selected, season = movie?.season, episode = movie?.episode) => {
-      if (!movie?.subjectId) return
-      const link = new URL('/tools/movies/watch', window.location.origin)
-      link.searchParams.set('id', movie.subjectId)
-      link.searchParams.set('title', movie.title || 'Shared movie')
-      if (cover(movie)) link.searchParams.set('cover', cover(movie))
-      if (movie.subjectType) link.searchParams.set('type', movie.subjectType)
-      if (season && Number(movie.subjectType) === 2) link.searchParams.set('season', season)
-      if (episode && Number(movie.subjectType) === 2) link.searchParams.set('episode', episode)
-      const shareTitle = Number(movie.subjectType) === 2 ? positionedTitle(movie.title || 'Movie', season, episode) : (movie.title || 'Movie')
-      link.searchParams.set('title', shareTitle)
-      await shareOrCopy({ title: `${shareTitle} — Toosii Tech`, text: `Watch ${shareTitle} on Toosii Tech`, url: link.toString() })
-    }
-
-    const shareMovieSearch = async () => {
-      if (!query.trim()) return
-      const link = new URL('/tools/movies/watch', window.location.origin)
-      link.searchParams.set('q', query.trim())
-      if (type) link.searchParams.set('type', type)
-      await shareOrCopy({ title: `Search movies for ${query.trim()} — Toosii Tech`, text: `Browse movie results for ${query.trim()}`, url: link.toString() })
-    }
-
-    const display  = results.length > 0 ? results : trending
-    const isSearch = results.length > 0
-
-    return (
-      <div className="mv-page">
-        {/* ── Hero ── */}
-        {hero && (
-          <div className="mv-hero" style={{ cursor: 'pointer' }} onClick={() => setSelected(hero)}>
-            <div className="mv-hero-bg" style={{ backgroundImage: 'url(' + cover(hero) + ')' }} />
-            <div className="mv-hero-gradient" />
-            <div className="mv-hero-content">
-              <div className="mv-hero-badge">🔥 Trending Now</div>
-              <h1 className="mv-hero-title">{hero.title}</h1>
-              <div className="mv-hero-meta">
-                {year(hero) && <span>📅 {year(hero)}</span>}
-                {hero.imdbRatingValue && <span>⭐ {hero.imdbRatingValue}</span>}
-                {hero.genre && <span>🎭 {hero.genre.split(',')[0]}</span>}
-                <span>{isTV(hero) ? '📺 Series' : '🎬 Movie'}</span>
-              </div>
-              <div className="mv-hero-btns">
-                <button className="mv-hero-play-btn">▶ Play Now</button>
-                <button className="mv-hero-info-btn" onClick={e => { e.stopPropagation(); setSelected(hero) }}>ℹ More Info</button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Search ── */}
-        <div className="mv-search-wrap">
-          <form className="mv-search-row" onSubmit={handleSearch}>
-            <span className="mv-search-icon">🔍</span>
-            <input className="mv-search-input" value={query}
-              onChange={e => setQuery(e.target.value)}
-              placeholder="Search movies, series…" />
-            <select className="mv-search-type" value={type} onChange={e => setType(e.target.value)}>
-              <option value="">All</option>
-              <option value="1">Movies</option>
-              <option value="2">Series</option>
-            </select>
-            <button type="submit" className="mv-search-btn">Search</button>
-          </form>
-        </div>
-
-        {/* ── Grid ── */}
-        <div className="mv-section">
-          <div className="mv-section-head">
-            <h2 className="mv-section-title">
-              <span className="mv-section-bar" />
-              {isSearch ? 'Results for "' + query + '"' : '🔥 Trending'}
-            </h2>
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              {isSearch && (
-                                  <button onClick={() => { setResults([]); setQuery('') }}
-
-                  style={{ fontSize: '0.8rem', color: '#a78bfa', background: 'none', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '7px', padding: '0.3rem 0.7rem', cursor: 'pointer' }}>
-                  ✕ Clear
-                </button>
-              )}
-              {isSearch && <button onClick={shareMovieSearch} className="mv-share-search-btn">↗ Share Search</button>}
-              <span className="mv-count">{display.length} titles</span>
-            </div>
-          </div>
-
-          <div className="mv-grid">
-            {(loading || searching)
-              ? Array.from({ length: 20 }).map((_, i) => <Skeleton key={i} />)
-              : display.length === 0
-                ? <div className="mv-empty"><span className="mv-empty-icon">🎬</span><p>No results found</p></div>
-                : display.map(m => <Card key={m.subjectId} movie={m} onClick={setSelected} onShare={shareMovie} />)
-            }
-          </div>
-        </div>
-
-        {/* ── Modal ── */}
-        {selected && (
-          <Modal
-            movie={selected}
-            onClose={() => setSelected(null)}
-            onSelect={setSelected}
-            onShare={shareMovie}
-          />
-        )}
-      </div>
-    )
-  }
- 
-/* ── StableVideo: auto-resumes the Toosii API stream on stall or error ── */
-function StableVideo({ src }) {
+function StableVideo({ src, captions = [], poster = '' }) {
   const videoRef = useRef(null)
   const retryRef = useRef(null)
-  const stallRef = useRef(null)
-  const retryCount = useRef(0)
+  const [error, setError] = useState(false)
 
-  function scheduleRetry(delay = 2000) {
-    clearTimeout(retryRef.current)
-    retryRef.current = setTimeout(() => {
-      const v = videoRef.current
-      if (!v) return
-      const t = v.currentTime
-      v.load()
-      v.currentTime = t
-      v.play().catch(() => {})
-      retryCount.current++
-    }, delay)
-  }
+  const retry = useCallback(() => {
+    const video = videoRef.current
+    if (!video) return
+    setError(false)
+    video.load()
+    video.play().catch(() => {})
+  }, [])
 
-  function handleStall() {
-    clearTimeout(stallRef.current)
-    stallRef.current = setTimeout(() => {
-      const v = videoRef.current
-      if (!v || v.paused) return
-      scheduleRetry(1500)
-    }, 5000) // wait 5s of stall before retry
-  }
-
-  function handleError() {
-    if (retryCount.current < 5) scheduleRetry(2000)
-  }
-
-  function handlePlaying() {
-    retryCount.current = 0
-    clearTimeout(retryRef.current)
-    clearTimeout(stallRef.current)
-  }
-
-  useEffect(() => () => {
-    clearTimeout(retryRef.current); clearTimeout(stallRef.current)
-  }, [src])
+  useEffect(() => () => clearTimeout(retryRef.current), [src])
 
   return (
-    <video
-      ref={videoRef}
-      className="mv-video"
-      src={src}
-      referrerPolicy="no-referrer"
-      controls autoPlay playsInline preload="auto"
-      onError={handleError}
-      onStalled={handleStall}
-      onWaiting={handleStall}
-      onPlaying={handlePlaying}
-    />
+    <div className="mv-stable-video">
+      <video ref={videoRef} className="mv-video" src={src} poster={poster} controls autoPlay playsInline preload="metadata"
+        onError={() => { setError(true); clearTimeout(retryRef.current); retryRef.current = setTimeout(retry, 2500) }}>
+        {captions.filter(caption => caption?.url).slice(0, 8).map((caption, index) => (
+          <track key={`${caption.language}-${index}`} kind="subtitles" src={caption.url} srcLang={String(caption.language || 'en').slice(0, 2).toLowerCase()} label={caption.language || 'Subtitles'} default={index === 0} />
+        ))}
+      </video>
+      {error && <button className="mv-video-retry" type="button" onClick={retry}>↻ Retry stream</button>}
+    </div>
   )
 }
 
+function DetailChips({ title, items, className = 'mv-detail-chip' }) {
+  if (!items?.length) return null
+  return (
+    <section className="mv-detail-section">
+      <h3 className="mv-modal-sub">{title}</h3>
+      <div className="mv-detail-chip-list">{items.map((item, index) => <span className={className} key={`${item}-${index}`}>{item}</span>)}</div>
+    </section>
+  )
+}
 
-/* ── Browser-side download through the Toosii same-origin route ── */
-function DlButton({ downloadSrc, res }) {
-  const [dlState, setDlState] = useState('idle') // 'idle' | 'loading' | 'error'
-  const [pct, setPct] = useState(0)
+function Modal({ movie, onClose, onSelect, onShare }) {
+  const [detail, setDetail] = useState(movie)
+  const [playData, setPlayData] = useState(null)
+  const [recs, setRecs] = useState([])
+  const [trailer, setTrailer] = useState(null)
+  const [cast, setCast] = useState([])
+  const [dubs, setDubs] = useState([])
+  const [captions, setCaptions] = useState([])
+  const [downloads, setDownloads] = useState([])
+  const [loadInfo, setLoadInfo] = useState(true)
+  const [error, setError] = useState('')
+  const [season, setSeason] = useState(Number(movie.season) || 1)
+  const [episode, setEpisode] = useState(Number(movie.episode) || 1)
+  const [resolution, setResolution] = useState(720)
+  const [playing, setPlaying] = useState(false)
+  const [player, setPlayer] = useState('direct')
+  const historyRef = useRef(false)
 
-  async function handleDownload() {
-    setDlState('loading'); setPct(0)
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    window.history.pushState({ movieModal: true }, '')
+    historyRef.current = true
+    const onPopState = () => { historyRef.current = false; onClose() }
+    window.addEventListener('popstate', onPopState)
+    return () => { document.body.style.overflow = ''; window.removeEventListener('popstate', onPopState) }
+  }, [onClose])
+
+  const close = useCallback(() => {
+    if (historyRef.current) { historyRef.current = false; window.history.back() } else onClose()
+  }, [onClose])
+
+  useEffect(() => {
+    let active = true
+    const id = movie.subjectId
+    const tvHint = isTV(movie)
+    setLoadInfo(true); setError(''); setPlaying(false)
+    Promise.allSettled([
+      request('detail', { id }),
+      request('play', { id }),
+      request('recommend', { id }),
+      request('trailer', { id }),
+      request('cast', { id }),
+      request('dubs', { id }),
+      request('captions', { id, res: 720, se: tvHint ? season : '', ep: tvHint ? episode : '' }),
+      request('downloads', { id, res: 720, se: tvHint ? season : '', ep: tvHint ? episode : '', title: movie.title }),
+    ]).then(results => {
+      if (!active) return
+      const [detailResult, playResult, recResult, trailerResult, castResult, dubsResult, captionResult, downloadResult] = results
+      if (detailResult.status === 'fulfilled') setDetail(detailResult.value?.data || movie)
+      if (playResult.status === 'fulfilled') setPlayData(playResult.value?.data || null)
+      if (recResult.status === 'fulfilled') setRecs((recResult.value?.data?.items || recResult.value?.data?.subjectList || []).slice(0, 12))
+      if (trailerResult.status === 'fulfilled') setTrailer(trailerResult.value?.data || null)
+      if (castResult.status === 'fulfilled') setCast(castResult.value?.data || [])
+      if (dubsResult.status === 'fulfilled') {
+        const value = dubsResult.value?.data
+        const toDubLabel = item => typeof item === 'string' ? item : item?.language || item?.name || item?.lan_name || item?.lan_code || item?.original || item?.title || ''
+        setDubs((Array.isArray(value) ? value : Object.values(value || {})).map(toDubLabel).filter(Boolean))
+      }
+      if (captionResult.status === 'fulfilled') setCaptions(captionResult.value?.data || [])
+      if (downloadResult.status === 'fulfilled') setDownloads(downloadResult.value?.data?.files || [])
+      if (results.every(result => result.status === 'rejected')) setError('Movie details are temporarily unavailable. You can close this window and try again.')
+      setLoadInfo(false)
+    })
+    return () => { active = false }
+  }, [movie.subjectId])
+
+  const d = detail || movie
+  const tv = isTV(d)
+  const seasons = playData?.seasons?.length ? playData.seasons : (tv ? [1] : [])
+  const seasonDetails = Array.isArray(playData?.seasonDetails) ? playData.seasonDetails : []
+  const episodesForSeason = selectedSeason => {
+    const found = seasonDetails.find(item => Number(item?.number) === Number(selectedSeason))
+    return found?.episodes?.length ? found.episodes : Array.from({ length: 24 }, (_, index) => index + 1)
+  }
+  const currentEpisodes = episodesForSeason(season)
+  const stream = mediaUrl(movie.subjectId, resolution, tv ? season : '', tv ? episode : '', 'stream')
+  const directDownload = mediaUrl(movie.subjectId, resolution, tv ? season : '', tv ? episode : '', 'download', d.title)
+  const trailerUrl = trailer?.url || ''
+
+  const watchEpisode = (nextSeason, nextEpisode) => {
+    setSeason(nextSeason); setEpisode(nextEpisode); setPlayer('direct'); setPlaying(true)
+    setTimeout(() => document.querySelector('.mv-player-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
+  }
+
+  return (
+    <div className="mv-modal-backdrop" onClick={event => { if (event.target === event.currentTarget) close() }}>
+      <div className="mv-modal">
+        <button className="mv-modal-close" onClick={close} aria-label="Close">✕</button>
+        <div className="mv-modal-hero">
+          <div className="mv-modal-hero-bg" style={{ backgroundImage: `url(${cover(d)})` }} />
+          <div className="mv-modal-hero-grad" />
+          <div className="mv-modal-hero-inner">
+            <img src={cover(d)} alt={d.title || 'Movie'} className="mv-modal-poster" onError={event => { event.currentTarget.src = PLACEHOLDER }} />
+            <div className="mv-modal-info">
+              <div className="mv-modal-badges">
+                <span className="mv-modal-badge mv-badge-purple">{tv ? '📺 Series' : '🎬 Movie'}</span>
+                {d.countryName && <span className="mv-modal-badge mv-badge-blue">📍 {d.countryName}</span>}
+                {d.imdbRatingValue && <span className="mv-modal-badge mv-badge-amber">⭐ {d.imdbRatingValue}</span>}
+              </div>
+              <h2 className="mv-modal-title">{d.title || 'Untitled'}</h2>
+              <div className="mv-modal-meta">
+                {year(d) && <span>📅 {year(d)}</span>}
+                {duration(d.duration) && <span>⏱ {duration(d.duration)}</span>}
+                {String(d.genre || '').split(',').slice(0, 3).filter(Boolean).map(genre => <span key={genre} style={{ color: '#a78bfa' }}>{genre.trim()}</span>)}
+              </div>
+              {!loadInfo && <div className="mv-modal-hero-actions">
+                <button className="mv-hero-play-btn" onClick={() => { setPlaying(true); setPlayer('direct') }}>▶ {tv ? `Watch S${season} E${episode}` : 'Watch Movie'}</button>
+                {trailerUrl && <button className="mv-modal-trailer-btn" onClick={() => document.querySelector('.mv-trailer-section')?.scrollIntoView({ behavior: 'smooth' })}>▶ Trailer</button>}
+                {onShare && <button className="mv-hero-info-btn" onClick={() => onShare(movie, tv ? season : null, tv ? episode : null)}>↗ Share</button>}
+              </div>}
+            </div>
+          </div>
+        </div>
+
+        <div className="mv-modal-body">
+          {loadInfo && <div className="mv-modal-spinner"><div className="mv-spin" /><p>Loading movie data…</p></div>}
+          {!loadInfo && error && <div className="mv-inline-error">{error}</div>}
+          {!loadInfo && !error && <>
+            {d.description && <p className="mv-modal-desc">{d.description}</p>}
+
+            {trailerUrl && <section className="mv-trailer-section">
+              <div className="mv-trailer-head"><h3 className="mv-modal-sub">▶ Official trailer</h3><span className="mv-count">{trailer.definition || 'Preview'}</span></div>
+              <video className="mv-trailer-video" src={trailerUrl} poster={trailer.cover || cover(d)} controls playsInline preload="metadata" />
+            </section>}
+
+            <section className="mv-player-section">
+              <div className="mv-player-head"><span className="mv-player-label"><span className="mv-player-dot" />{tv ? `S${season} E${episode} — Stream Now` : 'Full Movie — Stream Now'}</span><span className="mv-live-label">LIVE SOURCE</span></div>
+              <div className="mv-player-tabs">
+                <button className={player === 'direct' ? 'mv-source-btn active' : 'mv-source-btn'} onClick={() => { setPlayer('direct'); setPlaying(true) }}>⚡ Toosii</button>
+                <button className={player === 'proxy' ? 'mv-source-btn active' : 'mv-source-btn'} onClick={() => { setPlayer('proxy'); setPlaying(true) }}>▶ Safe stream</button>
+              </div>
+              <div className="mv-quality-row"><span className="mv-quality-label">Quality</span>{RESOLUTIONS.map(value => <button key={value} className={`mv-quality-btn${resolution === value ? ' active' : ''}`} onClick={() => setResolution(value)}>{value}p</button>)}<DownloadButton href={directDownload} label={`Download ${resolution}p`} /></div>
+              {playing ? (player === 'direct' ? <StableVideo src={stream} captions={captions} poster={cover(d)} /> : <video className="mv-video" src={stream} controls autoPlay playsInline preload="metadata" />) : <div className="mv-video-wrap mv-video-placeholder" onClick={() => setPlaying(true)}><img src={cover(d)} alt="" /><div className="mv-placeholder-content"><span className="mv-play-large">▶</span><span>{tv ? `Select an episode or play S${season} E${episode}` : 'Click to stream'}</span></div></div>}
+              <p className="mv-stream-caption">⚡ Toosii API · {resolution}p range-aware MP4{tv ? ` · S${season} E${episode}` : ''}</p>
+            </section>
+
+            {tv && seasons.length > 0 && <section className="mv-eps-panel">
+              <div className="mv-eps-head"><div className="mv-eps-title"><span className="mv-player-dot" />Seasons <div className="mv-eps-seasons">{seasons.map(value => <button key={value} className={`mv-eps-season-btn${Number(season) === Number(value) ? ' active' : ''}`} onClick={() => { setSeason(value); setEpisode(1) }}>S{value}</button>)}</div></div><div className="mv-eps-nav"><span className="mv-eps-now">S{season} · E{episode}</span><button className="mv-eps-nav-btn" disabled={episode <= 1} onClick={() => watchEpisode(season, Math.max(1, episode - 1))}>← Prev</button><button className="mv-eps-nav-btn mv-eps-next" disabled={episode >= currentEpisodes.length} onClick={() => watchEpisode(season, Math.min(currentEpisodes.length, episode + 1))}>Next →</button></div></div>
+              <div className="mv-eps-strip">{currentEpisodes.map(value => <button key={value} className={`mv-eps-ep${Number(episode) === Number(value) && playing ? ' active' : ''}`} onClick={() => watchEpisode(season, value)}><span className="mv-eps-ep-num">E{value}</span><span className="mv-eps-ep-label">Episode {value}</span></button>)}</div>
+            </section>}
+
+            {downloads.length > 0 && <section className="mv-download-section"><div className="mv-download-head">⬇ Available downloads <span className="mv-count">{downloads.length} files</span></div><div className="mv-download-grid">{downloads.map(file => <DownloadButton key={`${file.resourceId}-${file.resolution}`} href={file.downloadUrl} label={`${file.resolution || resolution}p`} size={file.size ? `${Math.round(Number(file.size) / 1048576)} MB` : ''} />)}</div></section>}
+
+            <div className="mv-detail-grid">
+              <DetailChips title="Available dubs" items={dubs} className="mv-dub-chip" />
+              <DetailChips title="Subtitles" items={captions.map(caption => caption.language)} className="mv-sub-chip" />
+            </div>
+            {cast.length > 0 && <section className="mv-detail-section"><h3 className="mv-modal-sub">Cast & crew</h3><div className="mv-cast-list">{cast.slice(0, 18).map((person, index) => <span className="mv-cast-chip" key={`${person.name}-${index}`}><strong>{person.name}</strong>{person.character ? ` · ${person.character}` : ''}</span>)}</div></section>}
+
+            {recs.length > 0 && <section className="mv-recommend-section"><h3 className="mv-modal-sub">You May Also Like</h3><div className="mv-recommend-grid">{recs.map(item => <Card key={item.subjectId} movie={item} onClick={next => { onClose(); setTimeout(() => onSelect(next), 50) }} onShare={onShare} />)}</div></section>}
+          </>}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default function MoviesPage({ shared = null }) {
+  const [trending, setTrending] = useState([])
+  const [hero, setHero] = useState(null)
+  const [results, setResults] = useState([])
+  const [rails, setRails] = useState({ home: [], moviePopular: [], movieNew: [], movieTop: [], tvPopular: [], tvTrending: [], tvNew: [] })
+  const [loading, setLoading] = useState(true)
+  const [searching, setSearching] = useState(false)
+  const [query, setQuery] = useState('')
+  const [type, setType] = useState('')
+  const [suggestions, setSuggestions] = useState([])
+  const [catalogMode, setCatalogMode] = useState('moviePopular')
+  const [selected, setSelected] = useState(null)
+  const sharedLoaded = useRef(false)
+
+  const loadRail = useCallback(async (mode, params = {}) => {
     try {
-      const resp = await fetch(downloadSrc, {
-        headers: { Accept: 'video/mp4,video/*,*/*' },
-      })
-      if (!resp.ok) throw new Error('Source returned ' + resp.status + '. It may be temporarily down.')
+      const payload = await request(mode === 'home' ? 'home' : mode, params)
+      const items = payload?.data?.items || payload?.data?.subjectList || []
+      setRails(previous => ({ ...previous, [mode === 'movie-popular' ? 'moviePopular' : mode === 'movie-new' ? 'movieNew' : mode === 'movie-top' ? 'movieTop' : mode === 'tv-popular' ? 'tvPopular' : mode === 'tv-trending' ? 'tvTrending' : mode === 'tv-new' ? 'tvNew' : mode]: items }))
+      return items
+    } catch { return [] }
+  }, [])
 
-      const contentType = resp.headers.get('content-type') || ''
-      if (!contentType.includes('video') && !contentType.includes('octet-stream')) {
-        throw new Error('Stream provider is currently down. Try again later.')
-      }
+  useEffect(() => {
+    let active = true
+    Promise.allSettled([request('trending'), request('home'), request('movie-popular'), request('movie-new'), request('tv-trending')]).then(values => {
+      if (!active) return
+      const [trend, home, moviePopular, movieNew, tvTrending] = values
+      const getItems = result => result.status === 'fulfilled' ? (result.value?.data?.items || result.value?.data?.subjectList || []) : []
+      const trendItems = getItems(trend)
+      const homeSections = home.status === 'fulfilled' ? (home.value?.data?.sections || []) : []
+      setTrending(trendItems)
+      setHero(trendItems[Math.floor(Math.random() * Math.min(5, trendItems.length))] || trendItems[0] || null)
+      setRails({ home: homeSections.flatMap(section => section.items || []).slice(0, 20), moviePopular: getItems(moviePopular), movieNew: getItems(movieNew), movieTop: [], tvPopular: [], tvTrending: getItems(tvTrending), tvNew: [] })
+      setLoading(false)
+    })
+    return () => { active = false }
+  }, [])
 
-      const total = parseInt(resp.headers.get('content-length') || '0', 10)
-      const reader = resp.body.getReader()
-      const chunks = []
-      let loaded = 0
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        chunks.push(value)
-        loaded += value.length
-        if (total) setPct(Math.round((loaded / total) * 100))
-      }
-      const blob = new Blob(chunks, { type: contentType || 'video/mp4' })
-      const url  = URL.createObjectURL(blob)
-      const a    = document.createElement('a')
-      const disposition = resp.headers.get('content-disposition') || ''
-      const filenameMatch = disposition.match(/filename\*?=(?:UTF-8''|\"|')?([^\"';]+)\"?$/i)
-      a.href = url; a.download = filenameMatch ? decodeURIComponent(filenameMatch[1]) : `movie-${res}p.mp4`
-      document.body.appendChild(a); a.click()
-      document.body.removeChild(a)
-      setTimeout(() => URL.revokeObjectURL(url), 10000)
-      setDlState('idle'); setPct(0)
-    } catch (err) {
-      setDlState('error')
-      setTimeout(() => setDlState('idle'), 4000)
+  useEffect(() => {
+    if (!query.trim()) { setSuggestions([]); return undefined }
+    const timer = setTimeout(() => request('suggest', { q: query, limit: 6 }).then(payload => setSuggestions(payload?.data || [])).catch(() => setSuggestions([])), 250)
+    return () => clearTimeout(timer)
+  }, [query])
+
+  useEffect(() => {
+    if (!shared || sharedLoaded.current) return
+    sharedLoaded.current = true
+    if (shared.query) {
+      setQuery(shared.query); setSearching(true)
+      request('search', { q: shared.query, type: shared.type }).then(payload => setResults(payload?.data?.items || payload?.data?.subjectList || [])).catch(() => {}).finally(() => setSearching(false))
     }
+    if (shared.id) setSelected({ subjectId: shared.id, title: shared.title || 'Shared title', cover: shared.cover ? { url: shared.cover } : '', subjectType: Number(shared.type) || 1, season: Number(shared.season) || 1, episode: Number(shared.episode) || 1 })
+  }, [shared])
+
+  const handleSearch = async event => {
+    event?.preventDefault()
+    if (!query.trim()) { setResults([]); return }
+    setSearching(true)
+    try { const payload = await request('search', { q: query, type }); setResults(payload?.data?.items || payload?.data?.subjectList || []) } catch { setResults([]) }
+    setSearching(false); setSuggestions([])
   }
 
-  const label = dlState === 'loading'
-    ? (pct > 0 ? `⬇ ${pct}%` : '⬇ …')
-    : dlState === 'error'
-    ? '✕ Unavailable'
-    : `⬇ Download ${res}p`
+  const shareMovie = async (movie = selected, season = movie?.season, episode = movie?.episode) => {
+    if (!movie?.subjectId) return
+    const link = new URL('/tools/movies/watch', window.location.origin)
+    link.searchParams.set('id', movie.subjectId); link.searchParams.set('title', movie.title || 'Shared movie')
+    if (cover(movie) !== PLACEHOLDER) link.searchParams.set('cover', cover(movie))
+    if (movie.subjectType) link.searchParams.set('type', movie.subjectType)
+    if (season && isTV(movie)) link.searchParams.set('season', season)
+    if (episode && isTV(movie)) link.searchParams.set('episode', episode)
+    const shareTitle = isTV(movie) ? positionedTitle(movie.title || 'Movie', season, episode) : (movie.title || 'Movie')
+    link.searchParams.set('title', shareTitle)
+    await shareOrCopy({ title: `${shareTitle} — Toosii Tech`, text: `Watch ${shareTitle} on Toosii Tech`, url: link.toString() })
+  }
 
-  const borderColor = dlState === 'error' ? 'rgba(239,68,68,0.4)' : 'rgba(37,211,102,0.3)'
-  const bgColor     = dlState === 'error' ? 'rgba(239,68,68,0.1)' : 'rgba(37,211,102,0.08)'
-  const txtColor    = dlState === 'error' ? '#f87171' : '#4ade80'
+  const shareMovieSearch = async () => {
+    if (!query.trim()) return
+    const link = new URL('/tools/movies/watch', window.location.origin)
+    link.searchParams.set('q', query.trim()); if (type) link.searchParams.set('type', type)
+    await shareOrCopy({ title: `Search movies for ${query.trim()} — Toosii Tech`, text: `Browse movie results for ${query.trim()}`, url: link.toString() })
+  }
+
+  const display = results.length ? results : trending
+  const railItems = rails[catalogMode] || []
+  const railTitle = { moviePopular: 'Popular movies', movieNew: 'New movies', movieTop: 'Top-rated movies', tvPopular: 'Popular series', tvTrending: 'Trending series', tvNew: 'New series' }[catalogMode] || 'Browse catalog'
 
   return (
-    <button onClick={handleDownload} disabled={dlState === 'loading'}
-      style={{ marginLeft: 'auto', fontSize: '0.75rem', fontWeight: 700, padding: '0.3rem 0.85rem',
-        borderRadius: '8px', border: '1px solid ' + borderColor, cursor: dlState === 'loading' ? 'wait' : 'pointer',
-        fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-        background: bgColor, color: txtColor, transition: 'all 0.2s', minWidth: '7rem', justifyContent: 'center' }}>
-      {label}
-    </button>
+    <div className="mv-page">
+      {hero && <div className="mv-hero" onClick={() => setSelected(hero)}>
+        <div className="mv-hero-bg" style={{ backgroundImage: `url(${cover(hero)})` }} /><div className="mv-hero-gradient" />
+        <div className="mv-hero-content"><div className="mv-hero-badge">🔥 Trending Now</div><h1 className="mv-hero-title">{hero.title}</h1><div className="mv-hero-meta">{year(hero) && <span>📅 {year(hero)}</span>}{hero.imdbRatingValue && <span>⭐ {hero.imdbRatingValue}</span>}{hero.genre && <span>🎭 {String(hero.genre).split(',')[0]}</span>}<span>{isTV(hero) ? '📺 Series' : '🎬 Movie'}</span></div><div className="mv-hero-btns"><button className="mv-hero-play-btn" onClick={event => { event.stopPropagation(); setSelected(hero) }}>▶ Play Now</button><button className="mv-hero-info-btn" onClick={event => { event.stopPropagation(); setSelected(hero) }}>ℹ More Info</button></div></div>
+      </div>}
+
+      <div className="mv-search-wrap"><form className="mv-search-row" onSubmit={handleSearch}><span className="mv-search-icon">🔍</span><input className="mv-search-input" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search movies, series…" aria-label="Search movies and series" /><select className="mv-search-type" value={type} onChange={event => setType(event.target.value)} aria-label="Content type"><option value="">All</option><option value="1">Movies</option><option value="2">Series</option></select><button type="submit" className="mv-search-btn">Search</button></form>{suggestions.length > 0 && <div className="mv-suggestions">{suggestions.map((suggestion, index) => <button key={`${suggestion.subjectId || suggestion.title || index}`} type="button" onClick={() => { setQuery(suggestion.title || suggestion.name || ''); setSuggestions([]) }}>{suggestion.title || suggestion.name || 'Suggestion'}</button>)}</div>}</div>
+
+      {results.length > 0 ? <section className="mv-section"><div className="mv-section-head"><h2 className="mv-section-title"><span className="mv-section-bar" />Results for “{query}”</h2><div className="mv-section-actions"><button className="mv-share-search-btn" onClick={shareMovieSearch}>↗ Share Search</button><button className="mv-clear-btn" onClick={() => { setResults([]); setQuery('') }}>✕ Clear</button><span className="mv-count">{results.length} titles</span></div></div><div className="mv-grid">{results.map(movie => <Card key={movie.subjectId} movie={movie} onClick={setSelected} onShare={shareMovie} />)}</div></section> : <>
+        {loading ? <section className="mv-section"><div className="mv-grid">{Array.from({ length: 12 }).map((_, index) => <Skeleton key={index} />)}</div></section> : <Rail title="🔥 Trending" items={trending} onSelect={setSelected} onShare={shareMovie} />}
+        <section className="mv-catalog-controls"><div><span className="mv-catalog-eyebrow">DAVE CATALOG</span><h2>Browse every rail</h2><p>Switch between movie and series catalogs, rankings, new releases, and genre shelves.</p></div><div className="mv-catalog-tabs">{[['moviePopular', 'Movie Popular'], ['movieNew', 'Movie New'], ['movieTop', 'Movie Top'], ['tvPopular', 'TV Popular'], ['tvTrending', 'TV Trending'], ['tvNew', 'TV New']].map(([id, label]) => <button key={id} className={catalogMode === id ? 'active' : ''} onClick={() => { setCatalogMode(id); if (!rails[id]?.length) loadRail(id.replace(/[A-Z]/g, match => '-' + match.toLowerCase())) }}>{label}</button>)}</div></section>
+        <Rail title={railTitle} items={railItems} onSelect={setSelected} onShare={shareMovie} />
+        {rails.home.length > 0 && <Rail title="Curated for you" items={rails.home} onSelect={setSelected} onShare={shareMovie} />}
+      </>}
+
+      <section className="mv-discover-bar"><div><span className="mv-catalog-eyebrow">DISCOVER</span><h2>Find by genre</h2></div><div className="mv-discover-actions">{['Action', 'Drama', 'Comedy', 'Romance', 'Sci-Fi'].map(genre => <button key={genre} onClick={() => loadRail('discover', { contentType: 'MOVIE', genre })}>{genre}</button>)}</div></section>
+
+      {selected && <Modal movie={selected} onClose={() => setSelected(null)} onSelect={setSelected} onShare={shareMovie} />}
+    </div>
   )
 }
-
- 
