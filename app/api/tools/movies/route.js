@@ -53,8 +53,9 @@ function normalizeMovie(raw = {}) {
   const subjectType = asNumber(raw?.subject_type ?? raw?.subjectType ?? raw?.type, 1)
   return {
     subjectId: String(raw?.subject_id ?? raw?.subjectId ?? raw?.id ?? ''),
-    subjectType: subjectType === 2 ? 2 : 1,
-    title: firstText(raw?.title, raw?.name, raw?.post_title, 'Untitled'),
+      subjectType: subjectType === 2 ? 2 : 1,
+      mediaKind: firstText(raw?.media_kind, raw?.mediaKind, raw?.content_type, String(genre || '').toLowerCase().includes('anime') ? 'anime' : subjectType === 2 ? 'series' : 'movie'),
+      title: firstText(raw?.title, raw?.name, raw?.post_title, 'Untitled'),
     description: firstText(raw?.description, raw?.plot, ''),
     releaseDate: firstText(raw?.release_date, raw?.releaseDate, raw?.year ? String(raw.year) : ''),
     duration: raw?.duration_seconds ?? raw?.duration ?? '',
@@ -66,6 +67,26 @@ function normalizeMovie(raw = {}) {
     contentRating: firstText(raw?.content_rating, raw?.contentRating),
     hasResource: raw?.has_resource ?? raw?.hasResource ?? true,
   }
+}
+
+function normalizeAnime(raw = {}) {
+  return { ...normalizeMovie(raw), mediaKind: 'anime' }
+}
+
+function normalizeLive(raw = {}) {
+  return { ...normalizeMovie(raw), subjectType: 9, mediaKind: 'live', isLive: true }
+}
+
+function normalizeAnimeCollection(payload) {
+  return pickCollection(payload)
+    .map(normalizeAnime)
+    .filter(item => item.subjectId && item.title)
+}
+
+function normalizeLiveCollection(payload) {
+  return pickCollection(payload)
+    .map(normalizeLive)
+    .filter(item => item.subjectId && item.title)
 }
 
 function pickCollection(payload) {
@@ -108,6 +129,8 @@ function detailResponse(movie, extra = {}) {
 function daveType(type) {
   if (type === '1') return 'MOVIE'
   if (type === '2') return 'TV_SERIES'
+  if (type === 'anime' || type === '3') return 'ANIME'
+  if (type === 'live') return 'LIVE'
   return 'ALL'
 }
 
@@ -200,13 +223,13 @@ function downloadEntries(payload) {
   const root = unwrap(payload)
   const byQuality = root?.by_quality || root?.byQuality
   if (byQuality && typeof byQuality === 'object') return Object.values(byQuality)
-  for (const key of ['files', 'downloads', 'resources', 'results', 'items']) {
+  for (const key of ['files', 'downloads', 'resources', 'results', 'items', 'list', 'all_files', 'allFiles']) {
     if (Array.isArray(root?.[key])) return root[key]
   }
   return []
 }
 
-function normalizeDownloadFiles(payload, id, title) {
+function normalizeDownloadFiles(payload, id, title, kind = 'movie', season = '', episode = '') {
   return downloadEntries(payload).map((item, index) => {
     const resolution = asNumber(item?.resolution ?? item?.quality ?? item?.height, 0)
     const resourceId = firstText(item?.resource_id, item?.resourceId, String(index))
@@ -218,9 +241,53 @@ function normalizeDownloadFiles(payload, id, title) {
       codec: firstText(item?.codec, item?.codec_name),
       duration: item?.duration ?? 0,
       browserCompatible: item?.browser_compatible !== false,
-      downloadUrl: '/api/tools/movies?action=download&id=' + encodeURIComponent(id) + '&res=' + encodeURIComponent(resolution || 720) + '&resourceId=' + encodeURIComponent(resourceId) + '&title=' + encodeURIComponent(title || 'movie'),
+      downloadUrl: '/api/tools/movies?action=download&id=' + encodeURIComponent(id) + '&kind=' + encodeURIComponent(kind) + '&res=' + encodeURIComponent(resolution || 720) + '&resourceId=' + encodeURIComponent(resourceId) + '&title=' + encodeURIComponent(title || 'movie') + (season || item?.season ? '&se=' + encodeURIComponent(season || item.season) : '') + (episode || item?.episode ? '&ep=' + encodeURIComponent(episode || item.episode) : ''),
     }
   }).filter(item => item.resolution || item.filename)
+}
+
+function normalizeDubs(value) {
+  const source = Array.isArray(value) ? value : Object.values(value || {})
+  return source.map(item => typeof item === 'string' ? item : firstText(item?.lan_name, item?.language, item?.name, item?.lan_code, item?.title)).filter(Boolean)
+}
+
+function normalizeStreamPayload(payload) {
+  const root = unwrap(payload)
+  const streams = Array.isArray(root?.streams) ? root.streams : Array.isArray(root?.mp4_streams) ? root.mp4_streams : []
+  const selected = streams.find(item => String(item?.format || '').toLowerCase() === 'mp4') || streams[0] || {}
+  const url = firstText(root?.playback_url, root?.playbackUrl, root?.url, root?.stream_url, selected?.proxyUrl, selected?.proxy_url)
+  return {
+    url,
+    playbackUrl: url,
+    browserCompatible: root?.browser_compatible !== false,
+    available: root?.available !== false,
+    resolution: root?.resolution || selected?.resolution || 0,
+    availableQualities: root?.available_qualities || root?.availableQualities || streams.map(item => asNumber(item?.resolution)).filter(Boolean),
+    urls: mediaUrls(payload),
+  }
+}
+
+function normalizeAnimeDetail(payload) {
+  const root = unwrap(payload)
+  const base = normalizeAnime(root)
+  const totalEpisodes = Math.max(
+    asNumber(root?.season_numbers),
+    ...((root?.resource_detectors || []).map(item => asNumber(item?.total_episode)).filter(Boolean)),
+    0,
+  )
+  return {
+    ...base,
+    cast: normalizeStaff(payload),
+    dubs: normalizeDubs(root?.dubs),
+    subtitleLanguages: Array.isArray(root?.subtitles) ? root.subtitles.map(item => String(item)).filter(Boolean) : [],
+    totalEpisodes,
+  }
+}
+
+function animeFallbackSeasons(payload = {}) {
+  const root = unwrap(payload)
+  const total = Math.min(Math.max(asNumber(root?.season_numbers), ...((root?.resource_detectors || []).map(item => asNumber(item?.total_episode)).filter(Boolean)), 24), 100)
+  return [{ number: 1, episodes: Array.from({ length: total }, (_, index) => index + 1) }]
 }
 
 function normalizeCaptions(payload) {
@@ -397,10 +464,26 @@ export async function GET(req) {
   const episode = searchParams.get('ep') || searchParams.get('episode') || ''
   const title = searchParams.get('title') || 'movie'
   const resourceId = searchParams.get('resourceId') || ''
+  const kind = searchParams.get('kind') || ''
 
   if (action === 'stream' || action === 'download' || action === 'legacy-download') {
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
     try {
+      if (kind === 'anime' || kind === 'live') {
+        if (kind === 'live' && action !== 'stream') return NextResponse.json({ error: 'Live events are stream-only.' }, { status: 400 })
+        const location = action === 'stream'
+          ? daveBffStreamUrl(id, res, season, episode)
+          : daveDownloadProxyUrl(id, res, season, episode, title)
+        return new Response(null, {
+          status: 307,
+          headers: {
+            Location: location,
+            'Cache-Control': 'no-store, no-cache, must-revalidate',
+            'Access-Control-Allow-Origin': '*',
+            'Referrer-Policy': 'no-referrer',
+          },
+        })
+      }
       return await legacyMediaOrFallback({ id, res, season, episode, title, resourceId, request: req, download: action !== 'stream' })
     } catch (error) {
       console.error('[movies:media-final]', error.message)
@@ -432,6 +515,8 @@ export async function GET(req) {
 
     if (action === 'search') {
       if (!q.trim()) return NextResponse.json(listResponse([], { operation: 'movies.search' }))
+      if (type === 'anime') return NextResponse.json(listResponse(normalizeAnimeCollection(await daveJson('/anime/search?q=' + encodeURIComponent(q) + '&page=1&per_page=20')), { operation: 'anime.search' }))
+      if (type === 'live') return NextResponse.json(listResponse(normalizeLiveCollection(await daveJson('/live/search?q=' + encodeURIComponent(q) + '&page=1&per_page=20')), { operation: 'live.search' }))
       try {
         const legacy = await legacyJson('/api/search?keyword=' + encodeURIComponent(q) + (type ? '&type=' + encodeURIComponent(type) : ''))
         return NextResponse.json(listResponse(normalizeLegacyCollection(legacy), { operation: 'movies.search' }))
@@ -445,17 +530,33 @@ export async function GET(req) {
       return NextResponse.json(brandPublicResponse({ success: true, api: 'Toosii API', operation: 'movies.suggest', data: normalizeCollection(await daveJson('/suggest?q=' + encodeURIComponent(q) + '&limit=10')) } ))
     }
 
+    if (action === 'anime-home') {
+      const payload = await daveJson('/anime/home')
+      const sections = (unwrap(payload)?.sections || []).map(section => ({ title: firstText(section?.section_title, section?.title, 'Anime'), items: normalizeAnimeCollection(section) })).filter(section => section.items.length)
+      return NextResponse.json(brandPublicResponse({ success: true, api: 'Toosii API', operation: 'anime.home', data: { sections, subjectList: sections[0]?.items || [], items: sections.flatMap(section => section.items) } }))
+    }
+
+    if (action === 'live') return NextResponse.json(listResponse(normalizeLiveCollection(await daveJson('/live?page=1')), { operation: 'live.browse' }))
+    if (action === 'live-search') return NextResponse.json(listResponse(normalizeLiveCollection(await daveJson('/live/search?q=' + encodeURIComponent(q) + '&page=1&per_page=20')), { operation: 'live.search' }))
+
     const daveRail = {
-      'movie-popular': '/movie/popular?page=1',
-      'movie-new': '/movie/new?page=1&per_page=20',
-      'movie-top': '/movie/top?page=1&per_page=20',
-      'movie-genre': '/movie/genre?genre=' + encodeURIComponent(searchParams.get('genre') || 'Action') + '&page=1&per_page=20',
-      'tv-popular': '/tv/popular?page=1',
-      'tv-new': '/tv/new?page=1&per_page=20',
-      'tv-trending': '/tv/trending?page=1&per_page=20',
-      'tv-genre': '/tv/genre?genre=' + encodeURIComponent(searchParams.get('genre') || 'Drama') + '&page=1&per_page=20',
+      'movie-popular': ['/movie/popular?page=1', normalizeCollection],
+      'movie-new': ['/movie/new?page=1&per_page=20', normalizeCollection],
+      'movie-top': ['/movie/top?page=1&per_page=20', normalizeCollection],
+      'movie-genre': ['/movie/genre?genre=' + encodeURIComponent(searchParams.get('genre') || 'Action') + '&page=1&per_page=20', normalizeCollection],
+      'tv-popular': ['/tv/popular?page=1', normalizeCollection],
+      'tv-new': ['/tv/new?page=1&per_page=20', normalizeCollection],
+      'tv-trending': ['/tv/trending?page=1&per_page=20', normalizeCollection],
+      'tv-genre': ['/tv/genre?genre=' + encodeURIComponent(searchParams.get('genre') || 'Drama') + '&page=1&per_page=20', normalizeCollection],
+      'anime-trending': ['/anime/trending?sort=hot&page=1&per_page=20', normalizeAnimeCollection],
+      'anime-browse': ['/anime/browse?sort=forYou&genre=Animation&page=1&per_page=20', normalizeAnimeCollection],
     }[action]
-    if (daveRail) return NextResponse.json(listResponse(normalizeCollection(await daveJson(daveRail)), { operation: 'movies.' + action }))
+    if (daveRail) return NextResponse.json(listResponse(daveRail[1](await daveJson(daveRail[0])), { operation: 'media.' + action }))
+
+    if (action === 'anime-info') {
+      if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+      return NextResponse.json(detailResponse(normalizeAnimeDetail(await daveJson('/anime/info/' + encodeURIComponent(id))), { operation: 'anime.info' }))
+    }
 
     if (action === 'detail' || action === 'movie-info' || action === 'tv-info') {
       if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
@@ -468,10 +569,32 @@ export async function GET(req) {
       }
     }
 
+    if (action === 'anime-play') {
+      if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+      const payload = await daveJson('/anime/stream/' + encodeURIComponent(id) + '?resolution=' + encodeURIComponent(res) + (season ? '&season=' + encodeURIComponent(season) : '') + (episode ? '&episode=' + encodeURIComponent(episode) : ''))
+      const selectedSeason = Number(season) || 1
+      return NextResponse.json(brandPublicResponse({ success: true, api: 'Toosii API', operation: 'anime.stream', data: { ...normalizeStreamPayload(payload), isTV: true, seasons: [selectedSeason], seasonDetails: [{ number: selectedSeason, episodes: Array.from({ length: 24 }, (_, index) => index + 1) }] } }))
+    }
+
+    if (action === 'live-stream-meta') {
+      if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+      return NextResponse.json(brandPublicResponse({ success: true, api: 'Toosii API', operation: 'live.stream', data: normalizeStreamPayload(await daveJson('/live/stream/' + encodeURIComponent(id) + '?resolution=' + encodeURIComponent(res))) }))
+    }
+
     if (action === 'play') {
       if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
       try { return NextResponse.json(brandPublicResponse({ success: true, api: 'Toosii API', data: await legacyPlay(id) })) } catch {}
       return NextResponse.json(brandPublicResponse({ success: true, api: 'Toosii API', data: await davePlay(id) }))
+    }
+
+    if (action === 'anime-seasons') {
+      if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+      try {
+        return NextResponse.json(brandPublicResponse({ success: true, api: 'Toosii API', operation: 'anime.seasons', data: { seasons: normalizeSeasonDetails(await daveJson('/anime/seasons/' + encodeURIComponent(id))) } }))
+      } catch {
+        const info = await daveJson('/anime/info/' + encodeURIComponent(id))
+        return NextResponse.json(brandPublicResponse({ success: true, api: 'Toosii API', operation: 'anime.seasons', data: { seasons: animeFallbackSeasons(info), fallback: true } }))
+      }
     }
 
     if (action === 'seasons' || action === 'tv-seasons') {
@@ -512,13 +635,28 @@ export async function GET(req) {
       return NextResponse.json(brandPublicResponse({ success: true, api: 'Toosii API', operation: 'movies.dubs', data: root?.dubs || root?.languages || root }))
     }
 
+    if (action === 'anime-captions') {
+      if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+      const path = '/anime/captions/' + encodeURIComponent(id) + '?resolution=' + encodeURIComponent(res) + (season ? '&season=' + encodeURIComponent(season) : '') + (episode ? '&episode=' + encodeURIComponent(episode) : '')
+      return NextResponse.json(brandPublicResponse({ success: true, api: 'Toosii API', operation: 'anime.captions', data: normalizeCaptions(await daveJson(path)) }))
+    }
+
+    if (action === 'anime-downloads') {
+      if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+      const path = season && episode
+        ? '/anime/episode/download/' + encodeURIComponent(id) + '?season=' + encodeURIComponent(season) + '&episode=' + encodeURIComponent(episode) + '&resolution=' + encodeURIComponent(res)
+        : '/anime/download/' + encodeURIComponent(id) + '?resolution=' + encodeURIComponent(res)
+      const payload = await daveJson(path)
+      return NextResponse.json(brandPublicResponse({ success: true, api: 'Toosii API', operation: 'anime.downloads', data: { files: normalizeDownloadFiles(payload, id, title, 'anime', season, episode), rawResourceCount: downloadEntries(payload).length } }))
+    }
+
     if (action === 'resources' || action === 'downloads') {
       if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
       const path = action === 'resources'
         ? '/item/' + encodeURIComponent(id) + '/resources'
         : '/item/' + encodeURIComponent(id) + '/downloads?resolution=' + encodeURIComponent(res) + (season && episode ? '&season=' + encodeURIComponent(season) + '&episode=' + encodeURIComponent(episode) : '')
       const payload = await daveJson(path)
-      return NextResponse.json(brandPublicResponse({ success: true, api: 'Toosii API', operation: 'movies.' + action, data: { files: action === 'downloads' ? normalizeDownloadFiles(payload, id, title) : downloadEntries(payload), rawResourceCount: downloadEntries(payload).length } }))
+      return NextResponse.json(brandPublicResponse({ success: true, api: 'Toosii API', operation: 'movies.' + action, data: { files: action === 'downloads' ? normalizeDownloadFiles(payload, id, title, 'movie', season, episode) : downloadEntries(payload), rawResourceCount: downloadEntries(payload).length } }))
     }
 
     if (action === 'captions') {
@@ -529,8 +667,12 @@ export async function GET(req) {
 
     if (action === 'stream-meta') {
       if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
-      const path = season && episode ? '/tv/episode/stream/' + encodeURIComponent(id) + '?season=' + encodeURIComponent(season) + '&episode=' + encodeURIComponent(episode) + '&resolution=' + encodeURIComponent(res) : '/stream/' + encodeURIComponent(id) + '?resolution=' + encodeURIComponent(res)
-      return NextResponse.json(brandPublicResponse({ success: true, api: 'Toosii API', operation: 'movies.stream', data: { urls: mediaUrls(await daveJson(path)) } }))
+      const path = kind === 'anime'
+        ? '/anime/stream/' + encodeURIComponent(id) + '?resolution=' + encodeURIComponent(res) + (season ? '&season=' + encodeURIComponent(season) : '') + (episode ? '&episode=' + encodeURIComponent(episode) : '')
+        : kind === 'live'
+          ? '/live/stream/' + encodeURIComponent(id) + '?resolution=' + encodeURIComponent(res)
+          : season && episode ? '/tv/episode/stream/' + encodeURIComponent(id) + '?season=' + encodeURIComponent(season) + '&episode=' + encodeURIComponent(episode) + '&resolution=' + encodeURIComponent(res) : '/stream/' + encodeURIComponent(id) + '?resolution=' + encodeURIComponent(res)
+      return NextResponse.json(brandPublicResponse({ success: true, api: 'Toosii API', operation: 'media.stream', data: { urls: mediaUrls(await daveJson(path)) } }))
     }
 
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
