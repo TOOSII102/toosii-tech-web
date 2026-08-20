@@ -97,6 +97,12 @@ function detailResponse(movie, extra = {}) {
   })
 }
 
+function normalizeLegacyCollection(payload) {
+  return (payload?.data?.subjectList || payload?.data?.items || payload?.data?.results || [])
+    .map(normalizeMovie)
+    .filter(movie => movie.subjectId && movie.title)
+}
+
 async function daveJson(path) {
   const response = await fetch(DAVEX_BASE + path, {
     headers: DAVE_JSON_HEADERS,
@@ -206,15 +212,15 @@ async function legacyPlay(id) {
   let imdbId = null
   let seasons = []
 
-  if (item) {
-    if (!isTV) {
-      const movie = await legacyJson('/api/showbox/movie?id=' + encodeURIComponent(item.id))
-      imdbId = movie?.data?.imdb_id || null
-    } else {
-      const tv = await legacyJson('/api/showbox/tv?id=' + encodeURIComponent(item.id) + '&season=1&episode=1')
-      imdbId = tv?.data?.imdb_id || null
-      seasons = Array.isArray(tv?.data?.season) ? tv.data.season.map(asNumber).filter(Boolean) : [1]
-    }
+  if (!item) throw new Error('legacy playback item not found')
+
+  if (!isTV) {
+    const movie = await legacyJson('/api/showbox/movie?id=' + encodeURIComponent(item.id))
+    imdbId = movie?.data?.imdb_id || null
+  } else {
+    const tv = await legacyJson('/api/showbox/tv?id=' + encodeURIComponent(item.id) + '&season=1&episode=1')
+    imdbId = tv?.data?.imdb_id || null
+    seasons = Array.isArray(tv?.data?.season) ? tv.data.season.map(asNumber).filter(Boolean) : [1]
   }
 
   return { isTV, imdbId, seasons }
@@ -249,6 +255,16 @@ export async function GET(req) {
     }
 
     const isDownload = action === 'download'
+    try {
+      return await fetchMedia(legacyStreamUrl(id, res, season, episode), req, {
+        download: isDownload,
+        filename,
+        headers: LEGACY_BROWSER_HEADERS,
+      })
+    } catch (error) {
+      console.warn('[movies:legacy-primary-media]', error.message)
+    }
+
     const daveMediaUrls = isDownload
       ? [daveDownloadUrl(id, res, season, episode, title), daveStreamUrl(id, res, season, episode)]
       : [daveStreamUrl(id, res, season, episode)]
@@ -263,27 +279,24 @@ export async function GET(req) {
           })
         } catch (error) {
           lastError = error
-          console.warn('[movies:dave-media]', mediaUrl.includes('/download') ? 'download ' + error.message : 'bff ' + error.message)
+          console.warn('[movies:davex-fallback-media]', mediaUrl.includes('/download') ? 'download ' + error.message : 'bff ' + error.message)
         }
       }
       throw lastError || new Error('media unavailable')
     } catch (error) {
-      console.error('[movies:dave-media-final]', error.message)
-      try {
-        return await fetchMedia(legacyStreamUrl(id, res, season, episode), req, {
-          download: isDownload,
-          filename,
-          headers: LEGACY_BROWSER_HEADERS,
-        })
-      } catch (fallbackError) {
-        console.error('[movies:legacy-media]', fallbackError.message)
-        return NextResponse.json({ error: isDownload ? 'Movie download is temporarily unavailable. Try again shortly.' : 'Movie stream is temporarily unavailable. Try another server or try again shortly.' }, { status: 502 })
-      }
+      console.error('[movies:fallback-media-final]', error.message)
+      return NextResponse.json({ error: isDownload ? 'Movie download is temporarily unavailable. Try again shortly.' : 'Movie stream is temporarily unavailable. Try another server or try again shortly.' }, { status: 502 })
     }
   }
 
   if (action === 'play') {
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+    try {
+      return NextResponse.json({ success: true, api: 'Toosii API', data: { ...(await legacyPlay(id)), seasonDetails: [] } })
+    } catch (error) {
+      console.warn('[movies:legacy-primary-play]', error.message)
+    }
+
     try {
       const detail = await daveJson('/item/' + encodeURIComponent(id))
       const movie = normalizeMovie(detail)
@@ -317,71 +330,67 @@ export async function GET(req) {
         data: { isTV, imdbId: detail?.imdb_id || detail?.imdbId || null, seasons, seasonDetails },
       }))
     } catch (error) {
-      console.error('[movies:dave-play]', error.message)
-      try {
-        return NextResponse.json({ success: true, api: 'Toosii API', data: { ...(await legacyPlay(id)), seasonDetails: [] } })
-      } catch (fallbackError) {
-        console.error('[movies:legacy-play]', fallbackError.message)
-        return NextResponse.json({ error: 'Movie playback information is temporarily unavailable. Try again shortly.' }, { status: 502 })
-      }
+      console.error('[movies:davex-fallback-play]', error.message)
+      return NextResponse.json({ error: 'Movie playback information is temporarily unavailable. Try again shortly.' }, { status: 502 })
     }
   }
 
   try {
     if (action === 'trending') {
       try {
-        return NextResponse.json(listResponse(normalizeCollection(await daveJson('/trending?tab=0&page=1')), { operation: 'movies.trending' }))
-      } catch (error) {
-        console.error('[movies:dave-trending]', error.message)
         const legacy = await legacyJson('/api/trending')
-        return NextResponse.json(listResponse((legacy?.data?.subjectList || []).map(normalizeMovie), { operation: 'movies.trending' }))
+        return NextResponse.json(listResponse(normalizeLegacyCollection(legacy), { operation: 'movies.trending' }))
+      } catch (error) {
+        console.warn('[movies:legacy-primary-trending]', error.message)
+        return NextResponse.json(listResponse(normalizeCollection(await daveJson('/trending?tab=0&page=1')), { operation: 'movies.trending' }))
       }
     }
 
     if (action === 'hot') {
       try {
-        return NextResponse.json(listResponse(normalizeCollection(await daveJson('/hot?page=1')), { operation: 'movies.hot' }))
-      } catch (error) {
-        console.error('[movies:dave-hot]', error.message)
         const legacy = await legacyJson('/api/hot')
-        return NextResponse.json(listResponse((legacy?.data?.subjectList || []).map(normalizeMovie), { operation: 'movies.hot' }))
+        return NextResponse.json(listResponse(normalizeLegacyCollection(legacy), { operation: 'movies.hot' }))
+      } catch (error) {
+        console.warn('[movies:legacy-primary-hot]', error.message)
+        return NextResponse.json(listResponse(normalizeCollection(await daveJson('/hot?page=1')), { operation: 'movies.hot' }))
       }
     }
 
     if (action === 'search') {
       if (!q.trim()) return NextResponse.json(listResponse([], { operation: 'movies.search' }))
       try {
+        const legacy = await legacyJson('/api/search?keyword=' + encodeURIComponent(q) + (type ? '&type=' + encodeURIComponent(type) : ''))
+        return NextResponse.json(listResponse(normalizeLegacyCollection(legacy), { operation: 'movies.search' }))
+      } catch (error) {
+        console.warn('[movies:legacy-primary-search]', error.message)
         const path = '/search?q=' + encodeURIComponent(q) + '&type=' + daveType(type) + '&page=1&per_page=20'
         return NextResponse.json(listResponse(normalizeCollection(await daveJson(path)), { operation: 'movies.search' }))
-      } catch (error) {
-        console.error('[movies:dave-search]', error.message)
-        const legacy = await legacyJson('/api/search?keyword=' + encodeURIComponent(q) + (type ? '&type=' + encodeURIComponent(type) : ''))
-        return NextResponse.json(listResponse((legacy?.data?.items || legacy?.data?.subjectList || []).map(normalizeMovie), { operation: 'movies.search' }))
       }
     }
 
     if (action === 'detail') {
       if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
       try {
-        return NextResponse.json(detailResponse(normalizeMovie(await daveJson('/item/' + encodeURIComponent(id))), { operation: 'movies.detail' }))
+        const legacy = await legacyJson('/api/rich-detail?subjectId=' + encodeURIComponent(id))
+        return NextResponse.json(detailResponse(normalizeMovie(legacy?.data), { operation: 'movies.detail' }))
       } catch (error) {
-        console.error('[movies:dave-detail]', error.message)
-        return NextResponse.json(detailResponse(normalizeMovie((await legacyJson('/api/rich-detail?subjectId=' + encodeURIComponent(id)))?.data), { operation: 'movies.detail' }))
+        console.warn('[movies:legacy-primary-detail]', error.message)
+        return NextResponse.json(detailResponse(normalizeMovie(await daveJson('/item/' + encodeURIComponent(id))), { operation: 'movies.detail' }))
       }
     }
 
     if (action === 'recommend') {
       if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
       try {
+        const legacy = await legacyJson('/api/recommend?subjectId=' + encodeURIComponent(id) + '&page=1&perPage=12')
+        return NextResponse.json(listResponse(normalizeLegacyCollection(legacy), { operation: 'movies.recommend' }))
+      } catch (error) {
+        console.warn('[movies:legacy-primary-recommend]', error.message)
         const detail = normalizeMovie(await daveJson('/item/' + encodeURIComponent(id)))
         const path = detail.subjectType === 2
           ? '/tv/recommend/' + encodeURIComponent(id) + '?limit=12'
           : '/movie/recommend/' + encodeURIComponent(id) + '?limit=12'
         return NextResponse.json(listResponse(normalizeCollection(await daveJson(path)), { operation: 'movies.recommend' }))
-      } catch (error) {
-        console.error('[movies:dave-recommend]', error.message)
-        const legacy = await legacyJson('/api/recommend?subjectId=' + encodeURIComponent(id) + '&page=1&perPage=12')
-        return NextResponse.json(listResponse((legacy?.data?.subjectList || legacy?.data?.items || []).map(normalizeMovie), { operation: 'movies.recommend' }))
       }
     }
 
