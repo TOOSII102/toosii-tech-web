@@ -234,14 +234,28 @@ function normalizeTrailer(payload) {
   }
 }
 
+async function fetchWithTimeout(url, options, timeout, label) {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeout)
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal })
+    return response
+  } catch (error) {
+    if (error?.name === 'AbortError') throw new Error((label || 'upstream') + ' timeout')
+    throw error
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 async function daveJson(path) {
-  const response = await fetch(DAVEX_BASE + path, { headers: DAVE_JSON_HEADERS, signal: AbortSignal.timeout(15000) })
+  const response = await fetchWithTimeout(DAVEX_BASE + path, { headers: DAVE_JSON_HEADERS }, 15000, 'Dave service')
   if (!response.ok) throw new Error('Dave service ' + response.status + ': ' + path)
   return response.json()
 }
 
 async function legacyJson(path) {
-  const response = await fetch(LEGACY_BASE + path, { headers: LEGACY_JSON_HEADERS, signal: AbortSignal.timeout(12000) })
+  const response = await fetchWithTimeout(LEGACY_BASE + path, { headers: LEGACY_JSON_HEADERS }, 12000, 'Legacy service')
   if (!response.ok) throw new Error('Legacy service ' + response.status + ': ' + path)
   return response.json()
 }
@@ -259,11 +273,10 @@ function mediaResponse(upstream, { download = false, filename = 'movie.mp4' } = 
 async function fetchMedia(url, request, { download = false, timeout = 90000, filename = 'movie.mp4', headers = {} } = {}) {
   if (!isSafeMediaUrl(url)) throw new Error('unsafe-media-host')
   const range = request.headers.get('range') || ''
-  const upstream = await fetch(url, {
+  const upstream = await fetchWithTimeout(url, {
     headers: { ...headers, Accept: 'video/mp4,video/webm,video/*,application/octet-stream,*/*;q=0.9', ...(range ? { Range: range } : {}) },
     redirect: 'follow',
-    signal: AbortSignal.timeout(timeout),
-  })
+  }, timeout, 'media')
   if (!upstream.ok) throw new Error('media ' + upstream.status)
   const type = upstream.headers.get('content-type') || ''
   if (!type.includes('video') && !type.includes('octet-stream') && !type.includes('mp4')) throw new Error('not-media')
@@ -322,14 +335,15 @@ async function daveMediaMetadata(id, res, season, episode, title, resourceId = '
 async function legacyMediaOrFallback({ id, res, season, episode, title, resourceId, request, download }) {
   const filename = safeFilename(title, res, season, episode)
   try {
-    return await fetchMedia(legacyStreamUrl(id, res, season, episode), request, { download, filename, headers: LEGACY_BROWSER_HEADERS })
+    return await fetchMedia(legacyStreamUrl(id, res, season, episode), request, { download, filename, headers: LEGACY_BROWSER_HEADERS, timeout: 20000 })
   } catch (error) {
     console.warn('[movies:legacy-primary-media]', error.message)
   }
 
-  const candidates = []
-  if (download) candidates.push(...await daveMediaMetadata(id, res, season, episode, title, resourceId || request.headers.get('x-resource-id') || ''))
-  candidates.push(daveBffStreamUrl(id, res, season, episode))
+  const candidates = [daveBffStreamUrl(id, res, season, episode)]
+  if (download) {
+    candidates.push(...await daveMediaMetadata(id, res, season, episode, title, resourceId || request.headers.get('x-resource-id') || ''))
+  }
   if (!download) {
     const streamPath = season && episode
       ? '/tv/episode/stream/' + encodeURIComponent(id) + '?season=' + encodeURIComponent(season) + '&episode=' + encodeURIComponent(episode) + '&resolution=' + encodeURIComponent(res || 720)
@@ -340,7 +354,7 @@ async function legacyMediaOrFallback({ id, res, season, episode, title, resource
   let lastError = null
   for (const mediaUrl of [...new Set(candidates)]) {
     try {
-      return await fetchMedia(mediaUrl, request, { download, filename, headers: DAVE_JSON_HEADERS })
+      return await fetchMedia(mediaUrl, request, { download, filename, headers: DAVE_JSON_HEADERS, timeout: 20000 })
     } catch (error) {
       lastError = error
       console.warn('[movies:davex-fallback-media]', error.message)
