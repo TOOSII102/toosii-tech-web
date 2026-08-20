@@ -5,7 +5,6 @@
   import './movies.css'
 
   const API  = '/api/tools/movies'
-  const XCSP = 'https://movieapi.xcasper.space/api/bff/stream'
   const RESS = [1080, 720, 480, 360]
 
   /* ── utils ── */
@@ -50,24 +49,17 @@
     return (se && ep) ? srv.tv(imdbId, se, ep) : srv.movie(imdbId)
   }
 
-  /* Build xcasper direct URL (Option A — no-referrer) */
-  function xcUrl(subjectId, res, se, ep) {
-    let u = XCSP + '?subjectId=' + encodeURIComponent(subjectId) + '&resolution=' + res
-    if (se && ep) u += '&se=' + se + '&ep=' + ep
-    return u
-  }
-
-  /* Build xcasper proxy URL (Option B) */
-  function xcProxy(subjectId, res, se, ep) {
+  /* Toosii API media URLs. The server route keeps the provider hidden, forwards ranges, and falls back safely. */
+  function streamUrl(subjectId, res, se, ep) {
     let u = API + '?action=stream&id=' + encodeURIComponent(subjectId) + '&res=' + res
     if (se && ep) u += '&se=' + se + '&ep=' + ep
     return u
   }
 
-  /* Build xcasper download URL */
-  function xcDownload(subjectId, res, se, ep) {
+  function downloadUrl(subjectId, res, se, ep, title) {
     let u = API + '?action=download&id=' + encodeURIComponent(subjectId) + '&res=' + res
     if (se && ep) u += '&se=' + se + '&ep=' + ep
+    if (title) u += '&title=' + encodeURIComponent(title)
     return u
   }
 
@@ -163,9 +155,15 @@
     const tv     = isTV(d)
     const poster = cover(d)
 
-    /* season list: from ShowBox if available, else [1] */
+    /* Season and episode data: use Dave’s real availability, then keep a safe fallback for older titles. */
     const seasons = playData?.seasons?.length ? playData.seasons : (tv ? [1] : [])
-    const EP_PER  = 24  /* show 24 episode buttons per season */
+    const seasonDetails = Array.isArray(playData?.seasonDetails) ? playData.seasonDetails : []
+    const episodesForSeason = season => {
+      const details = seasonDetails.find(item => Number(item?.number) === Number(season))
+      return details?.episodes?.length ? details.episodes : Array.from({ length: 24 }, (_, index) => index + 1)
+    }
+    const currentEpisodes = episodesForSeason(se)
+    const EP_PER = currentEpisodes.length
 
     function scrollToPlayer() {
       setTimeout(() => document.querySelector('.mv-player-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
@@ -184,9 +182,8 @@
     /* derive current player src */
     const imdbId  = playData?.imdbId || null
     const vsSrc   = imdbId ? embedUrl(player, imdbId, tv ? se : null, tv ? ep : null) : null
-    const xcSrc  = xcUrl(movie.subjectId, res, tv ? se : '', tv ? ep : '')
-    const pxSrc  = xcProxy(movie.subjectId, res, tv ? se : '', tv ? ep : '')
-    const dlSrc  = API + '?action=download&id=' + encodeURIComponent(movie.subjectId) + '&res=' + res + (tv && se && ep ? '&se=' + se + '&ep=' + ep : '')
+    const pxSrc   = streamUrl(movie.subjectId, res, tv ? se : '', tv ? ep : '')
+    const dlSrc   = downloadUrl(movie.subjectId, res, tv ? se : '', tv ? ep : '', d.title)
 
     return (
       <div className="mv-modal-backdrop" onClick={e => { if (e.target === e.currentTarget) close() }}>
@@ -256,8 +253,8 @@
                   <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
                     <span style={{ fontSize: '0.72rem', color: '#475569', marginRight: '0.25rem' }}>Player:</span>
                     {[
-                      { id: 'direct', label: '⚡ Direct',  title: 'Direct xcasper stream' },
-                      { id: 'proxy',  label: '▶ Stream',  title: 'Ad-free native player (recommended)' },
+                      { id: 'direct', label: '⚡ Toosii',  title: 'Toosii API range-aware MP4 stream' },
+                      { id: 'proxy',  label: '▶ Safe stream',  title: 'Toosii API same-origin media stream' },
                     ].map(opt => (
                       <button key={opt.id} title={opt.title}
                         onClick={() => { setPlayer(opt.id); if (!playing) setPlaying(true) }}
@@ -289,7 +286,7 @@
                         {r}p
                       </button>
                     ))}
-                    <DlButton xcSrc={xcSrc} res={res} />
+                    <DlButton downloadSrc={dlSrc} res={res} />
                   </div>
 
                   {playing ? (
@@ -341,7 +338,7 @@
                   )}
 
                   <p style={{ fontSize: '0.72rem', color: '#334155', margin: '0.6rem 0 0', padding: '0 0.25rem' }}>
-                    {player === 'vidsrc' ? '▶ VidSrc stream' : player === 'direct' ? '⚡ Direct xcasper · ' + res + 'p (no-referrer)' : '🔀 Proxy xcasper · ' + res + 'p'}
+                    {player === 'vidsrc' ? '▶ VidSrc stream' : player === 'direct' ? '⚡ Toosii API · ' + res + 'p (range-aware)' : '🔀 Toosii API · ' + res + 'p (same-origin)'}
                     {tv ? ' · S' + se + ' E' + ep : ''}
                     {VS_SERVERS.some(s => s.id === player) && !imdbId && ' · IMDB ID unavailable for this title'}
                   </p>
@@ -371,7 +368,7 @@
                           disabled={ep <= 1 && se <= seasons[0]}
                           onClick={() => {
                             if (ep > 1) { const next = ep - 1; setEp(next); watchEp(se, next) }
-                            else if (se > seasons[0]) { const ps = seasons[seasons.indexOf(se) - 1]; setSe(ps); setEp(EP_PER); watchEp(ps, EP_PER) }
+                            else if (se > seasons[0]) { const ps = seasons[seasons.indexOf(se) - 1]; const previousEpisode = episodesForSeason(ps).length; setSe(ps); setEp(previousEpisode); watchEp(ps, previousEpisode) }
                           }}>
                           ← Prev
                         </button>
@@ -386,7 +383,7 @@
                     </div>
                     {/* Scrollable episode strip */}
                     <div className="mv-eps-strip">
-                      {Array.from({ length: EP_PER }, (_, i) => i + 1).map(e => (
+                      {currentEpisodes.map(e => (
                         <button key={e}
                           className={'mv-eps-ep' + (ep === e && playing ? ' active' : '')}
                           onClick={() => watchEp(se, e)}>
@@ -651,15 +648,15 @@ function StableVideo({ src }) {
 
 
 /* ── Browser-side download: fetches directly from xcasper so no server proxy needed ── */
-function DlButton({ xcSrc, res }) {
+function DlButton({ downloadSrc, res }) {
   const [dlState, setDlState] = useState('idle') // 'idle' | 'loading' | 'error'
   const [pct, setPct] = useState(0)
 
   async function handleDownload() {
     setDlState('loading'); setPct(0)
     try {
-      const resp = await fetch(xcSrc, {
-        headers: { Accept: 'video/mp4,video/*,*/*', 'Referer': 'https://xcasper.space/' },
+      const resp = await fetch(downloadSrc, {
+        headers: { Accept: 'video/mp4,video/*,*/*' },
       })
       if (!resp.ok) throw new Error('Source returned ' + resp.status + '. It may be temporarily down.')
 
@@ -679,10 +676,12 @@ function DlButton({ xcSrc, res }) {
         loaded += value.length
         if (total) setPct(Math.round((loaded / total) * 100))
       }
-      const blob = new Blob(chunks, { type: 'video/mp4' })
+      const blob = new Blob(chunks, { type: contentType || 'video/mp4' })
       const url  = URL.createObjectURL(blob)
       const a    = document.createElement('a')
-      a.href = url; a.download = `movie-${res}p.mp4`
+      const disposition = resp.headers.get('content-disposition') || ''
+      const filenameMatch = disposition.match(/filename\*?=(?:UTF-8''|\"|')?([^\"';]+)\"?$/i)
+      a.href = url; a.download = filenameMatch ? decodeURIComponent(filenameMatch[1]) : `movie-${res}p.mp4`
       document.body.appendChild(a); a.click()
       document.body.removeChild(a)
       setTimeout(() => URL.revokeObjectURL(url), 10000)
