@@ -263,7 +263,7 @@ export async function GET(req) {
           })
         } catch (error) {
           lastError = error
-          console.error('[movies:dave-media]', mediaUrl.includes('/download') ? 'download ' + error.message : 'bff ' + error.message)
+          console.warn('[movies:dave-media]', mediaUrl.includes('/download') ? 'download ' + error.message : 'bff ' + error.message)
         }
       }
       throw lastError || new Error('media unavailable')
