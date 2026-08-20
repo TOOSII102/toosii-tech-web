@@ -99,9 +99,10 @@ function Rail({ title, items, onSelect, onShare }) {
   )
 }
 
-function DownloadButton({ href, label, size }) {
+function DownloadButton({ href, label, size, filename }) {
+  const fallbackName = `${String(label || 'movie').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'movie'}.mp4`
   return (
-    <a className="mv-download-btn" href={href} download>
+    <a className="mv-download-btn" href={href} download={filename || fallbackName} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">
       <span>⬇ {label}</span>
       {size ? <span className="mv-download-size">{size}</span> : null}
     </a>
@@ -277,7 +278,7 @@ function Modal({ movie, onClose, onSelect, onShare }) {
                 <button className={player === 'direct' ? 'mv-source-btn active' : 'mv-source-btn'} onClick={() => { setPlayer('direct'); setPlaying(true) }}>⚡ Toosii</button>
                 <button className={player === 'proxy' ? 'mv-source-btn active' : 'mv-source-btn'} onClick={() => { setPlayer('proxy'); setPlaying(true) }}>▶ Safe stream</button>
               </div>
-              <div className="mv-quality-row"><span className="mv-quality-label">Quality</span>{RESOLUTIONS.map(value => <button key={value} className={`mv-quality-btn${resolution === value ? ' active' : ''}`} onClick={() => setResolution(value)}>{value}p</button>)}<DownloadButton href={directDownload} label={`Download ${resolution}p`} /></div>
+              <div className="mv-quality-row"><span className="mv-quality-label">Quality</span>{RESOLUTIONS.map(value => <button key={value} className={`mv-quality-btn${resolution === value ? ' active' : ''}`} onClick={() => setResolution(value)}>{value}p</button>)}<DownloadButton href={directDownload} label={`Download ${resolution}p`} filename={`${positionedTitle(d.title, tv ? season : '', tv ? episode : '')}-${resolution}p.mp4`} /></div>
               {playing ? (player === 'direct' ? <StableVideo src={stream} captions={captions} poster={cover(d)} /> : <video className="mv-video" src={stream} controls autoPlay playsInline preload="metadata" />) : <div className="mv-video-wrap mv-video-placeholder" onClick={() => setPlaying(true)}><img src={cover(d)} alt="" /><div className="mv-placeholder-content"><span className="mv-play-large">▶</span><span>{tv ? `Select an episode or play S${season} E${episode}` : 'Click to stream'}</span></div></div>}
               <p className="mv-stream-caption">⚡ Toosii API · {resolution}p range-aware MP4{tv ? ` · S${season} E${episode}` : ''}</p>
             </section>
@@ -287,7 +288,7 @@ function Modal({ movie, onClose, onSelect, onShare }) {
               <div className="mv-eps-strip">{currentEpisodes.map(value => <button key={value} className={`mv-eps-ep${Number(episode) === Number(value) && playing ? ' active' : ''}`} onClick={() => watchEpisode(season, value)}><span className="mv-eps-ep-num">E{value}</span><span className="mv-eps-ep-label">Episode {value}</span></button>)}</div>
             </section>}
 
-            {downloads.length > 0 && <section className="mv-download-section"><div className="mv-download-head">⬇ Available downloads <span className="mv-count">{downloads.length} files</span></div><div className="mv-download-grid">{downloads.map(file => <DownloadButton key={`${file.resourceId}-${file.resolution}`} href={file.downloadUrl} label={`${file.resolution || resolution}p`} size={file.size ? `${Math.round(Number(file.size) / 1048576)} MB` : ''} />)}</div></section>}
+            {downloads.length > 0 && <section className="mv-download-section"><div className="mv-download-head">⬇ Available downloads <span className="mv-count">{downloads.length} files</span></div><div className="mv-download-grid">{downloads.map(file => <DownloadButton key={`${file.resourceId}-${file.resolution}`} href={file.downloadUrl} label={`${file.resolution || resolution}p`} filename={file.filename} size={file.size ? `${Math.round(Number(file.size) / 1048576)} MB` : ''} />)}</div></section>}
 
             <div className="mv-detail-grid">
               <DetailChips title="Available dubs" items={dubs} className="mv-dub-chip" />
