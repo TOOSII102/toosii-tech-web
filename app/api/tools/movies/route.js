@@ -149,8 +149,8 @@ function legacyStreamUrl(id, res, season, episode) {
 function daveBffStreamUrl(id, res, season, episode) {
   const params = new URLSearchParams({ resolution: String(res || 720) })
   if (season && episode) {
-    params.set('se', String(season))
-    params.set('ep', String(episode))
+    params.set('season', String(season))
+    params.set('episode', String(episode))
   }
   return DAVEX_BASE + '/bff/stream/' + encodeURIComponent(id) + '?' + params.toString()
 }
