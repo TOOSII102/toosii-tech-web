@@ -31,6 +31,18 @@ const LEGACY_JSON_HEADERS = {
   'Sec-Fetch-Mode': 'cors',
 }
 
+const SOURCE_CACHE_TTL = 60 * 1000
+const SOURCE_STALE_TTL = 15 * 60 * 1000
+const PROVIDER_FAILURE_WINDOW = 60 * 1000
+const PROVIDER_FAILURE_THRESHOLD = 3
+const PROVIDER_COOLDOWN = 30 * 1000
+const SOURCE_CACHE_MAX = 500
+
+const runtimeStore = globalThis.__toosiiMovieRuntimeStore || (globalThis.__toosiiMovieRuntimeStore = {
+  sourceCache: new Map(),
+  providerHealth: new Map(),
+})
+
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
@@ -152,6 +164,12 @@ function daveBffStreamUrl(id, res, season, episode) {
     params.set('season', String(season))
     params.set('episode', String(episode))
   }
+  return DAVEX_BASE + '/bff/stream/' + encodeURIComponent(id) + '?' + params.toString()
+}
+
+function daveBffVariantUrl(id, res, season, episode) {
+  if (!season || !episode) return ''
+  const params = new URLSearchParams({ resolution: String(res || 720), se: String(season), ep: String(episode) })
   return DAVEX_BASE + '/bff/stream/' + encodeURIComponent(id) + '?' + params.toString()
 }
 
@@ -415,12 +433,51 @@ async function daveMediaMetadata(id, res, season, episode, title, resourceId = '
   return [...new Set(candidates)]
 }
 
+function sourceCacheKey({ id, res, season, episode, download }) {
+  return [download ? 'download' : 'stream', String(id), String(res || 720), String(season || ''), String(episode || '')].join(':')
+}
+
+function putSourceCache(key, value) {
+  if (!runtimeStore.sourceCache.has(key) && runtimeStore.sourceCache.size >= SOURCE_CACHE_MAX) {
+    const oldestKey = runtimeStore.sourceCache.keys().next().value
+    if (oldestKey) runtimeStore.sourceCache.delete(oldestKey)
+  }
+  runtimeStore.sourceCache.set(key, value)
+}
+
+function providerHealthKey(provider, download) {
+  return provider + ':' + (download ? 'download' : 'stream')
+}
+
+function providerCircuitOpen(provider, download) {
+  const health = runtimeStore.providerHealth.get(providerHealthKey(provider, download))
+  return Boolean(health?.openUntil && health.openUntil > Date.now())
+}
+
+function noteProviderSuccess(provider, download) {
+  runtimeStore.providerHealth.set(providerHealthKey(provider, download), { failures: 0, openUntil: 0, lastSuccessAt: Date.now() })
+}
+
+function noteProviderFailure(provider, download) {
+  const key = providerHealthKey(provider, download)
+  const now = Date.now()
+  const previous = runtimeStore.providerHealth.get(key) || { failures: 0, openUntil: 0 }
+  const failures = previous.lastFailureAt && now - previous.lastFailureAt < PROVIDER_FAILURE_WINDOW ? previous.failures + 1 : 1
+  runtimeStore.providerHealth.set(key, {
+    failures,
+    lastFailureAt: now,
+    openUntil: failures >= PROVIDER_FAILURE_THRESHOLD ? now + PROVIDER_COOLDOWN : 0,
+    lastSuccessAt: previous.lastSuccessAt || 0,
+  })
+}
+
 async function probeMediaUrl(url, label) {
   if (!isSafeMediaUrl(url)) throw new Error('unsafe-media-host')
   const response = await fetchWithTimeout(url, {
     headers: {
       ...DAVE_JSON_HEADERS,
       Accept: 'video/mp4,video/webm,video/*,application/octet-stream,*/*;q=0.9',
+      'Accept-Encoding': 'identity',
       Range: 'bytes=0-1023',
     },
     redirect: 'follow',
@@ -433,7 +490,34 @@ async function probeMediaUrl(url, label) {
   return response
 }
 
-function mediaRedirect(url) {
+async function resolveDaveSource({ urls, cacheKey, download, force = false }) {
+  const now = Date.now()
+  const candidates = [...new Set((urls || []).filter(Boolean))]
+  const cached = runtimeStore.sourceCache.get(cacheKey)
+  if (!force && cached?.expiresAt > now && !providerCircuitOpen('dave', download)) {
+    return { url: cached.url, cacheState: 'hit', verifiedAt: cached.verifiedAt }
+  }
+  if (providerCircuitOpen('dave', download)) {
+    if (cached?.verifiedAt && now - cached.verifiedAt < SOURCE_STALE_TTL) return { url: cached.url, cacheState: 'stale-circuit' }
+    throw new Error('dave-circuit-open')
+  }
+  const failures = []
+  for (const url of candidates) {
+    try {
+      await probeMediaUrl(url, download ? 'Dave download probe' : 'Dave stream probe')
+      noteProviderSuccess('dave', download)
+      putSourceCache(cacheKey, { url, verifiedAt: now, expiresAt: now + SOURCE_CACHE_TTL })
+      return { url, cacheState: cached ? 'revalidated' : 'validated', verifiedAt: now }
+    } catch (error) {
+      failures.push(error.message)
+    }
+  }
+  noteProviderFailure('dave', download)
+  if (cached?.verifiedAt && now - cached.verifiedAt < SOURCE_STALE_TTL) return { url: cached.url, cacheState: 'stale-error', error: failures.join('; ') }
+  throw new Error(failures.join('; ') || 'dave-no-source')
+}
+
+function mediaRedirect(url, extraHeaders = {}) {
   return new Response(null, {
     status: 307,
     headers: {
@@ -441,29 +525,36 @@ function mediaRedirect(url) {
       'Cache-Control': 'no-store, no-cache, must-revalidate',
       'Access-Control-Allow-Origin': '*',
       'Referrer-Policy': 'no-referrer',
+      ...extraHeaders,
     },
   })
 }
 
-async function daveMediaOrFallback({ id, res, season, episode, title, request, download }) {
+async function daveMediaOrFallback({ id, res, season, episode, title, request, download, force }) {
   const filename = safeFilename(title, res, season, episode)
-  const daveUrl = download
-    ? daveDownloadProxyUrl(id, res, season, episode, title)
-    : daveBffStreamUrl(id, res, season, episode)
+  const daveUrls = download
+    ? [daveDownloadProxyUrl(id, res, season, episode, title)]
+    : [daveBffStreamUrl(id, res, season, episode), daveBffVariantUrl(id, res, season, episode)]
+  const cacheKey = sourceCacheKey({ id, res, season, episode, download })
   try {
-    await probeMediaUrl(daveUrl, download ? 'Dave download probe' : 'Dave stream probe')
-    return mediaRedirect(daveUrl)
+    const source = await resolveDaveSource({ urls: daveUrls, cacheKey, download, force })
+    return mediaRedirect(source.url, {
+      'X-Toosii-Source': 'primary',
+      'X-Toosii-Source-Cache': source.cacheState,
+      ...(source.error ? { 'X-Toosii-Source-Warning': 'stale-source' } : {}),
+    })
   } catch (error) {
     console.warn('[movies:dave-primary-media]', error.message)
   }
 
   try {
-    return await fetchMedia(legacyStreamUrl(id, res, season, episode), request, {
+    const response = await fetchMedia(legacyStreamUrl(id, res, season, episode), request, {
       download,
       filename,
       headers: LEGACY_BROWSER_HEADERS,
       timeout: 8000,
     })
+    return response
   } catch (error) {
     console.warn('[movies:legacy-fallback-media]', error.message)
     throw new Error(download ? 'Movie download is temporarily unavailable.' : 'Movie stream is temporarily unavailable.')
@@ -482,6 +573,7 @@ export async function GET(req) {
   const title = searchParams.get('title') || 'movie'
   const resourceId = searchParams.get('resourceId') || ''
   const kind = searchParams.get('kind') || ''
+  const retry = asNumber(searchParams.get('retry'), 0)
 
   if (action === 'stream' || action === 'download' || action === 'legacy-download') {
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
@@ -501,10 +593,16 @@ export async function GET(req) {
           },
         })
       }
-      return await daveMediaOrFallback({ id, res, season, episode, title, request: req, download: action !== 'stream' })
+      return await daveMediaOrFallback({ id, res, season, episode, title, request: req, download: action !== 'stream', force: retry > 0 })
     } catch (error) {
       console.error('[movies:media-final]', error.message)
-      return NextResponse.json({ error: action === 'stream' ? 'Movie stream is temporarily unavailable.' : 'Movie download is temporarily unavailable.' }, { status: 502 })
+      return NextResponse.json({
+        error: action === 'stream' ? 'Movie stream is temporarily unavailable. Please retry shortly.' : 'Movie download is temporarily unavailable. Please retry shortly.',
+        retryable: true,
+      }, {
+        status: 503,
+        headers: { 'Retry-After': '5', 'Cache-Control': 'no-store, no-cache, must-revalidate' },
+      })
     }
   }
 

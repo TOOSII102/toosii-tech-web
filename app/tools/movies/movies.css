@@ -1210,11 +1210,12 @@
 .mv-quality-label { color: #475569; font-size: .72rem; margin-right: .15rem; }
 .mv-stream-caption { margin: .6rem .25rem 0; color: #475569; font-size: .7rem; }
 .mv-stable-video { position: relative; height: 100%; }
+.mv-video-retry-actions { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 3; display: grid; gap: .35rem; justify-items: center; text-align: center; }
 .mv-video-retry {
-  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 3;
   border: 1px solid rgba(248,113,113,.35); border-radius: 8px; padding: .55rem .85rem;
   background: rgba(0,0,0,.75); color: #fca5a5; font: inherit; font-size: .78rem; cursor: pointer;
 }
+.mv-video-retry-actions span { color: rgba(255,255,255,.72); font-size: .68rem; white-space: nowrap; }
 .mv-trailer-video { width: 100%; max-height: 420px; display: block; border-radius: 12px; background: #000; }
 .mv-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 1.25rem; }
 .mv-detail-section { margin: 0 0 1.5rem; }

@@ -9,16 +9,43 @@ import './movies.css'
 const API = '/api/tools/movies'
 const RESOLUTIONS = [1080, 720, 480, 360]
 const PLACEHOLDER = 'https://placehold.co/300x450/0d0d1a/8b5cf6?text=Toosii'
+const CLIENT_CACHE_TTL = 60 * 1000
+const CLIENT_CACHE_MAX = 150
+const clientMetadataCache = new Map()
+
+const putClientMetadata = (url, payload) => {
+  if (!clientMetadataCache.has(url) && clientMetadataCache.size >= CLIENT_CACHE_MAX) {
+    const oldestKey = clientMetadataCache.keys().next().value
+    if (oldestKey) clientMetadataCache.delete(oldestKey)
+  }
+  clientMetadataCache.set(url, { payload, expiresAt: Date.now() + CLIENT_CACHE_TTL })
+}
+const CACHEABLE_ACTIONS = new Set(['trending', 'hot', 'home', 'movie-popular', 'movie-new', 'movie-top', 'tv-popular', 'tv-trending', 'tv-new', 'anime-home', 'anime-trending', 'anime-browse', 'live', 'search', 'suggest', 'detail', 'movie-info', 'tv-info', 'play', 'seasons', 'tv-seasons', 'recommend', 'movie-recommend', 'tv-recommend', 'trailer', 'cast', 'dubs', 'captions'])
 
 const request = async (action, params = {}) => {
   const query = new URLSearchParams({ action })
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') query.set(key, String(value))
   })
-  const response = await fetch(API + '?' + query.toString())
-  const payload = await response.json().catch(() => ({}))
-  if (!response.ok) throw new Error(payload?.error || 'Movies service unavailable')
-  return payload
+  const url = API + '?' + query.toString()
+  const cacheable = CACHEABLE_ACTIONS.has(action)
+  const cached = cacheable ? clientMetadataCache.get(url) : null
+  if (cached && cached.expiresAt > Date.now()) return cached.payload
+  try {
+    const response = await fetch(url)
+    const payload = await response.json().catch(() => ({}))
+    if (!response.ok) {
+      const error = new Error(payload?.error || 'Movies service unavailable')
+      error.status = response.status
+      error.retryable = Boolean(payload?.retryable || response.status >= 500)
+      throw error
+    }
+    if (cacheable) putClientMetadata(url, payload)
+    return payload
+  } catch (error) {
+    if (cached) return cached.payload
+    throw error
+  }
 }
 
 const cover = movie => movie?.cover?.url || movie?.cover || PLACEHOLDER
@@ -44,7 +71,7 @@ function positionedTitle(title, season, episode) {
   return `${base}${!hasSeason ? ` S${season}` : ''}${episode && !hasEpisode ? ` E${episode}` : ''}`
 }
 
-function mediaUrl(id, resolution, season, episode, action = 'stream', title = '', kind = '') {
+function mediaUrl(id, resolution, season, episode, action = 'stream', title = '', kind = '', retry = 0) {
   const params = new URLSearchParams({ action, id: String(id), res: String(resolution || 720) })
   if (season && episode) {
     params.set('se', String(season))
@@ -52,6 +79,7 @@ function mediaUrl(id, resolution, season, episode, action = 'stream', title = ''
   }
   if (kind) params.set('kind', kind)
   if (title) params.set('title', title)
+  if (retry) params.set('retry', String(retry))
   return API + '?' + params.toString()
 }
 
@@ -115,30 +143,30 @@ function DownloadButton({ href, label, size, filename, item, season, episode, me
   )
 }
 
-function StableVideo({ src, captions = [], poster = '' }) {
-  const videoRef = useRef(null)
+function StableVideo({ src, captions = [], poster = '', onRetry }) {
   const retryRef = useRef(null)
   const [error, setError] = useState(false)
 
   const retry = useCallback(() => {
-    const video = videoRef.current
-    if (!video) return
+    clearTimeout(retryRef.current)
     setError(false)
-    video.load()
-    video.play().catch(() => {})
-  }, [])
+    if (onRetry) onRetry()
+  }, [onRetry])
 
-  useEffect(() => () => clearTimeout(retryRef.current), [src])
+  useEffect(() => {
+    setError(false)
+    return () => clearTimeout(retryRef.current)
+  }, [src])
 
   return (
     <div className="mv-stable-video">
-      <video ref={videoRef} className="mv-video" src={src} poster={poster} controls autoPlay playsInline preload="metadata"
+      <video className="mv-video" src={src} poster={poster} controls autoPlay playsInline preload="metadata"
         onError={() => { setError(true); clearTimeout(retryRef.current); retryRef.current = setTimeout(retry, 2500) }}>
         {captions.filter(caption => caption?.url).slice(0, 8).map((caption, index) => (
           <track key={`${caption.language}-${index}`} kind="subtitles" src={caption.url} srcLang={String(caption.language || 'en').slice(0, 2).toLowerCase()} label={caption.language || 'Subtitles'} default={index === 0} />
         ))}
       </video>
-      {error && <button className="mv-video-retry" type="button" onClick={retry}>↻ Retry stream</button>}
+      {error && <div className="mv-video-retry-actions"><button className="mv-video-retry" type="button" onClick={retry}>↻ Retry stream</button><span>Trying another source when available.</span></div>}
     </div>
   )
 }
@@ -171,6 +199,7 @@ function Modal({ movie, onClose, onSelect, onShare }) {
   const [resolution, setResolution] = useState(720)
   const [playing, setPlaying] = useState(false)
   const [player, setPlayer] = useState('direct')
+  const [streamRetry, setStreamRetry] = useState(0)
   const [saved, setSaved] = useState(false)
   const historyRef = useRef(false)
 
@@ -245,12 +274,12 @@ function Modal({ movie, onClose, onSelect, onShare }) {
     return found?.episodes?.length ? found.episodes : Array.from({ length: 24 }, (_, index) => index + 1)
   }
   const currentEpisodes = episodesForSeason(season)
-  const stream = mediaUrl(movie.subjectId, resolution, episodic ? season : '', episodic ? episode : '', 'stream', '', kind)
+  const stream = mediaUrl(movie.subjectId, resolution, episodic ? season : '', episodic ? episode : '', 'stream', '', kind, streamRetry)
   const directDownload = live ? '' : mediaUrl(movie.subjectId, resolution, episodic ? season : '', episodic ? episode : '', 'download', d.title, kind)
   const trailerUrl = trailer?.url || ''
 
   const watchEpisode = (nextSeason, nextEpisode) => {
-    setSeason(nextSeason); setEpisode(nextEpisode); setPlayer('direct'); setPlaying(true)
+    setSeason(nextSeason); setEpisode(nextEpisode); setPlayer('direct'); setStreamRetry(0); setPlaying(true)
     recordWatched(movie, { season: nextSeason, episode: nextEpisode, mediaKind: kind })
     setTimeout(() => document.querySelector('.mv-player-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
   }
@@ -300,11 +329,11 @@ function Modal({ movie, onClose, onSelect, onShare }) {
             <section className="mv-player-section">
               <div className="mv-player-head"><span className="mv-player-label"><span className="mv-player-dot" />{live ? 'Live event — Stream Now' : episodic ? `S${season} E${episode} — Stream Now` : 'Full Movie — Stream Now'}</span><span className="mv-live-label">{live ? 'LIVE' : 'LIVE SOURCE'}</span></div>
               <div className="mv-player-tabs">
-                <button className={player === 'direct' ? 'mv-source-btn active' : 'mv-source-btn'} onClick={() => { setPlayer('direct'); setPlaying(true) }}>⚡ Toosii</button>
-                <button className={player === 'proxy' ? 'mv-source-btn active' : 'mv-source-btn'} onClick={() => { setPlayer('proxy'); setPlaying(true) }}>▶ Safe stream</button>
+                <button className={player === 'direct' ? 'mv-source-btn active' : 'mv-source-btn'} onClick={() => { setPlayer('direct'); setStreamRetry(0); setPlaying(true) }}>⚡ Toosii</button>
+                <button className={player === 'proxy' ? 'mv-source-btn active' : 'mv-source-btn'} onClick={() => { setPlayer('proxy'); setStreamRetry(0); setPlaying(true) }}>▶ Safe stream</button>
               </div>
-              <div className="mv-quality-row"><span className="mv-quality-label">Quality</span>{RESOLUTIONS.map(value => <button key={value} className={`mv-quality-btn${resolution === value ? ' active' : ''}`} onClick={() => setResolution(value)}>{value}p</button>)}{!live && <DownloadButton href={directDownload} label={`Download ${resolution}p`} filename={`${positionedTitle(d.title, episodic ? season : '', episodic ? episode : '')}-${resolution}p.mp4`} item={d} season={episodic ? season : ''} episode={episodic ? episode : ''} mediaKind={kind} />}</div>
-              {playing ? (player === 'direct' ? <StableVideo src={stream} captions={captions} poster={cover(d)} /> : <video className="mv-video" src={stream} controls autoPlay playsInline preload="metadata" />) : <div className="mv-video-wrap mv-video-placeholder" onClick={() => setPlaying(true)}><img src={cover(d)} alt="" /><div className="mv-placeholder-content"><span className="mv-play-large">▶</span><span>{live ? 'Click to watch live' : episodic ? `Select an episode or play S${season} E${episode}` : 'Click to stream'}</span></div></div>}
+              <div className="mv-quality-row"><span className="mv-quality-label">Quality</span>{RESOLUTIONS.map(value => <button key={value} className={`mv-quality-btn${resolution === value ? ' active' : ''}`} onClick={() => { setResolution(value); setStreamRetry(0) }}>{value}p</button>)}{!live && <DownloadButton href={directDownload} label={`Download ${resolution}p`} filename={`${positionedTitle(d.title, episodic ? season : '', episodic ? episode : '')}-${resolution}p.mp4`} item={d} season={episodic ? season : ''} episode={episodic ? episode : ''} mediaKind={kind} />}</div>
+              {playing ? (player === 'direct' ? <StableVideo src={stream} captions={captions} poster={cover(d)} onRetry={() => setStreamRetry(value => value + 1)} /> : <video className="mv-video" src={stream} controls autoPlay playsInline preload="metadata" />) : <div className="mv-video-wrap mv-video-placeholder" onClick={() => setPlaying(true)}><img src={cover(d)} alt="" /><div className="mv-placeholder-content"><span className="mv-play-large">▶</span><span>{live ? 'Click to watch live' : episodic ? `Select an episode or play S${season} E${episode}` : 'Click to stream'}</span></div></div>}
               <p className="mv-stream-caption">⚡ Toosii API · {resolution}p range-aware MP4{live ? ' · live relay' : episodic ? ` · S${season} E${episode}` : ''}</p>
             </section>
 
