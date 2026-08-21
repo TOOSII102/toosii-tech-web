@@ -192,7 +192,8 @@ function isSafeMediaUrl(value) {
     return url.protocol === 'https:' && (
       url.hostname === new URL(DAVEX_BASE).hostname ||
       url.hostname === new URL(LEGACY_BASE).hostname ||
-      url.hostname.endsWith('.aoneroom.com')
+      url.hostname.endsWith('.aoneroom.com') ||
+      url.hostname.endsWith('.hakunaymatata.com')
     )
   } catch {
     return false
@@ -413,12 +414,15 @@ async function davePlay(id) {
 async function daveMediaMetadata(id, res, season, episode, title, resourceId = '') {
   const isTV = Boolean(season && episode)
   const paths = [
+    isTV
+      ? '/tv/episode/stream/' + encodeURIComponent(id) + '?season=' + encodeURIComponent(season) + '&episode=' + encodeURIComponent(episode) + '&resolution=' + encodeURIComponent(res || 720)
+      : '/movie/stream/' + encodeURIComponent(id) + '?resolution=' + encodeURIComponent(res || 720),
     '/item/' + encodeURIComponent(id) + '/downloads?resolution=' + encodeURIComponent(res || 720) + (isTV ? '&season=' + encodeURIComponent(season) + '&episode=' + encodeURIComponent(episode) : ''),
     '/download/' + encodeURIComponent(id) + '?resolution=' + encodeURIComponent(res || 720) + (isTV ? '&season=' + encodeURIComponent(season) + '&episode=' + encodeURIComponent(episode) : ''),
     isTV
       ? '/tv/episode/download/' + encodeURIComponent(id) + '?season=' + encodeURIComponent(season) + '&episode=' + encodeURIComponent(episode) + '&resolution=' + encodeURIComponent(res || 720)
-      : '/movie/stream/' + encodeURIComponent(id) + '?resolution=' + encodeURIComponent(res || 720),
-  ]
+      : '',
+  ].filter(Boolean)
   const candidates = []
   for (const path of paths) {
     try {
@@ -433,8 +437,8 @@ async function daveMediaMetadata(id, res, season, episode, title, resourceId = '
   return [...new Set(candidates)]
 }
 
-function sourceCacheKey({ id, res, season, episode, download }) {
-  return [download ? 'download' : 'stream', String(id), String(res || 720), String(season || ''), String(episode || '')].join(':')
+function sourceCacheKey({ id, res, season, episode, download, resourceId = '' }) {
+  return [download ? 'download' : 'stream', String(id), String(res || 720), String(season || ''), String(episode || ''), download ? String(resourceId || '') : ''].join(':')
 }
 
 function putSourceCache(key, value) {
@@ -530,12 +534,12 @@ function mediaRedirect(url, extraHeaders = {}) {
   })
 }
 
-async function daveMediaOrFallback({ id, res, season, episode, title, request, download, force }) {
+async function daveMediaOrFallback({ id, res, season, episode, title, resourceId, request, download, force }) {
   const filename = safeFilename(title, res, season, episode)
   const daveUrls = download
     ? [daveDownloadProxyUrl(id, res, season, episode, title)]
     : [daveBffStreamUrl(id, res, season, episode), daveBffVariantUrl(id, res, season, episode)]
-  const cacheKey = sourceCacheKey({ id, res, season, episode, download })
+  const cacheKey = sourceCacheKey({ id, res, season, episode, download, resourceId })
   try {
     const source = await resolveDaveSource({ urls: daveUrls, cacheKey, download, force })
     return mediaRedirect(source.url, {
@@ -545,6 +549,17 @@ async function daveMediaOrFallback({ id, res, season, episode, title, request, d
     })
   } catch (error) {
     console.warn('[movies:dave-primary-media]', error.message)
+  }
+
+  try {
+    const metadataUrls = await daveMediaMetadata(id, res, season, episode, title, resourceId || request.headers.get('x-resource-id') || '')
+    const metadataSource = await resolveDaveSource({ urls: metadataUrls, cacheKey, download, force: true })
+    return mediaRedirect(metadataSource.url, {
+      'X-Toosii-Source': 'primary-metadata',
+      'X-Toosii-Source-Cache': metadataSource.cacheState,
+    })
+  } catch (error) {
+    console.warn('[movies:davex-metadata-media]', error.message)
   }
 
   try {
@@ -583,7 +598,7 @@ export async function GET(req) {
       // Downloads must always revalidate the source immediately before returning a
       // redirect; otherwise a cached 307 can make a mobile browser save an
       // upstream JSON error response as a .json file after the provider goes down.
-      return await daveMediaOrFallback({ id, res, season, episode, title, request: req, download: isDownload, force: isDownload || retry > 0 })
+      return await daveMediaOrFallback({ id, res, season, episode, title, resourceId, request: req, download: isDownload, force: isDownload || retry > 0 })
     } catch (error) {
       console.error('[movies:media-final]', error.message)
       return NextResponse.json({
