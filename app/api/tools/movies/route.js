@@ -523,12 +523,12 @@ export async function GET(req) {
     if (action === 'home') {
       const home = await daveJson('/homepage?tab=0&page=1&mode=clean')
       const sections = (unwrap(home)?.sections || []).map(section => ({ title: firstText(section?.title, section?.name, 'Featured'), items: normalizeCollection(section) })).filter(section => section.items.length)
-      return NextResponse.json(brandPublicResponse({ success: true, api: 'Toosii API', operation: 'movies.home', data: { sections, subjectList: sections[0]?.items || [] } }))
+      return NextResponse.json(brandPublicResponse({ success: true, api: 'Toosii API', operation: 'movies.home', provider: 'Toosii Primary', data: { sections, subjectList: sections[0]?.items || [] } }))
     }
 
     if (action === 'discover') {
       const path = '/discover?type=' + encodeURIComponent(searchParams.get('contentType') || 'MOVIE') + '&genre=' + encodeURIComponent(searchParams.get('genre') || '') + '&page=1&per_page=20'
-      return NextResponse.json(listResponse(normalizeCollection(await daveJson(path)), { operation: 'movies.discover' }))
+      return NextResponse.json(listResponse(normalizeCollection(await daveJson(path)), { operation: 'movies.discover', provider: 'Toosii Primary' }))
     }
 
     if (action === 'search') {
@@ -546,17 +546,17 @@ export async function GET(req) {
     }
 
     if (action === 'suggest') {
-      return NextResponse.json(brandPublicResponse({ success: true, api: 'Toosii API', operation: 'movies.suggest', data: normalizeCollection(await daveJson('/suggest?q=' + encodeURIComponent(q) + '&limit=10')) } ))
+      return NextResponse.json(brandPublicResponse({ success: true, api: 'Toosii API', operation: 'movies.suggest', provider: 'Toosii Primary', data: normalizeCollection(await daveJson('/suggest?q=' + encodeURIComponent(q) + '&limit=10')) } ))
     }
 
     if (action === 'anime-home') {
       const payload = await daveJson('/anime/home')
       const sections = (unwrap(payload)?.sections || []).map(section => ({ title: firstText(section?.section_title, section?.title, 'Anime'), items: normalizeAnimeCollection(section) })).filter(section => section.items.length)
-      return NextResponse.json(brandPublicResponse({ success: true, api: 'Toosii API', operation: 'anime.home', data: { sections, subjectList: sections[0]?.items || [], items: sections.flatMap(section => section.items) } }))
+      return NextResponse.json(brandPublicResponse({ success: true, api: 'Toosii API', operation: 'anime.home', provider: 'Toosii Primary', data: { sections, subjectList: sections[0]?.items || [], items: sections.flatMap(section => section.items) } }))
     }
 
-    if (action === 'live') return NextResponse.json(listResponse(normalizeLiveCollection(await daveJson('/live?page=1')), { operation: 'live.browse' }))
-    if (action === 'live-search') return NextResponse.json(listResponse(normalizeLiveCollection(await daveJson('/live/search?q=' + encodeURIComponent(q) + '&page=1&per_page=20')), { operation: 'live.search' }))
+    if (action === 'live') return NextResponse.json(listResponse(normalizeLiveCollection(await daveJson('/live?page=1')), { operation: 'live.browse', provider: 'Toosii Primary' }))
+    if (action === 'live-search') return NextResponse.json(listResponse(normalizeLiveCollection(await daveJson('/live/search?q=' + encodeURIComponent(q) + '&page=1&per_page=20')), { operation: 'live.search', provider: 'Toosii Primary' }))
 
     const daveRail = {
       'movie-popular': ['/movie/popular?page=1', normalizeCollection],
@@ -570,7 +570,7 @@ export async function GET(req) {
       'anime-trending': ['/anime/trending?sort=hot&page=1&per_page=20', normalizeAnimeCollection],
       'anime-browse': ['/anime/browse?sort=forYou&genre=Animation&page=1&per_page=20', normalizeAnimeCollection],
     }[action]
-    if (daveRail) return NextResponse.json(listResponse(daveRail[1](await daveJson(daveRail[0])), { operation: 'media.' + action }))
+    if (daveRail) return NextResponse.json(listResponse(daveRail[1](await daveJson(daveRail[0])), { operation: 'media.' + action, provider: 'Toosii Primary' }))
 
     if (action === 'anime-info') {
       if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
