@@ -135,9 +135,46 @@ function Rail({ title, items, onSelect, onShare }) {
 
 function DownloadButton({ href, label, size, filename, item, season, episode, mediaKind: kind }) {
   const fallbackName = `${String(label || 'movie').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'movie'}.mp4`
+  const [status, setStatus] = useState('idle')
+  const isLocalResolver = String(href || '').startsWith('/')
+
+  const startDownload = async event => {
+    if (!href) return
+    if (!isLocalResolver) {
+      item && recordDownload(item, { season, episode, mediaKind: kind, filename: filename || fallbackName, resolution: label })
+      return
+    }
+    event.preventDefault()
+    if (status === 'loading') return
+    setStatus('loading')
+    try {
+      const response = await fetch(href, { redirect: 'manual', cache: 'no-store' })
+      const isValidRedirect = response.type === 'opaqueredirect' || (response.status >= 300 && response.status < 400)
+      const isValidMediaResponse = response.status === 200 || response.status === 206
+      if (isValidRedirect || isValidMediaResponse) {
+        item && recordDownload(item, { season, episode, mediaKind: kind, filename: filename || fallbackName, resolution: label })
+        const downloadLink = document.createElement('a')
+        downloadLink.href = href
+        downloadLink.download = filename || fallbackName
+        downloadLink.rel = 'noopener noreferrer'
+        downloadLink.style.display = 'none'
+        document.body.appendChild(downloadLink)
+        downloadLink.click()
+        downloadLink.remove()
+        setStatus('idle')
+        return
+      }
+      const payload = await response.json().catch(() => ({}))
+      throw new Error(payload?.error || 'Download source is temporarily unavailable')
+    } catch (error) {
+      setStatus('error')
+      window.setTimeout(() => setStatus('idle'), 4000)
+    }
+  }
+
   return (
-    <a className="mv-download-btn" href={href} download={filename || fallbackName} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" onClick={() => item && recordDownload(item, { season, episode, mediaKind: kind, filename: filename || fallbackName, resolution: label })}>
-      <span>⬇ {label}</span>
+    <a className={`mv-download-btn${status === 'error' ? ' is-error' : ''}`} href={href || '#'} download={filename || fallbackName} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" aria-busy={status === 'loading'} onClick={startDownload}>
+      <span>{status === 'loading' ? '⏳ Checking source…' : status === 'error' ? '⚠ Retry download' : `⬇ ${label}`}</span>
       {size ? <span className="mv-download-size">{size}</span> : null}
     </a>
   )
@@ -145,6 +182,7 @@ function DownloadButton({ href, label, size, filename, item, season, episode, me
 
 function StableVideo({ src, captions = [], poster = '', onRetry }) {
   const retryRef = useRef(null)
+  const loadTimeoutRef = useRef(null)
   const [error, setError] = useState(false)
 
   const retry = useCallback(() => {
@@ -155,18 +193,25 @@ function StableVideo({ src, captions = [], poster = '', onRetry }) {
 
   useEffect(() => {
     setError(false)
-    return () => clearTimeout(retryRef.current)
+    clearTimeout(retryRef.current)
+    clearTimeout(loadTimeoutRef.current)
+    loadTimeoutRef.current = window.setTimeout(() => setError(true), 12000)
+    return () => {
+      clearTimeout(retryRef.current)
+      clearTimeout(loadTimeoutRef.current)
+    }
   }, [src])
 
   return (
     <div className="mv-stable-video">
       <video className="mv-video" src={src} poster={poster} controls autoPlay playsInline preload="metadata"
-        onError={() => { setError(true); clearTimeout(retryRef.current); retryRef.current = setTimeout(retry, 2500) }}>
+        onLoadedData={() => clearTimeout(loadTimeoutRef.current)} onCanPlay={() => clearTimeout(loadTimeoutRef.current)}
+        onError={() => { clearTimeout(loadTimeoutRef.current); setError(true); clearTimeout(retryRef.current); retryRef.current = setTimeout(retry, 2500) }}>
         {captions.filter(caption => caption?.url).slice(0, 8).map((caption, index) => (
           <track key={`${caption.language}-${index}`} kind="subtitles" src={caption.url} srcLang={String(caption.language || 'en').slice(0, 2).toLowerCase()} label={caption.language || 'Subtitles'} default={index === 0} />
         ))}
       </video>
-      {error && <div className="mv-video-retry-actions"><button className="mv-video-retry" type="button" onClick={retry}>↻ Retry stream</button><span>Trying another source when available.</span></div>}
+      {error && <div className="mv-video-retry-actions"><button className="mv-video-retry" type="button" onClick={retry}>↻ Retry stream</button><span>Source unavailable. Retry to re-check available sources.</span></div>}
     </div>
   )
 }
@@ -198,10 +243,12 @@ function Modal({ movie, onClose, onSelect, onShare }) {
   const [episode, setEpisode] = useState(Number(movie.episode) || 1)
   const [resolution, setResolution] = useState(720)
   const [playing, setPlaying] = useState(false)
-  const [player, setPlayer] = useState('direct')
   const [streamRetry, setStreamRetry] = useState(0)
   const [saved, setSaved] = useState(false)
   const historyRef = useRef(false)
+  const animeHint = isAnime(movie)
+  const liveHint = isLive(movie)
+  const tvHint = isTV(movie) || animeHint
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -220,9 +267,6 @@ function Modal({ movie, onClose, onSelect, onShare }) {
     let active = true
     const id = movie.subjectId
     setSaved(isInMyList(movie, { season: movie.season, episode: movie.episode }))
-    const animeHint = isAnime(movie)
-    const liveHint = isLive(movie)
-    const tvHint = isTV(movie) || animeHint
     setLoadInfo(true); setError(''); setPlaying(false)
     const requests = [
       request(animeHint ? 'anime-info' : 'detail', { id }),
@@ -261,6 +305,20 @@ function Modal({ movie, onClose, onSelect, onShare }) {
     return () => { active = false }
   }, [movie.subjectId])
 
+  useEffect(() => {
+    if (liveHint) return undefined
+    let active = true
+    Promise.allSettled([
+      request(animeHint ? 'anime-captions' : 'captions', { id: movie.subjectId, res: 720, se: tvHint ? season : '', ep: tvHint ? episode : '' }),
+      request(animeHint ? 'anime-downloads' : 'downloads', { id: movie.subjectId, res: 720, se: tvHint ? season : '', ep: tvHint ? episode : '', title: movie.title }),
+    ]).then(([captionResult, downloadResult]) => {
+      if (!active) return
+      if (captionResult.status === 'fulfilled' && (captionResult.value?.data || []).some(caption => caption?.url)) setCaptions(captionResult.value.data)
+      if (downloadResult.status === 'fulfilled') setDownloads(downloadResult.value?.data?.files || [])
+    })
+    return () => { active = false }
+  }, [movie.subjectId, season, episode, animeHint, liveHint, tvHint])
+
   const d = detail || movie
   const tv = isTV(d)
   const anime = isAnime(d) || isAnime(movie)
@@ -279,7 +337,7 @@ function Modal({ movie, onClose, onSelect, onShare }) {
   const trailerUrl = trailer?.url || ''
 
   const watchEpisode = (nextSeason, nextEpisode) => {
-    setSeason(nextSeason); setEpisode(nextEpisode); setPlayer('direct'); setStreamRetry(0); setPlaying(true)
+    setSeason(nextSeason); setEpisode(nextEpisode); setStreamRetry(0); setPlaying(true)
     recordWatched(movie, { season: nextSeason, episode: nextEpisode, mediaKind: kind })
     setTimeout(() => document.querySelector('.mv-player-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
   }
@@ -306,7 +364,7 @@ function Modal({ movie, onClose, onSelect, onShare }) {
                 {String(d.genre || '').split(',').slice(0, 3).filter(Boolean).map(genre => <span key={genre} style={{ color: '#a78bfa' }}>{genre.trim()}</span>)}
               </div>
               {!loadInfo && <div className="mv-modal-hero-actions">
-                <button className="mv-hero-play-btn" onClick={() => { setPlaying(true); setPlayer('direct'); recordWatched(movie, { season: episodic ? season : '', episode: episodic ? episode : '', mediaKind: kind }) }}>▶ {live ? 'Watch Live' : episodic ? `Watch S${season} E${episode}` : 'Watch Movie'}</button>
+                <button className="mv-hero-play-btn" onClick={() => { setPlaying(true); recordWatched(movie, { season: episodic ? season : '', episode: episodic ? episode : '', mediaKind: kind }) }}>▶ {live ? 'Watch Live' : episodic ? `Watch S${season} E${episode}` : 'Watch Movie'}</button>
                 {!live && <button type="button" className={`mv-modal-save-btn${saved ? ' active' : ''}`} onClick={() => { const next = toggleMyList(movie, { season: episodic ? season : '', episode: episodic ? episode : '', mediaKind: kind }); setSaved(next.some(entry => entry.subjectId === String(movie.subjectId) && Number(entry.season || 0) === Number(season || 0) && Number(entry.episode || 0) === Number(episode || 0))) }}>{saved ? '✓ Saved' : '+ My List'}</button>}
                 {trailerUrl && <button className="mv-modal-trailer-btn" onClick={() => document.querySelector('.mv-trailer-section')?.scrollIntoView({ behavior: 'smooth' })}>▶ Trailer</button>}
                 {onShare && <button className="mv-hero-info-btn" onClick={() => onShare(movie, episodic ? season : null, episodic ? episode : null)}>↗ Share</button>}
@@ -328,12 +386,8 @@ function Modal({ movie, onClose, onSelect, onShare }) {
 
             <section className="mv-player-section">
               <div className="mv-player-head"><span className="mv-player-label"><span className="mv-player-dot" />{live ? 'Live event — Stream Now' : episodic ? `S${season} E${episode} — Stream Now` : 'Full Movie — Stream Now'}</span><span className="mv-live-label">{live ? 'LIVE' : 'LIVE SOURCE'}</span></div>
-              <div className="mv-player-tabs">
-                <button className={player === 'direct' ? 'mv-source-btn active' : 'mv-source-btn'} onClick={() => { setPlayer('direct'); setStreamRetry(0); setPlaying(true) }}>⚡ Toosii</button>
-                <button className={player === 'proxy' ? 'mv-source-btn active' : 'mv-source-btn'} onClick={() => { setPlayer('proxy'); setStreamRetry(0); setPlaying(true) }}>▶ Safe stream</button>
-              </div>
               <div className="mv-quality-row"><span className="mv-quality-label">Quality</span>{RESOLUTIONS.map(value => <button key={value} className={`mv-quality-btn${resolution === value ? ' active' : ''}`} onClick={() => { setResolution(value); setStreamRetry(0) }}>{value}p</button>)}{!live && <DownloadButton href={directDownload} label={`Download ${resolution}p`} filename={`${positionedTitle(d.title, episodic ? season : '', episodic ? episode : '')}-${resolution}p.mp4`} item={d} season={episodic ? season : ''} episode={episodic ? episode : ''} mediaKind={kind} />}</div>
-              {playing ? (player === 'direct' ? <StableVideo src={stream} captions={captions} poster={cover(d)} onRetry={() => setStreamRetry(value => value + 1)} /> : <video className="mv-video" src={stream} controls autoPlay playsInline preload="metadata" />) : <div className="mv-video-wrap mv-video-placeholder" onClick={() => setPlaying(true)}><img src={cover(d)} alt="" /><div className="mv-placeholder-content"><span className="mv-play-large">▶</span><span>{live ? 'Click to watch live' : episodic ? `Select an episode or play S${season} E${episode}` : 'Click to stream'}</span></div></div>}
+              {playing ? <StableVideo src={stream} captions={captions} poster={cover(d)} onRetry={() => setStreamRetry(value => value + 1)} /> : <div className="mv-video-wrap mv-video-placeholder" onClick={() => setPlaying(true)}><img src={cover(d)} alt="" /><div className="mv-placeholder-content"><span className="mv-play-large">▶</span><span>{live ? 'Click to watch live' : episodic ? `Select an episode or play S${season} E${episode}` : 'Click to stream'}</span></div></div>}
               <p className="mv-stream-caption">⚡ Toosii API · {resolution}p range-aware MP4{live ? ' · live relay' : episodic ? ` · S${season} E${episode}` : ''}</p>
             </section>
 

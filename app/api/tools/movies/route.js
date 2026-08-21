@@ -498,7 +498,7 @@ async function resolveDaveSource({ urls, cacheKey, download, force = false }) {
     return { url: cached.url, cacheState: 'hit', verifiedAt: cached.verifiedAt }
   }
   if (providerCircuitOpen('dave', download)) {
-    if (cached?.verifiedAt && now - cached.verifiedAt < SOURCE_STALE_TTL) return { url: cached.url, cacheState: 'stale-circuit' }
+    if (!force && cached?.verifiedAt && now - cached.verifiedAt < SOURCE_STALE_TTL) return { url: cached.url, cacheState: 'stale-circuit' }
     throw new Error('dave-circuit-open')
   }
   const failures = []
@@ -513,7 +513,7 @@ async function resolveDaveSource({ urls, cacheKey, download, force = false }) {
     }
   }
   noteProviderFailure('dave', download)
-  if (cached?.verifiedAt && now - cached.verifiedAt < SOURCE_STALE_TTL) return { url: cached.url, cacheState: 'stale-error', error: failures.join('; ') }
+  if (!force && cached?.verifiedAt && now - cached.verifiedAt < SOURCE_STALE_TTL) return { url: cached.url, cacheState: 'stale-error', error: failures.join('; ') }
   throw new Error(failures.join('; ') || 'dave-no-source')
 }
 
@@ -578,22 +578,12 @@ export async function GET(req) {
   if (action === 'stream' || action === 'download' || action === 'legacy-download') {
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
     try {
-      if (kind === 'anime' || kind === 'live') {
-        if (kind === 'live' && action !== 'stream') return NextResponse.json({ error: 'Live events are stream-only.' }, { status: 400 })
-        const location = action === 'stream'
-          ? daveBffStreamUrl(id, res, season, episode)
-          : daveDownloadProxyUrl(id, res, season, episode, title)
-        return new Response(null, {
-          status: 307,
-          headers: {
-            Location: location,
-            'Cache-Control': 'no-store, no-cache, must-revalidate',
-            'Access-Control-Allow-Origin': '*',
-            'Referrer-Policy': 'no-referrer',
-          },
-        })
-      }
-      return await daveMediaOrFallback({ id, res, season, episode, title, request: req, download: action !== 'stream', force: retry > 0 })
+      if (kind === 'live' && action !== 'stream') return NextResponse.json({ error: 'Live events are stream-only.' }, { status: 400 })
+      const isDownload = action !== 'stream'
+      // Downloads must always revalidate the source immediately before returning a
+      // redirect; otherwise a cached 307 can make a mobile browser save an
+      // upstream JSON error response as a .json file after the provider goes down.
+      return await daveMediaOrFallback({ id, res, season, episode, title, request: req, download: isDownload, force: isDownload || retry > 0 })
     } catch (error) {
       console.error('[movies:media-final]', error.message)
       return NextResponse.json({
