@@ -11,6 +11,9 @@ const RESOLUTIONS = [1080, 720, 480, 360]
 const PLACEHOLDER = 'https://placehold.co/300x450/0d0d1a/8b5cf6?text=Toosii'
 const CLIENT_CACHE_TTL = 60 * 1000
 const CLIENT_CACHE_MAX = 150
+const MAX_AUTO_STREAM_RETRIES = 3
+const STREAM_STALL_TIMEOUT = 8000
+const STREAM_INITIAL_LOAD_TIMEOUT = 20000
 const clientMetadataCache = new Map()
 
 const putClientMetadata = (url, payload) => {
@@ -180,38 +183,94 @@ function DownloadButton({ href, label, size, filename, item, season, episode, me
   )
 }
 
-function StableVideo({ src, captions = [], poster = '', onRetry }) {
+function StableVideo({ src, resetKey = '', captions = [], poster = '', onRetry }) {
   const retryRef = useRef(null)
   const loadTimeoutRef = useRef(null)
+  const stallTimeoutRef = useRef(null)
+  const hasStartedRef = useRef(false)
+  const autoRetryCountRef = useRef(0)
+  const onRetryRef = useRef(onRetry)
   const [error, setError] = useState(false)
+  const [autoRetryExhausted, setAutoRetryExhausted] = useState(false)
 
-  const retry = useCallback(() => {
-    clearTimeout(retryRef.current)
-    setError(false)
-    if (onRetry) onRetry()
+  useEffect(() => {
+    onRetryRef.current = onRetry
   }, [onRetry])
+
+  const retry = useCallback((manual = false) => {
+    clearTimeout(retryRef.current)
+    clearTimeout(stallTimeoutRef.current)
+    if (manual) {
+      autoRetryCountRef.current = 0
+      setAutoRetryExhausted(false)
+    }
+    if (manual) setError(false)
+    onRetryRef.current?.()
+  }, [])
+
+  const scheduleAutoRetry = useCallback(() => {
+    if (autoRetryCountRef.current >= MAX_AUTO_STREAM_RETRIES) {
+      setAutoRetryExhausted(true)
+      return
+    }
+    const attempt = autoRetryCountRef.current
+    autoRetryCountRef.current += 1
+    clearTimeout(retryRef.current)
+    retryRef.current = window.setTimeout(() => retry(false), Math.min(2500 * (2 ** attempt), 10000))
+  }, [retry])
+
+  const markUnavailable = useCallback(() => {
+    clearTimeout(loadTimeoutRef.current)
+    clearTimeout(stallTimeoutRef.current)
+    setError(true)
+    scheduleAutoRetry()
+  }, [scheduleAutoRetry])
+
+  const markAvailable = useCallback(() => {
+    clearTimeout(loadTimeoutRef.current)
+    clearTimeout(stallTimeoutRef.current)
+    clearTimeout(retryRef.current)
+    hasStartedRef.current = true
+    autoRetryCountRef.current = 0
+    setError(false)
+    setAutoRetryExhausted(false)
+  }, [])
+
+  const handleWaiting = useCallback(event => {
+    if (!hasStartedRef.current || event.currentTarget.paused || error) return
+    clearTimeout(stallTimeoutRef.current)
+    stallTimeoutRef.current = window.setTimeout(markUnavailable, STREAM_STALL_TIMEOUT)
+  }, [error, markUnavailable])
 
   useEffect(() => {
     setError(false)
+    setAutoRetryExhausted(false)
+    hasStartedRef.current = false
+    autoRetryCountRef.current = 0
+  }, [resetKey])
+
+  useEffect(() => {
     clearTimeout(retryRef.current)
     clearTimeout(loadTimeoutRef.current)
-    loadTimeoutRef.current = window.setTimeout(() => setError(true), 12000)
+    clearTimeout(stallTimeoutRef.current)
+    loadTimeoutRef.current = window.setTimeout(markUnavailable, STREAM_INITIAL_LOAD_TIMEOUT)
     return () => {
       clearTimeout(retryRef.current)
       clearTimeout(loadTimeoutRef.current)
+      clearTimeout(stallTimeoutRef.current)
     }
-  }, [src])
+  }, [src, markUnavailable])
 
   return (
     <div className="mv-stable-video">
       <video className="mv-video" src={src} poster={poster} controls autoPlay playsInline preload="metadata"
-        onLoadedData={() => clearTimeout(loadTimeoutRef.current)} onCanPlay={() => clearTimeout(loadTimeoutRef.current)}
-        onError={() => { clearTimeout(loadTimeoutRef.current); setError(true); clearTimeout(retryRef.current); retryRef.current = setTimeout(retry, 2500) }}>
+        onLoadedMetadata={markAvailable} onLoadedData={markAvailable} onCanPlay={markAvailable} onPlaying={markAvailable} onWaiting={handleWaiting}
+        onError={markUnavailable}>
         {captions.filter(caption => caption?.url).slice(0, 8).map((caption, index) => (
           <track key={`${caption.language}-${index}`} kind="subtitles" src={caption.url} srcLang={String(caption.language || 'en').slice(0, 2).toLowerCase()} label={caption.language || 'Subtitles'} default={index === 0} />
         ))}
       </video>
-      {error && <div className="mv-video-retry-actions"><button className="mv-video-retry" type="button" onClick={retry}>↻ Retry stream</button><span>Source unavailable. Retry to re-check available sources.</span></div>}
+      {error && <div className="mv-video-retry-actions"><button className="mv-video-retry" type="button" onClick={() => retry(true)}>↻ Retry stream</button><span>{autoRetryExhausted ? 'Source unavailable after automatic retries. Tap Retry to check again.' : 'Rechecking available sources…'}</span></div>}
     </div>
   )
 }
@@ -387,7 +446,7 @@ function Modal({ movie, onClose, onSelect, onShare }) {
             <section className="mv-player-section">
               <div className="mv-player-head"><span className="mv-player-label"><span className="mv-player-dot" />{live ? 'Live event — Stream Now' : episodic ? `S${season} E${episode} — Stream Now` : 'Full Movie — Stream Now'}</span><span className="mv-live-label">{live ? 'LIVE' : 'LIVE SOURCE'}</span></div>
               <div className="mv-quality-row"><span className="mv-quality-label">Quality</span>{RESOLUTIONS.map(value => <button key={value} className={`mv-quality-btn${resolution === value ? ' active' : ''}`} onClick={() => { setResolution(value); setStreamRetry(0) }}>{value}p</button>)}{!live && <DownloadButton href={directDownload} label={`Download ${resolution}p`} filename={`${positionedTitle(d.title, episodic ? season : '', episodic ? episode : '')}-${resolution}p.mp4`} item={d} season={episodic ? season : ''} episode={episodic ? episode : ''} mediaKind={kind} />}</div>
-              {playing ? <StableVideo src={stream} captions={captions} poster={cover(d)} onRetry={() => setStreamRetry(value => value + 1)} /> : <div className="mv-video-wrap mv-video-placeholder" onClick={() => setPlaying(true)}><img src={cover(d)} alt="" /><div className="mv-placeholder-content"><span className="mv-play-large">▶</span><span>{live ? 'Click to watch live' : episodic ? `Select an episode or play S${season} E${episode}` : 'Click to stream'}</span></div></div>}
+              {playing ? <StableVideo key={`${movie.subjectId}:${season}:${episode}:${resolution}`} resetKey={`${movie.subjectId}:${season}:${episode}:${resolution}`} src={stream} captions={captions} poster={cover(d)} onRetry={() => setStreamRetry(value => value + 1)} /> : <div className="mv-video-wrap mv-video-placeholder" onClick={() => setPlaying(true)}><img src={cover(d)} alt="" /><div className="mv-placeholder-content"><span className="mv-play-large">▶</span><span>{live ? 'Click to watch live' : episodic ? `Select an episode or play S${season} E${episode}` : 'Click to stream'}</span></div></div>}
               <p className="mv-stream-caption">⚡ Toosii API · {resolution}p range-aware MP4{live ? ' · live relay' : episodic ? ` · S${season} E${episode}` : ''}</p>
             </section>
 

@@ -37,6 +37,8 @@ const PROVIDER_FAILURE_WINDOW = 60 * 1000
 const PROVIDER_FAILURE_THRESHOLD = 3
 const PROVIDER_COOLDOWN = 30 * 1000
 const SOURCE_CACHE_MAX = 500
+const MEDIA_PROBE_ATTEMPTS = 2
+const MEDIA_PROBE_RETRY_DELAY = 650
 
 const runtimeStore = globalThis.__toosiiMovieRuntimeStore || (globalThis.__toosiiMovieRuntimeStore = {
   sourceCache: new Map(),
@@ -49,6 +51,14 @@ export const dynamic = 'force-dynamic'
 function asNumber(value, fallback = 0) {
   const number = Number(value)
   return Number.isFinite(number) ? number : fallback
+}
+
+function isRetryableStatus(status) {
+  return [408, 425, 429, 500, 502, 503, 504].includes(Number(status))
+}
+
+function wait(milliseconds) {
+  return new Promise(resolve => setTimeout(resolve, milliseconds))
 }
 
 function unwrap(payload) {
@@ -477,21 +487,42 @@ function noteProviderFailure(provider, download) {
 
 async function probeMediaUrl(url, label) {
   if (!isSafeMediaUrl(url)) throw new Error('unsafe-media-host')
-  const response = await fetchWithTimeout(url, {
-    headers: {
-      ...DAVE_JSON_HEADERS,
-      Accept: 'video/mp4,video/webm,video/*,application/octet-stream,*/*;q=0.9',
-      'Accept-Encoding': 'identity',
-      Range: 'bytes=0-1023',
-    },
-    redirect: 'follow',
-  }, 20000, label || 'media probe')
-  if (!response.ok) throw new Error((label || 'media probe') + ' ' + response.status)
-  const type = response.headers.get('content-type') || ''
-  if (!type.includes('video') && !type.includes('octet-stream') && !type.includes('mp4')) throw new Error('not-media')
-  const body = await response.arrayBuffer()
-  if (!body.byteLength) throw new Error('empty-media')
-  return response
+  let lastError
+  for (let attempt = 0; attempt < MEDIA_PROBE_ATTEMPTS; attempt += 1) {
+    try {
+      const response = await fetchWithTimeout(url, {
+        headers: {
+          ...DAVE_JSON_HEADERS,
+          Accept: 'video/mp4,video/webm,video/*,application/octet-stream,*/*;q=0.9',
+          'Accept-Encoding': 'identity',
+          Range: 'bytes=0-1023',
+        },
+        redirect: 'follow',
+      }, 20000, label || 'media probe')
+      if (!response.ok) {
+        if (isRetryableStatus(response.status) && attempt < MEDIA_PROBE_ATTEMPTS - 1) {
+          const retryAfter = Math.min(Math.max(asNumber(response.headers.get('retry-after'), 0) * 1000, MEDIA_PROBE_RETRY_DELAY), 3000)
+          await response.body?.cancel?.()
+          await wait(retryAfter)
+          continue
+        }
+        throw new Error((label || 'media probe') + ' ' + response.status)
+      }
+      const type = response.headers.get('content-type') || ''
+      if (!type.includes('video') && !type.includes('octet-stream') && !type.includes('mp4')) throw new Error('not-media')
+      const body = await response.arrayBuffer()
+      if (!body.byteLength) throw new Error('empty-media')
+      return response
+    } catch (error) {
+      lastError = error
+      if (attempt < MEDIA_PROBE_ATTEMPTS - 1 && !String(error?.message || '').includes('not-media')) {
+        await wait(MEDIA_PROBE_RETRY_DELAY)
+        continue
+      }
+      throw error
+    }
+  }
+  throw lastError || new Error('media-probe-failed')
 }
 
 async function resolveDaveSource({ urls, cacheKey, download, force = false }) {
@@ -517,7 +548,7 @@ async function resolveDaveSource({ urls, cacheKey, download, force = false }) {
     }
   }
   noteProviderFailure('dave', download)
-  if (!force && cached?.verifiedAt && now - cached.verifiedAt < SOURCE_STALE_TTL) return { url: cached.url, cacheState: 'stale-error', error: failures.join('; ') }
+  if (cached?.verifiedAt && now - cached.verifiedAt < SOURCE_STALE_TTL) return { url: cached.url, cacheState: force ? 'stale-after-retry' : 'stale-error', error: failures.join('; ') }
   throw new Error(failures.join('; ') || 'dave-no-source')
 }
 
