@@ -6,15 +6,15 @@ import { isInMyList, recordDownload, recordWatched, toggleMyList } from '../../.
 import '../tools.css'
 import './movies.css'
 
-const API = '/api/tools/movies'
+const DAVE_BASE = 'https://davexmovieapi.zone.id'
 const RESOLUTIONS = [1080, 720, 480, 360]
 const PLACEHOLDER = 'https://placehold.co/300x450/0d0d1a/8b5cf6?text=Toosii'
 const CLIENT_CACHE_TTL = 60 * 1000
 const CLIENT_CACHE_MAX = 150
 const MAX_AUTO_STREAM_RETRIES = 3
+const DAVE_REQUEST_TIMEOUT = 15000
 const STREAM_STALL_TIMEOUT = 8000
 const STREAM_INITIAL_LOAD_TIMEOUT = 20000
-const DOWNLOAD_CHECK_TIMEOUT = 20000
 const clientMetadataCache = new Map()
 
 const putClientMetadata = (url, payload) => {
@@ -26,29 +26,184 @@ const putClientMetadata = (url, payload) => {
 }
 const CACHEABLE_ACTIONS = new Set(['trending', 'hot', 'home', 'movie-popular', 'movie-new', 'movie-top', 'tv-popular', 'tv-trending', 'tv-new', 'anime-home', 'anime-trending', 'anime-browse', 'live', 'search', 'suggest', 'detail', 'movie-info', 'tv-info', 'play', 'seasons', 'tv-seasons', 'recommend', 'movie-recommend', 'tv-recommend', 'trailer', 'cast', 'dubs', 'captions'])
 
-const request = async (action, params = {}) => {
-  const query = new URLSearchParams({ action })
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') query.set(key, String(value))
+const firstValue = (...values) => values.find(value => value !== undefined && value !== null && value !== '')
+const numberValue = (value, fallback = 0) => {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : fallback
+}
+const DaveType = value => ({ movie: 'MOVIE', tv: 'TV_SERIES', series: 'TV_SERIES', anime: 'ANIME', live: 'ALL' }[String(value || '').toLowerCase()] || 'ALL')
+const unwrapDave = payload => payload?.data || payload?.result || payload || {}
+
+function davePath(action, params = {}) {
+  const id = encodeURIComponent(String(params.id || ''))
+  const q = new URLSearchParams()
+  const resolution = params.res || 720
+  if (params.se) q.set('season', String(params.se))
+  if (params.ep) q.set('episode', String(params.ep))
+  if (action === 'home') return '/homepage?tab=0&page=1&mode=clean'
+  if (action === 'trending') return '/trending?tab=0&page=1'
+  if (action === 'movie-popular') return '/movie/popular?page=1'
+  if (action === 'movie-new') return '/movie/new?page=1&per_page=20'
+  if (action === 'movie-top') return '/movie/top?page=1&per_page=20'
+  if (action === 'tv-popular') return '/tv/popular?page=1'
+  if (action === 'tv-trending') return '/tv/trending?page=1&per_page=20'
+  if (action === 'tv-new') return '/tv/new?page=1&per_page=20'
+  if (action === 'anime-home') return '/anime/home'
+  if (action === 'anime-trending') return '/anime/trending?sort=hot&page=1&per_page=20'
+  if (action === 'anime-browse') return '/anime/browse?sort=forYou&genre=Animation&page=1&per_page=20'
+  if (action === 'live') return '/live?page=1'
+  if (action === 'live-search') return `/live/search?q=${encodeURIComponent(params.q || '')}&page=1&per_page=20`
+  if (action === 'search') return `/search?q=${encodeURIComponent(params.q || '')}&type=${DaveType(params.type)}&page=1&per_page=20`
+  if (action === 'suggest') return `/suggest?q=${encodeURIComponent(params.q || '')}&limit=10`
+  if (action === 'anime-info') return `/anime/info/${id}`
+  if (action === 'movie-info') return `/movie/info/${id}`
+  if (action === 'tv-info') return `/tv/info/${id}`
+  if (action === 'detail') return `/item/${id}`
+  if (action === 'anime-seasons') return `/anime/seasons/${id}`
+  if (action === 'seasons') return `/item/${id}/seasons`
+  if (action === 'tv-seasons') return `/tv/seasons/${id}`
+  if (action === 'movie-recommend') return `/movie/recommend/${id}?limit=12`
+  if (action === 'tv-recommend') return `/tv/recommend/${id}?limit=12`
+  if (action === 'trailer') return `/item/${id}/trailer`
+  if (action === 'cast') return `/item/${id}/cast`
+  if (action === 'dubs') return `/item/${id}/dubs`
+  if (action === 'captions') return `/item/${id}/captions/auto?resolution=${encodeURIComponent(resolution)}`
+  if (action === 'anime-captions') return `/anime/captions/${id}?resolution=${encodeURIComponent(resolution)}${q.toString() ? `&${q}` : ''}`
+  if (action === 'downloads') return `/item/${id}/downloads?resolution=${encodeURIComponent(resolution)}${q.toString() ? `&${q}` : ''}`
+  if (action === 'anime-downloads') return params.se && params.ep
+    ? `/anime/episode/download/${id}?season=${encodeURIComponent(params.se)}&episode=${encodeURIComponent(params.ep)}&resolution=${encodeURIComponent(resolution)}`
+    : `/anime/download/${id}?resolution=${encodeURIComponent(resolution)}`
+  if (action === 'live-stream-meta') return `/live/stream/${id}?resolution=${encodeURIComponent(resolution)}`
+  if (action === 'anime-play') return `/anime/stream/${id}?resolution=${encodeURIComponent(resolution)}${q.toString() ? `&${q}` : ''}`
+  return `/movie/stream/${id}?resolution=${encodeURIComponent(resolution)}`
+}
+
+function normalizeDaveMovie(item, forcedKind = '') {
+  const value = item || {}
+  const coverValue = firstValue(value.cover?.url, value.cover, value.poster_url, value.posterUrl, value.image)
+  return {
+    ...value,
+    subjectId: String(firstValue(value.subject_id, value.subjectId, value.id, '')),
+    subjectType: numberValue(firstValue(value.subject_type, value.subjectType), 1),
+    title: firstValue(value.title, value.name, 'Untitled'),
+    description: firstValue(value.description, value.synopsis, ''),
+    releaseDate: firstValue(value.release_date, value.releaseDate, value.year, ''),
+    genre: Array.isArray(value.genre) ? value.genre.join(', ') : firstValue(value.genre, ''),
+    cover: coverValue ? (value.cover?.url ? value.cover : coverValue) : '',
+    imdbRatingValue: firstValue(value.imdb_rating_value, value.imdb_rating, value.rating, ''),
+    duration: firstValue(value.duration_seconds, value.duration, ''),
+    countryName: firstValue(value.country_name, value.country, ''),
+    mediaKind: forcedKind || value.mediaKind || (numberValue(firstValue(value.subject_type, value.subjectType), 1) === 9 ? 'live' : ''),
+  }
+}
+
+function collectionItems(payload, forcedKind = '') {
+  const root = unwrapDave(payload)
+  const sections = Array.isArray(root.sections) ? root.sections : []
+  const list = Array.isArray(root.results) ? root.results : Array.isArray(root.items) ? root.items : Array.isArray(root.subjectList) ? root.subjectList : []
+  const sectionItems = sections.flatMap(section => Array.isArray(section?.items) ? section.items : [])
+  return (list.length ? list : sectionItems).map(item => normalizeDaveMovie(item, forcedKind)).filter(item => item.subjectId && item.title)
+}
+
+function normalizeDaveSeasons(payload) {
+  const seasons = Array.isArray(unwrapDave(payload)?.seasons) ? unwrapDave(payload).seasons : []
+  return seasons.map(item => {
+    const number = numberValue(firstValue(item.season_number, item.number), 1)
+    const maxEpisodes = numberValue(firstValue(item.max_episodes, item.episode_count), 0)
+    const episodeCount = maxEpisodes || Math.max(...(Array.isArray(item.resolutions) ? item.resolutions.map(resolution => numberValue(resolution.ep_num)).filter(Boolean) : []), 1)
+    return { number, episodes: Array.from({ length: Math.min(episodeCount, 100) }, (_, index) => index + 1) }
   })
-  const url = API + '?' + query.toString()
+}
+
+function normalizeDaveCaptions(payload) {
+  const root = unwrapDave(payload)
+  const source = Array.isArray(root.captions) ? root.captions : Array.isArray(root.subtitles) ? root.subtitles : []
+  return source.map(item => ({ language: firstValue(item.lanName, item.language, item.lang, 'Unknown'), url: firstValue(item.proxyUrl, item.proxy_url, item.downloadUrl, item.url), format: firstValue(item.format, 'vtt') })).filter(item => item.url)
+}
+
+function normalizeDaveDownloads(payload, params) {
+  const root = unwrapDave(payload)
+  const byQuality = root.by_quality || root.byQuality || {}
+  const files = Object.values(byQuality).length ? Object.values(byQuality) : (Array.isArray(root.files) ? root.files : Array.isArray(root.downloads) ? root.downloads : Array.isArray(root.list) ? root.list : [])
+  return files.map((item, index) => {
+    const resolution = numberValue(firstValue(item.resolution, item.height, String(item.quality || '').replace(/[^0-9]/g, '')), 0)
+    const filename = firstValue(item.filename, item.file_name, item.title, daveFilename(params.title, resolution || params.res || 720, params.se, params.ep))
+    return {
+      resourceId: String(firstValue(item.resource_id, item.resourceId, index)),
+      resolution,
+      filename,
+      size: firstValue(item.file_size, item.fileSize, item.size, 0),
+      codec: firstValue(item.codec, item.codecName, ''),
+      duration: firstValue(item.duration, 0),
+      browserCompatible: true,
+      downloadUrl: mediaUrl(params.id, resolution || params.res || 720, params.se || '', params.ep || '', 'download', params.title || filename),
+    }
+  }).filter(item => item.resolution || item.filename)
+}
+
+function normalizeDaveTrailer(payload) {
+  const root = unwrapDave(payload)
+  const item = root.trailer || root.video_address || root.videoAddress || root
+  return { url: firstValue(item.url, item.video_url, item.videoUrl, ''), cover: firstValue(item.cover?.url, root.cover?.url, ''), duration: firstValue(item.duration, 0), definition: firstValue(item.definition, item.quality, '') }
+}
+
+function normalizeDaveStaff(payload) {
+  const root = unwrapDave(payload)
+  const list = Array.isArray(root.staff_list) ? root.staff_list : Array.isArray(root.cast) ? root.cast : Array.isArray(root.results) ? root.results : []
+  return list.map(item => ({ name: firstValue(item.name, item.actor, item.character, ''), character: firstValue(item.character, item.role, ''), avatar: firstValue(item.avatar_url, item.avatar, '') })).filter(item => item.name)
+}
+
+function normalizeDavePayload(action, raw, params) {
+  if (action === 'home' || action === 'trending' || action === 'anime-home') {
+    const root = unwrapDave(raw)
+    const sections = Array.isArray(root.sections) ? root.sections.map(section => ({ title: firstValue(section.section_title, section.title, 'Browse'), items: collectionItems({ items: section.items }, action === 'anime-home' ? 'anime' : '') })).filter(section => section.items.length) : []
+    return { data: { sections, items: sections.flatMap(section => section.items), subjectList: sections.flatMap(section => section.items) } }
+  }
+  if (['movie-popular', 'movie-new', 'movie-top', 'tv-popular', 'tv-new', 'tv-trending', 'anime-trending', 'anime-browse', 'live', 'search'].includes(action)) {
+    return { data: { items: collectionItems(raw, action.startsWith('anime-') ? 'anime' : action === 'live' ? 'live' : ''), subjectList: collectionItems(raw, action.startsWith('anime-') ? 'anime' : action === 'live' ? 'live' : '') } }
+  }
+  if (action === 'suggest') return { data: collectionItems({ results: unwrapDave(raw).suggestions || unwrapDave(raw).items || [] }) }
+  if (['detail', 'movie-info', 'tv-info', 'anime-info'].includes(action)) return { data: normalizeDaveMovie(unwrapDave(raw), action === 'anime-info' ? 'anime' : '') }
+  if (['seasons', 'tv-seasons', 'anime-seasons'].includes(action)) {
+    const seasonDetails = normalizeDaveSeasons(raw)
+    return { data: { seasons: seasonDetails.map(item => item.number), seasonDetails } }
+  }
+  if (action === 'play') return { data: { seasons: [] } }
+  if (action === 'anime-play' || action === 'live-stream-meta') return { data: { ...unwrapDave(raw), url: firstValue(unwrapDave(raw).playback_url, unwrapDave(raw).playbackUrl, unwrapDave(raw).url, ''), available: true } }
+  if (['movie-recommend', 'tv-recommend'].includes(action)) return { data: { items: collectionItems(raw), subjectList: collectionItems(raw) } }
+  if (action === 'trailer') return { data: normalizeDaveTrailer(raw) }
+  if (action === 'cast') return { data: normalizeDaveStaff(raw) }
+  if (action === 'dubs') return { data: unwrapDave(raw).dubs || unwrapDave(raw).languages || [] }
+  if (action === 'captions' || action === 'anime-captions') return { data: normalizeDaveCaptions(raw) }
+  if (action === 'downloads' || action === 'anime-downloads') return { data: { files: normalizeDaveDownloads(raw, params) } }
+  return { data: unwrapDave(raw) }
+}
+
+const request = async (action, params = {}) => {
+  const path = davePath(action, params)
+  const url = DAVE_BASE + path
   const cacheable = CACHEABLE_ACTIONS.has(action)
   const cached = cacheable ? clientMetadataCache.get(url) : null
   if (cached && cached.expiresAt > Date.now()) return cached.payload
+  const controller = new AbortController()
+  const timeout = window.setTimeout(() => controller.abort(), DAVE_REQUEST_TIMEOUT)
   try {
-    const response = await fetch(url)
-    const payload = await response.json().catch(() => ({}))
-    if (!response.ok) {
-      const error = new Error(payload?.error || 'Movies service unavailable')
+    const response = await fetch(url, { headers: { Accept: 'application/json' }, signal: controller.signal })
+    const raw = await response.json().catch(() => ({}))
+    if (!response.ok || raw?.status === false || raw?.ok === false) {
+      const error = new Error(raw?.error || `Dave service unavailable (${response.status})`)
       error.status = response.status
-      error.retryable = Boolean(payload?.retryable || response.status >= 500)
+      error.retryable = response.status >= 500 || response.status === 429
       throw error
     }
+    const payload = normalizeDavePayload(action, raw, params)
     if (cacheable) putClientMetadata(url, payload)
     return payload
   } catch (error) {
     if (cached) return cached.payload
     throw error
+  } finally {
+    window.clearTimeout(timeout)
   }
 }
 
@@ -75,16 +230,28 @@ function positionedTitle(title, season, episode) {
   return `${base}${!hasSeason ? ` S${season}` : ''}${episode && !hasEpisode ? ` E${episode}` : ''}`
 }
 
-function mediaUrl(id, resolution, season, episode, action = 'stream', title = '', kind = '', retry = 0) {
-  const params = new URLSearchParams({ action, id: String(id), res: String(resolution || 720) })
-  if (season && episode) {
-    params.set('se', String(season))
-    params.set('ep', String(episode))
+function daveFilename(title, resolution, season, episode) {
+  const clean = String(title || 'movie').replace(/[^a-z0-9._ -]/gi, '').trim() || 'movie'
+  const position = season && episode ? `-S${season}E${episode}` : ''
+  return `${clean}${position}-${resolution || 720}p.mp4`
+}
+
+function mediaUrl(id, resolution, season, episode, action = 'stream', title = '') {
+  const quality = String(resolution || 720)
+  if (action === 'download') {
+    const params = new URLSearchParams({ subjectId: String(id), resolution: quality, filename: daveFilename(title, quality, season, episode) })
+    if (season && episode) {
+      params.set('season', String(season))
+      params.set('episode', String(episode))
+    }
+    return DAVE_BASE + '/proxy/download?' + params.toString()
   }
-  if (kind) params.set('kind', kind)
-  if (title) params.set('title', title)
-  if (retry) params.set('retry', String(retry))
-  return API + '?' + params.toString()
+  const params = new URLSearchParams({ resolution: quality })
+  if (season && episode) {
+    params.set('season', String(season))
+    params.set('episode', String(episode))
+  }
+  return DAVE_BASE + '/bff/stream/' + encodeURIComponent(String(id)) + '?' + params.toString()
 }
 
 function Skeleton() {
@@ -330,8 +497,8 @@ function Modal({ movie, onClose, onSelect, onShare }) {
     setLoadInfo(true); setError(''); setPlaying(false)
     const requests = [
       request(animeHint ? 'anime-info' : 'detail', { id }),
-      request(animeHint ? 'anime-play' : liveHint ? 'live-stream-meta' : 'play', { id, res: 720, se: tvHint && !liveHint ? season : '', ep: tvHint && !liveHint ? episode : '' }),
-      liveHint ? Promise.resolve({ data: { items: [] } }) : request('recommend', { id }),
+      request(animeHint ? 'anime-play' : liveHint ? 'live-stream-meta' : tvHint ? 'tv-seasons' : 'play', { id, res: 720, se: tvHint && !liveHint ? season : '', ep: tvHint && !liveHint ? episode : '' }),
+      liveHint ? Promise.resolve({ data: { items: [] } }) : request(tvHint ? 'tv-recommend' : 'movie-recommend', { id }),
       liveHint ? Promise.resolve({ data: null }) : request('trailer', { id }),
       liveHint ? Promise.resolve({ data: [] }) : request('cast', { id }),
       liveHint ? Promise.resolve({ data: [] }) : request('dubs', { id }),
@@ -392,8 +559,8 @@ function Modal({ movie, onClose, onSelect, onShare }) {
     return found?.episodes?.length ? found.episodes : Array.from({ length: 24 }, (_, index) => index + 1)
   }
   const currentEpisodes = episodesForSeason(season)
-  const stream = mediaUrl(movie.subjectId, resolution, episodic ? season : '', episodic ? episode : '', 'stream', '', kind, streamRetry)
-  const directDownload = live ? '' : mediaUrl(movie.subjectId, resolution, episodic ? season : '', episodic ? episode : '', 'download', d.title, kind)
+  const stream = mediaUrl(movie.subjectId, resolution, episodic ? season : '', episodic ? episode : '', 'stream')
+  const directDownload = live ? '' : mediaUrl(movie.subjectId, resolution, episodic ? season : '', episodic ? episode : '', 'download', d.title)
   const trailerUrl = trailer?.url || ''
 
   const watchEpisode = (nextSeason, nextEpisode) => {
@@ -447,8 +614,8 @@ function Modal({ movie, onClose, onSelect, onShare }) {
             <section className="mv-player-section">
               <div className="mv-player-head"><span className="mv-player-label"><span className="mv-player-dot" />{live ? 'Live event — Stream Now' : episodic ? `S${season} E${episode} — Stream Now` : 'Full Movie — Stream Now'}</span><span className="mv-live-label">{live ? 'LIVE' : 'LIVE SOURCE'}</span></div>
               <div className="mv-quality-row"><span className="mv-quality-label">Quality</span>{RESOLUTIONS.map(value => <button key={value} className={`mv-quality-btn${resolution === value ? ' active' : ''}`} onClick={() => { setResolution(value); setStreamRetry(0) }}>{value}p</button>)}{!live && <DownloadButton href={directDownload} label={`Download ${resolution}p`} filename={`${positionedTitle(d.title, episodic ? season : '', episodic ? episode : '')}-${resolution}p.mp4`} item={d} season={episodic ? season : ''} episode={episodic ? episode : ''} mediaKind={kind} />}</div>
-              {playing ? <StableVideo key={`${movie.subjectId}:${season}:${episode}:${resolution}`} resetKey={`${movie.subjectId}:${season}:${episode}:${resolution}`} src={stream} captions={captions} poster={cover(d)} onRetry={() => setStreamRetry(value => value + 1)} /> : <div className="mv-video-wrap mv-video-placeholder" onClick={() => setPlaying(true)}><img src={cover(d)} alt="" /><div className="mv-placeholder-content"><span className="mv-play-large">▶</span><span>{live ? 'Click to watch live' : episodic ? `Select an episode or play S${season} E${episode}` : 'Click to stream'}</span></div></div>}
-              <p className="mv-stream-caption">⚡ Toosii API · {resolution}p range-aware MP4{live ? ' · live relay' : episodic ? ` · S${season} E${episode}` : ''}</p>
+              {playing ? <StableVideo key={`${movie.subjectId}:${season}:${episode}:${resolution}:${streamRetry}`} resetKey={`${movie.subjectId}:${season}:${episode}:${resolution}:${streamRetry}`} src={stream} captions={captions} poster={cover(d)} onRetry={() => setStreamRetry(value => value + 1)} /> : <div className="mv-video-wrap mv-video-placeholder" onClick={() => setPlaying(true)}><img src={cover(d)} alt="" /><div className="mv-placeholder-content"><span className="mv-play-large">▶</span><span>{live ? 'Click to watch live' : episodic ? `Select an episode or play S${season} E${episode}` : 'Click to stream'}</span></div></div>}
+              <p className="mv-stream-caption">⚡ Dave Direct · {resolution}p range-aware MP4{live ? ' · live relay' : episodic ? ` · S${season} E${episode}` : ''}</p>
             </section>
 
             {episodic && seasons.length > 0 && <section className="mv-eps-panel">
@@ -456,7 +623,7 @@ function Modal({ movie, onClose, onSelect, onShare }) {
               <div className="mv-eps-strip">{currentEpisodes.map(value => <button key={value} className={`mv-eps-ep${Number(episode) === Number(value) && playing ? ' active' : ''}`} onClick={() => watchEpisode(season, value)}><span className="mv-eps-ep-num">E{value}</span><span className="mv-eps-ep-label">Episode {value}</span></button>)}</div>
             </section>}
 
-            {!live && downloads.length > 0 && <section className="mv-download-section"><div className="mv-download-head">⬇ Available downloads <span className="mv-count">{downloads.length} files</span></div><div className="mv-download-grid">{downloads.map(file => <DownloadButton key={`${file.resourceId}-${file.resolution}`} href={file.downloadUrl} label={`${file.resolution || resolution}p`} filename={file.filename} size={file.size ? `${Math.round(Number(file.size) / 1048576)} MB` : ''} item={d} season={episodic ? season : ''} episode={episodic ? episode : ''} mediaKind={kind} />)}</div></section>}
+            {!live && downloads.length > 0 && <section className="mv-download-section"><div className="mv-download-head">⬇ Available downloads <span className="mv-count">{downloads.length} files</span></div><div className="mv-download-grid">{downloads.map(file => <DownloadButton key={`${file.resourceId}-${file.resolution}`} href={mediaUrl(d.subjectId, file.resolution || resolution, episodic ? season : '', episodic ? episode : '', 'download', d.title)} label={`${file.resolution || resolution}p`} filename={file.filename || daveFilename(d.title, file.resolution || resolution, episodic ? season : '', episodic ? episode : '')} size={file.size ? `${Math.round(Number(file.size) / 1048576)} MB` : ''} item={d} season={episodic ? season : ''} episode={episodic ? episode : ''} mediaKind={kind} />)}</div></section>}
 
             <div className="mv-detail-grid">
               <DetailChips title="Available dubs" items={dubs} className="mv-dub-chip" />
