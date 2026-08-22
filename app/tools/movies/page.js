@@ -31,6 +31,28 @@ const numberValue = (value, fallback = 0) => {
   const parsed = Number(value)
   return Number.isFinite(parsed) ? parsed : fallback
 }
+const formatBytes = bytes => {
+  const value = Number(bytes)
+  if (!Number.isFinite(value) || value <= 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB']
+  const index = Math.min(Math.floor(Math.log(value) / Math.log(1024)), units.length - 1)
+  return `${(value / (1024 ** index)).toFixed(index === 0 ? 0 : 1)} ${units[index]}`
+}
+const formatEta = seconds => {
+  if (seconds === null || seconds === undefined || !Number.isFinite(Number(seconds)) || Number(seconds) < 0) return 'Calculating…'
+  const value = Number(seconds)
+  if (value < 60) return `${Math.max(1, Math.ceil(value))}s left`
+  const minutes = Math.floor(value / 60)
+  const remaining = Math.ceil(value % 60)
+  return `${minutes}m ${String(remaining).padStart(2, '0')}s left`
+}
+const responseTotal = response => {
+  const length = Number(response.headers.get('content-length'))
+  if (Number.isFinite(length) && length > 0) return length
+  const match = String(response.headers.get('content-range') || '').match(/\/(\d+)$/)
+  return match ? Number(match[1]) : 0
+}
+const IDLE_DOWNLOAD_PROGRESS = { phase: 'idle', loaded: 0, total: 0, percent: 0, speed: 0, eta: null }
 const DaveType = value => ({ movie: 'MOVIE', tv: 'TV_SERIES', series: 'TV_SERIES', anime: 'ANIME', live: 'ALL' }[String(value || '').toLowerCase()] || 'ALL')
 const unwrapDave = payload => payload?.data || payload?.result || payload || {}
 
@@ -307,13 +329,40 @@ function Rail({ title, items, onSelect, onShare }) {
 function DownloadButton({ href, label, size, filename, item, season, episode, mediaKind: kind }) {
   const fallbackName = `${String(label || 'movie').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'movie'}.mp4`
   const [status, setStatus] = useState('idle')
+  const [progress, setProgress] = useState(IDLE_DOWNLOAD_PROGRESS)
   const isLocalResolver = String(href || '').startsWith('/')
   const handoffRef = useRef(null)
+  const downloadAbortRef = useRef(null)
 
   useEffect(() => () => {
+    downloadAbortRef.current?.abort()
     handoffRef.current?.remove()
     handoffRef.current = null
   }, [])
+
+  const startNativeHandoff = () => {
+    setStatus('loading')
+    setProgress({ phase: 'handoff', loaded: 0, total: 0, percent: 0, speed: 0, eta: null })
+    handoffRef.current?.remove()
+    const frame = document.createElement('iframe')
+    frame.setAttribute('aria-hidden', 'true')
+    frame.tabIndex = -1
+    frame.style.position = 'fixed'
+    frame.style.width = '1px'
+    frame.style.height = '1px'
+    frame.style.left = '-9999px'
+    frame.style.opacity = '0'
+    frame.style.pointerEvents = 'none'
+    frame.src = href
+    handoffRef.current = frame
+    document.body.appendChild(frame)
+    window.setTimeout(() => {
+      frame.remove()
+      if (handoffRef.current === frame) handoffRef.current = null
+      setStatus('idle')
+      setProgress(current => current.phase === 'handoff' ? IDLE_DOWNLOAD_PROGRESS : current)
+    }, 5000)
+  }
 
   const startDownload = async event => {
     if (!href) return
@@ -321,25 +370,81 @@ function DownloadButton({ href, label, size, filename, item, season, episode, me
       event.preventDefault()
       if (status === 'loading') return
       item && recordDownload(item, { season, episode, mediaKind: kind, filename: filename || fallbackName, resolution: label })
+      downloadAbortRef.current?.abort()
+      const controller = new AbortController()
+      downloadAbortRef.current = controller
+      const startedAt = performance.now()
       setStatus('loading')
-      handoffRef.current?.remove()
-      const frame = document.createElement('iframe')
-      frame.setAttribute('aria-hidden', 'true')
-      frame.tabIndex = -1
-      frame.style.position = 'fixed'
-      frame.style.width = '1px'
-      frame.style.height = '1px'
-      frame.style.left = '-9999px'
-      frame.style.opacity = '0'
-      frame.style.pointerEvents = 'none'
-      frame.src = href
-      handoffRef.current = frame
-      document.body.appendChild(frame)
-      window.setTimeout(() => {
-        frame.remove()
-        if (handoffRef.current === frame) handoffRef.current = null
+      setProgress({ phase: 'preparing', loaded: 0, total: 0, percent: 0, speed: 0, eta: null })
+      let canFallbackToNative = false
+      try {
+        let advertisedTotal = 0
+        try {
+          const probeResponse = await fetch(href, { headers: { Accept: 'video/mp4, video/*, application/octet-stream', Range: 'bytes=0-0' }, cache: 'no-store', signal: controller.signal })
+          advertisedTotal = responseTotal(probeResponse)
+          await probeResponse.body?.cancel()
+        } catch {}
+        const response = await fetch(href, { headers: { Accept: 'video/mp4, video/*, application/octet-stream', Range: 'bytes=0-' }, cache: 'no-store', signal: controller.signal })
+        if (!response.ok) {
+          if (response.status === 405 || response.status === 416) { startNativeHandoff(); return }
+          throw new Error(`Download source unavailable (${response.status})`)
+        }
+        const contentType = String(response.headers.get('content-type') || '').toLowerCase()
+        if (contentType.includes('application/json') || contentType.includes('text/html')) throw new Error('Dave did not return an MP4 file')
+        canFallbackToNative = true
+        if (!response.body) throw new TypeError('Streaming is unavailable in this browser')
+
+        const total = responseTotal(response) || advertisedTotal
+        const reader = response.body.getReader()
+        const chunks = []
+        let loaded = 0
+        let lastUpdate = startedAt
+        let lastLoaded = 0
+        let speed = 0
+        setProgress({ phase: 'downloading', loaded: 0, total, percent: total ? 0 : null, speed: 0, eta: null })
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          if (!value) continue
+          chunks.push(value)
+          loaded += value.byteLength
+          const now = performance.now()
+          const elapsed = (now - lastUpdate) / 1000
+          if (elapsed >= 0.25) {
+            const instantSpeed = (loaded - lastLoaded) / Math.max(elapsed, 0.001)
+            speed = speed ? speed * 0.7 + instantSpeed * 0.3 : instantSpeed
+            const remaining = total > loaded && speed > 0 ? (total - loaded) / speed : null
+            setProgress({ phase: 'downloading', loaded, total, percent: total ? Math.min(100, Math.round((loaded / total) * 100)) : null, speed, eta: remaining })
+            lastUpdate = now
+            lastLoaded = loaded
+          }
+        }
+
+        if (!loaded) throw new Error('The download returned an empty file')
+        const blob = new Blob(chunks, { type: contentType || 'video/mp4' })
+        const objectUrl = URL.createObjectURL(blob)
+        const anchor = document.createElement('a')
+        anchor.href = objectUrl
+        anchor.download = filename || fallbackName
+        document.body.appendChild(anchor)
+        anchor.click()
+        anchor.remove()
+        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
+        setProgress({ phase: 'complete', loaded, total: total || loaded, percent: 100, speed, eta: 0 })
         setStatus('idle')
-      }, 4000)
+      } catch (error) {
+        if (controller.signal.aborted) return
+        if (canFallbackToNative || error instanceof TypeError || error?.name === 'TypeError') {
+          startNativeHandoff()
+          return
+        }
+        setStatus('error')
+        setProgress({ phase: 'error', loaded: 0, total: 0, percent: 0, speed: 0, eta: null })
+        window.setTimeout(() => setStatus('idle'), 4000)
+      } finally {
+        if (downloadAbortRef.current === controller) downloadAbortRef.current = null
+      }
       return
     }
     event.preventDefault()
@@ -367,14 +472,33 @@ function DownloadButton({ href, label, size, filename, item, season, episode, me
     }
   }
 
+  const progressLabel = progress.phase === 'complete'
+    ? 'Download complete'
+    : progress.phase === 'error'
+      ? 'Download failed'
+      : progress.phase === 'handoff'
+        ? 'Starting device download…'
+        : progress.phase === 'preparing'
+          ? 'Preparing video…'
+          : 'Downloading video…'
+  const progressPercent = progress.total ? Math.min(100, progress.percent || 0) : (progress.phase === 'complete' ? 100 : 6)
+  const busyLabel = progress.phase === 'downloading' && progress.total ? `Downloading ${progress.percent}%` : 'Starting download…'
+
   return (
-    <a className={`mv-download-btn${status === 'error' ? ' is-error' : ''}`} href={href || '#'} download={filename || fallbackName} rel="noopener noreferrer" referrerPolicy="no-referrer" aria-busy={status === 'loading'} onClick={startDownload}>
-      <span className="mv-download-status" role={status === 'loading' ? 'status' : undefined}>
-        {status === 'loading' ? <span className="mv-download-spinner" aria-hidden="true" /> : null}
-        {status === 'loading' ? 'Starting download…' : status === 'error' ? '⚠ Retry download' : `⬇ ${label}`}
-      </span>
-      {size ? <span className="mv-download-size">{size}</span> : null}
-    </a>
+    <div className="mv-download-control">
+      <a className={`mv-download-btn${status === 'error' ? ' is-error' : ''}`} href={href || '#'} download={filename || fallbackName} rel="noopener noreferrer" referrerPolicy="no-referrer" aria-busy={status === 'loading'} onClick={startDownload}>
+        <span className="mv-download-status" role={status === 'loading' ? 'status' : undefined}>
+          {status === 'loading' ? <span className="mv-download-spinner" aria-hidden="true" /> : null}
+          {status === 'loading' ? busyLabel : status === 'error' ? '⚠ Retry download' : `⬇ ${label}`}
+        </span>
+        {size ? <span className="mv-download-size">{size}</span> : null}
+      </a>
+      {progress.phase !== 'idle' && <div className={`mv-download-progress${progress.phase === 'error' ? ' is-error' : progress.phase === 'complete' ? ' is-complete' : ''}`} role="status" aria-live="polite">
+        <div className="mv-download-progress-head"><span>{progressLabel}</span><strong>{progress.total || progress.phase === 'complete' ? `${progress.total ? progress.percent : 100}%` : '…'}</strong></div>
+        <div className="mv-download-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={progress.total || progress.phase === 'complete' ? progressPercent : undefined} aria-valuetext={progress.total || progress.phase === 'complete' ? `${progressPercent}%` : 'Download starting'}><span style={{ width: `${progressPercent}%` }} /></div>
+        <div className="mv-download-progress-stats"><span>{formatBytes(progress.loaded)}{progress.total ? ` / ${formatBytes(progress.total)}` : ''}</span><span>{progress.speed > 0 ? `${formatBytes(progress.speed)}/s` : progress.phase === 'complete' ? 'Ready' : 'Connecting…'}</span><span>{progress.phase === 'complete' ? 'Saved to device' : progress.phase === 'error' ? 'Try again' : progress.total && progress.phase === 'downloading' ? formatEta(progress.eta) : 'Preparing…'}</span></div>
+      </div>}
+    </div>
   )
 }
 

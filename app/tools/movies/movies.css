@@ -590,6 +590,42 @@
   transform: translateY(-1px);
 }
 .mv-download-size { font-size: 0.68rem; color: #475569; font-weight: 600; }
+.mv-download-control { display: inline-flex; flex-direction: column; align-items: stretch; gap: 0.55rem; min-width: min(100%, 12rem); }
+.mv-download-progress {
+  width: min(100%, 24rem);
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(37, 211, 102, 0.24);
+  border-radius: 11px;
+  background: rgba(37, 211, 102, 0.06);
+  color: #a7f3d0;
+}
+.mv-download-progress-head,
+.mv-download-progress-stats {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.55rem;
+}
+.mv-download-progress-head { font-size: 0.73rem; }
+.mv-download-progress-head strong { color: #72f0ba; font-size: 0.8rem; }
+.mv-download-progress-track {
+  height: 7px; margin: 0.6rem 0 0.5rem; overflow: hidden; border-radius: 999px;
+  background: rgba(255,255,255,0.1);
+}
+.mv-download-progress-track span {
+  display: block; height: 100%; min-width: 6px; border-radius: inherit;
+  background: linear-gradient(90deg, #25d366, #72f0ba, #75d6ff);
+  box-shadow: 0 0 12px rgba(37,211,102,0.4); transition: width 0.25s ease;
+}
+.mv-download-progress-stats { color: #94a3b8; font-size: 0.64rem; }
+.mv-download-progress.is-complete { border-color: rgba(37, 211, 102, 0.4); }
+.mv-download-progress.is-error { border-color: rgba(248, 113, 113, 0.45); color: #fca5a5; }
+@media (max-width: 480px) {
+  .mv-download-control { width: 100%; }
+  .mv-download-control .mv-download-btn { width: 100%; justify-content: space-between; }
+  .mv-download-progress { width: 100%; }
+  .mv-download-progress-stats { flex-wrap: wrap; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mv-download-progress-track span { transition: none; }
+}
 
 /* Cast */
 .mv-cast-section { margin-bottom: 1.75rem; }
