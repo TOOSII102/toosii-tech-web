@@ -579,7 +579,7 @@
 }
 @keyframes mv-download-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) {
-  .mv-download-spinner { animation-duration: 1.5s; }
+  .mv-download-spinner { animation: none; opacity: .78; }
 }
 .mv-download-btn.is-error { border-color: rgba(248,113,113,.45); color: #fca5a5; }
 .mv-download-btn[aria-busy="true"] { opacity: .82; pointer-events: none; }
