@@ -182,7 +182,10 @@ function DownloadButton({ href, label, size, filename, item, season, episode, me
 
   return (
     <a className={`mv-download-btn${status === 'error' ? ' is-error' : ''}`} href={href || '#'} download={filename || fallbackName} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" aria-busy={status === 'loading'} onClick={startDownload}>
-      <span>{status === 'loading' ? '⏳ Checking source…' : status === 'error' ? '⚠ Retry download' : `⬇ ${label}`}</span>
+      <span className="mv-download-status" role={status === 'loading' ? 'status' : undefined}>
+        {status === 'loading' ? <span className="mv-download-spinner" aria-hidden="true" /> : null}
+        {status === 'loading' ? 'Checking source…' : status === 'error' ? '⚠ Retry download' : `⬇ ${label}`}
+      </span>
       {size ? <span className="mv-download-size">{size}</span> : null}
     </a>
   )
