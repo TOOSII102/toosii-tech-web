@@ -14,6 +14,7 @@ const CLIENT_CACHE_MAX = 150
 const MAX_AUTO_STREAM_RETRIES = 3
 const STREAM_STALL_TIMEOUT = 8000
 const STREAM_INITIAL_LOAD_TIMEOUT = 20000
+const DOWNLOAD_CHECK_TIMEOUT = 20000
 const clientMetadataCache = new Map()
 
 const putClientMetadata = (url, payload) => {
@@ -150,8 +151,10 @@ function DownloadButton({ href, label, size, filename, item, season, episode, me
     event.preventDefault()
     if (status === 'loading') return
     setStatus('loading')
+    const controller = new AbortController()
+    const timeout = window.setTimeout(() => controller.abort(), DOWNLOAD_CHECK_TIMEOUT)
     try {
-      const response = await fetch(href, { redirect: 'manual', cache: 'no-store' })
+      const response = await fetch(href, { redirect: 'manual', cache: 'no-store', signal: controller.signal })
       const isValidRedirect = response.type === 'opaqueredirect' || (response.status >= 300 && response.status < 400)
       const isValidMediaResponse = response.status === 200 || response.status === 206
       if (isValidRedirect || isValidMediaResponse) {
@@ -172,6 +175,8 @@ function DownloadButton({ href, label, size, filename, item, season, episode, me
     } catch (error) {
       setStatus('error')
       window.setTimeout(() => setStatus('idle'), 4000)
+    } finally {
+      window.clearTimeout(timeout)
     }
   }
 
