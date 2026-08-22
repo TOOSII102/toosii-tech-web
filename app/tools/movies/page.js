@@ -308,11 +308,38 @@ function DownloadButton({ href, label, size, filename, item, season, episode, me
   const fallbackName = `${String(label || 'movie').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'movie'}.mp4`
   const [status, setStatus] = useState('idle')
   const isLocalResolver = String(href || '').startsWith('/')
+  const handoffRef = useRef(null)
+
+  useEffect(() => () => {
+    handoffRef.current?.remove()
+    handoffRef.current = null
+  }, [])
 
   const startDownload = async event => {
     if (!href) return
     if (!isLocalResolver) {
+      event.preventDefault()
+      if (status === 'loading') return
       item && recordDownload(item, { season, episode, mediaKind: kind, filename: filename || fallbackName, resolution: label })
+      setStatus('loading')
+      handoffRef.current?.remove()
+      const frame = document.createElement('iframe')
+      frame.setAttribute('aria-hidden', 'true')
+      frame.tabIndex = -1
+      frame.style.position = 'fixed'
+      frame.style.width = '1px'
+      frame.style.height = '1px'
+      frame.style.left = '-9999px'
+      frame.style.opacity = '0'
+      frame.style.pointerEvents = 'none'
+      frame.src = href
+      handoffRef.current = frame
+      document.body.appendChild(frame)
+      window.setTimeout(() => {
+        frame.remove()
+        if (handoffRef.current === frame) handoffRef.current = null
+        setStatus('idle')
+      }, 4000)
       return
     }
     event.preventDefault()
@@ -341,10 +368,10 @@ function DownloadButton({ href, label, size, filename, item, season, episode, me
   }
 
   return (
-    <a className={`mv-download-btn${status === 'error' ? ' is-error' : ''}`} href={href || '#'} download={filename || fallbackName} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" aria-busy={status === 'loading'} onClick={startDownload}>
+    <a className={`mv-download-btn${status === 'error' ? ' is-error' : ''}`} href={href || '#'} download={filename || fallbackName} rel="noopener noreferrer" referrerPolicy="no-referrer" aria-busy={status === 'loading'} onClick={startDownload}>
       <span className="mv-download-status" role={status === 'loading' ? 'status' : undefined}>
         {status === 'loading' ? <span className="mv-download-spinner" aria-hidden="true" /> : null}
-        {status === 'loading' ? 'Checking source…' : status === 'error' ? '⚠ Retry download' : `⬇ ${label}`}
+        {status === 'loading' ? 'Starting download…' : status === 'error' ? '⚠ Retry download' : `⬇ ${label}`}
       </span>
       {size ? <span className="mv-download-size">{size}</span> : null}
     </a>
