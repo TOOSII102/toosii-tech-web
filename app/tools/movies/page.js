@@ -476,7 +476,7 @@ export default function MoviesPage({ shared = null }) {
   const [trending, setTrending] = useState([])
   const [hero, setHero] = useState(null)
   const [results, setResults] = useState([])
-  const [rails, setRails] = useState({ home: [], moviePopular: [], movieNew: [], movieTop: [], tvPopular: [], tvTrending: [], tvNew: [], animeTrending: [], animeBrowse: [], live: [] })
+  const [rails, setRails] = useState({ home: [], trending: [], moviePopular: [], movieNew: [], movieTop: [], tvPopular: [], tvTrending: [], tvNew: [], animeTrending: [], animeBrowse: [], live: [] })
   const [loading, setLoading] = useState(true)
   const [searching, setSearching] = useState(false)
   const [query, setQuery] = useState('')
@@ -507,7 +507,7 @@ export default function MoviesPage({ shared = null }) {
       const animeSections = animeHome.status === 'fulfilled' ? (animeHome.value?.data?.sections || []) : []
       setTrending(trendItems)
       setHero(trendItems[Math.floor(Math.random() * Math.min(5, trendItems.length))] || trendItems[0] || null)
-      setRails({ home: homeSections.flatMap(section => section.items || []).slice(0, 20), moviePopular: getItems(moviePopular), movieNew: getItems(movieNew), movieTop: [], tvPopular: [], tvTrending: getItems(tvTrending), tvNew: [], animeTrending: animeSections.flatMap(section => section.items || []).slice(0, 20), animeBrowse: [], live: getItems(live) })
+      setRails({ home: homeSections.flatMap(section => section.items || []).slice(0, 20), trending: trendItems, moviePopular: getItems(moviePopular), movieNew: getItems(movieNew), movieTop: [], tvPopular: [], tvTrending: getItems(tvTrending), tvNew: [], animeTrending: animeSections.flatMap(section => section.items || []).slice(0, 20), animeBrowse: [], live: getItems(live) })
       setLoading(false)
     })
     return () => { active = false }
@@ -515,7 +515,7 @@ export default function MoviesPage({ shared = null }) {
 
   useEffect(() => {
     const requestedCatalog = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('catalog') : ''
-    if (requestedCatalog && ['moviePopular', 'movieNew', 'movieTop', 'tvPopular', 'tvTrending', 'tvNew', 'animeTrending', 'animeBrowse', 'live'].includes(requestedCatalog)) setCatalogMode(requestedCatalog)
+    if (requestedCatalog && ['trending', 'moviePopular', 'movieNew', 'movieTop', 'tvPopular', 'tvTrending', 'tvNew', 'animeTrending', 'animeBrowse', 'live'].includes(requestedCatalog)) setCatalogMode(requestedCatalog)
   }, [])
 
   useEffect(() => {
@@ -565,9 +565,9 @@ export default function MoviesPage({ shared = null }) {
   }
 
   const display = results.length ? results : trending
-  const railItems = rails[catalogMode] || []
-  const railTitle = { moviePopular: 'Popular movies', movieNew: 'New movies', movieTop: 'Top-rated movies', tvPopular: 'Popular series', tvTrending: 'Trending series', tvNew: 'New series', animeTrending: 'Trending anime', animeBrowse: 'Browse anime', live: 'Live events & replays' }[catalogMode] || 'Browse catalog'
-  const railActions = { moviePopular: 'movie-popular', movieNew: 'movie-new', movieTop: 'movie-top', tvPopular: 'tv-popular', tvTrending: 'tv-trending', tvNew: 'tv-new', animeTrending: 'anime-trending', animeBrowse: 'anime-browse', live: 'live' }
+  const railItems = catalogMode === 'trending' ? trending : (rails[catalogMode] || [])
+  const railTitle = { trending: 'Trending now', moviePopular: 'Popular movies', movieNew: 'New movies', movieTop: 'Top-rated movies', tvPopular: 'Popular series', tvTrending: 'Trending series', tvNew: 'New series', animeTrending: 'Trending anime', animeBrowse: 'Browse anime', live: 'Live events & replays' }[catalogMode] || 'Browse catalog'
+  const railActions = { trending: 'trending', moviePopular: 'movie-popular', movieNew: 'movie-new', movieTop: 'movie-top', tvPopular: 'tv-popular', tvTrending: 'tv-trending', tvNew: 'tv-new', animeTrending: 'anime-trending', animeBrowse: 'anime-browse', live: 'live' }
 
   return (
     <div className="mv-page">
@@ -580,9 +580,9 @@ export default function MoviesPage({ shared = null }) {
       <div className="mv-search-wrap"><form className="mv-search-row" onSubmit={handleSearch}><span className="mv-search-icon">🔍</span><input className="mv-search-input" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search movies, series, anime, live…" aria-label="Search movies, series, anime, and live events" /><select className="mv-search-type" value={type} onChange={event => setType(event.target.value)} aria-label="Content type"><option value="">All</option><option value="1">Movies</option><option value="2">Series</option><option value="anime">Anime</option><option value="live">Live</option></select><button type="submit" className="mv-search-btn">Search</button></form>{suggestions.length > 0 && <div className="mv-suggestions">{suggestions.map((suggestion, index) => <button key={`${suggestion.subjectId || suggestion.title || index}`} type="button" onClick={() => { setQuery(suggestion.title || suggestion.name || ''); setSuggestions([]) }}>{suggestion.title || suggestion.name || 'Suggestion'}</button>)}</div>}</div>
 
       {results.length > 0 ? <section className="mv-section"><div className="mv-section-head"><h2 className="mv-section-title"><span className="mv-section-bar" />Results for “{query}”</h2><div className="mv-section-actions"><button className="mv-share-search-btn" onClick={shareMovieSearch}>↗ Share Search</button><button className="mv-clear-btn" onClick={() => { setResults([]); setQuery('') }}>✕ Clear</button><span className="mv-count">{results.length} titles</span></div></div><div className="mv-grid">{results.map(movie => <Card key={movie.subjectId} movie={movie} onClick={setSelected} onShare={shareMovie} />)}</div></section> : <>
-        {loading ? <section className="mv-section"><div className="mv-grid">{Array.from({ length: 12 }).map((_, index) => <Skeleton key={index} />)}</div></section> : <Rail title="🔥 Trending" items={trending} onSelect={setSelected} onShare={shareMovie} />}
-        <section className="mv-catalog-controls"><div><span className="mv-catalog-eyebrow">TOOSII CATALOG</span><h2>Browse every rail</h2><p>Switch between movie and series catalogs, rankings, new releases, and genre shelves.</p></div><div className="mv-catalog-tabs">{[['moviePopular', 'Movie Popular'], ['movieNew', 'Movie New'], ['movieTop', 'Movie Top'], ['tvPopular', 'TV Popular'], ['tvTrending', 'TV Trending'], ['tvNew', 'TV New'], ['animeTrending', 'Anime Trending'], ['animeBrowse', 'Anime Browse'], ['live', 'Live Events']].map(([id, label]) => <button key={id} className={catalogMode === id ? 'active' : ''} onClick={() => { setCatalogMode(id); if (!rails[id]?.length) loadRail(railActions[id]) }}>{label}</button>)}</div></section>
-        <Rail title={railTitle} items={railItems} onSelect={setSelected} onShare={shareMovie} />
+        {loading ? <section className="mv-section"><div className="mv-grid">{Array.from({ length: 12 }).map((_, index) => <Skeleton key={index} />)}</div></section> : null}
+        <section className="mv-catalog-controls"><div><span className="mv-catalog-eyebrow">TOOSII CATALOG</span><h2>Browse every rail</h2><p>Choose a movie, series, anime, live, or trending shelf instead of loading Trending as the default.</p></div><div className="mv-catalog-tabs">{[['moviePopular', 'Movie Popular'], ['movieNew', 'Movie New'], ['movieTop', 'Movie Top'], ['trending', 'Trending'], ['tvPopular', 'TV Popular'], ['tvTrending', 'TV Trending'], ['tvNew', 'TV New'], ['animeTrending', 'Anime Trending'], ['animeBrowse', 'Anime Browse'], ['live', 'Live Events']].map(([id, label]) => <button key={id} className={catalogMode === id ? 'active' : ''} onClick={() => { setCatalogMode(id); if (id !== 'trending' && !rails[id]?.length) loadRail(railActions[id]) }}>{label}</button>)}</div></section>
+        {!loading && <Rail title={railTitle} items={railItems} onSelect={setSelected} onShare={shareMovie} />}
         {rails.home.length > 0 && <Rail title="Curated for you" items={rails.home} onSelect={setSelected} onShare={shareMovie} />}
       </>}
 
