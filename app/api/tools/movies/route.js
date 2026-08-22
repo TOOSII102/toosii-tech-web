@@ -621,6 +621,26 @@ export async function GET(req) {
   const kind = searchParams.get('kind') || ''
   const retry = asNumber(searchParams.get('retry'), 0)
 
+  if (action === 'download-check') {
+    if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+    try {
+      const checkHeaders = new Headers(req.headers)
+      checkHeaders.set('range', 'bytes=0-1023')
+      const checkRequest = new Request(req, { headers: checkHeaders })
+      const mediaResponse = await daveMediaOrFallback({ id, res, season, episode, title, resourceId, request: checkRequest, download: true, force: true })
+      const location = mediaResponse.headers.get('location')
+      const contentType = mediaResponse.headers.get('content-type') || ''
+      const isMediaResponse = (mediaResponse.status === 200 || mediaResponse.status === 206) && (contentType.includes('video') || contentType.includes('octet-stream') || contentType.includes('mp4'))
+      if (!location && !isMediaResponse) throw new Error('download-source-not-media')
+      await mediaResponse.body?.cancel?.()
+      const source = mediaResponse.headers.get('X-Toosii-Source') || (location?.includes('davexmovieapi.zone.id') ? 'primary' : 'fallback')
+      return NextResponse.json({ available: true, provider: source === 'fallback' ? 'Toosii Fallback' : 'Toosii Primary' }, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } })
+    } catch (error) {
+      console.warn('[movies:download-check]', error.message)
+      return NextResponse.json({ available: false, error: 'Movie download is temporarily unavailable.', retryable: true }, { status: 503, headers: { 'Retry-After': '5', 'Cache-Control': 'no-store, no-cache, must-revalidate' } })
+    }
+  }
+
   if (action === 'stream' || action === 'download' || action === 'legacy-download') {
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
     try {

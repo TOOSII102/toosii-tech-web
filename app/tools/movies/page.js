@@ -154,23 +154,16 @@ function DownloadButton({ href, label, size, filename, item, season, episode, me
     const controller = new AbortController()
     const timeout = window.setTimeout(() => controller.abort(), DOWNLOAD_CHECK_TIMEOUT)
     try {
-      const response = await fetch(href, { redirect: 'manual', cache: 'no-store', signal: controller.signal })
-      const isValidRedirect = response.type === 'opaqueredirect' || (response.status >= 300 && response.status < 400)
-      const isValidMediaResponse = response.status === 200 || response.status === 206
-      if (isValidRedirect || isValidMediaResponse) {
+      const checkUrl = new URL(href, window.location.origin)
+      checkUrl.searchParams.set('action', 'download-check')
+      const response = await fetch(checkUrl.pathname + checkUrl.search, { cache: 'no-store', signal: controller.signal })
+      const payload = await response.json().catch(() => ({}))
+      if (response.ok && payload?.available === true) {
         item && recordDownload(item, { season, episode, mediaKind: kind, filename: filename || fallbackName, resolution: label })
-        const downloadLink = document.createElement('a')
-        downloadLink.href = href
-        downloadLink.download = filename || fallbackName
-        downloadLink.rel = 'noopener noreferrer'
-        downloadLink.style.display = 'none'
-        document.body.appendChild(downloadLink)
-        downloadLink.click()
-        downloadLink.remove()
         setStatus('idle')
+        window.location.assign(href)
         return
       }
-      const payload = await response.json().catch(() => ({}))
       throw new Error(payload?.error || 'Download source is temporarily unavailable')
     } catch (error) {
       setStatus('error')
