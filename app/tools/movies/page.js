@@ -554,7 +554,7 @@ export default function MoviesPage({ shared = null }) {
     if (episode && episodic) link.searchParams.set('episode', episode)
     const shareTitle = episodic ? positionedTitle(movie.title || 'Movie', season, episode) : (movie.title || 'Movie')
     link.searchParams.set('title', shareTitle)
-    await shareOrCopy({ title: `${shareTitle} — Toosii Tech`, text: `Watch ${shareTitle} on Toosii Tech`, url: link.toString() })
+    await shareOrCopy({ title: `${shareTitle} — Toosii Tech Movies`, text: '', url: link.toString() })
   }
 
   const shareMovieSearch = async () => {
