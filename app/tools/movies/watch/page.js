@@ -16,9 +16,9 @@ export async function generateMetadata({ searchParams }) {
   const hasEpisode = !episode || new RegExp(`\\bE${episode}\\b`, 'i').test(title)
   const shareTitle = `${title}${season && !hasSeason ? ` S${season}` : ''}${episode && !hasEpisode ? ` E${episode}` : ''}`
   return createShareMetadata({
-    title: `${shareTitle} — Toosii Tech Movies`,
-    description: query ? `Browse Toosii Tech movie and series results for ${query}.` : `Watch ${shareTitle} on Toosii Tech Movies & Series.`,
-    keywords: `${title}, movies, series, streaming, Toosii Tech`,
+    title: `${shareTitle} — TOOSIIFLIX`,
+    description: query ? `Browse ${query} on TOOSIIFLIX by Toosii Tech.` : `Watch ${shareTitle} on TOOSIIFLIX by Toosii Tech.`,
+    keywords: `${title}, TOOSIIFLIX, movies, series, streaming, Toosii Tech`,
     path: '/tools/movies/watch',
     type: 'video.movie',
     previewParams: {

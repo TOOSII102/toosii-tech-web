@@ -1,9 +1,9 @@
 import { createShareMetadata } from '../../../lib/shareMetadata'
 
 export const metadata = createShareMetadata({
-  title: 'Free HD Movie Streaming — Toosii Tech',
-  description: 'Stream and browse thousands of HD movies and series for free — no sign-up, no subscription. Browse by genre, search by title, and watch instantly.',
-  keywords: 'free movie streaming, HD movies online, watch movies free, free series streaming, Kenya movies, Toosii Tech movies, stream without account',
+  title: 'TOOSIIFLIX — Movies, Series, Anime & Live TV',
+  description: 'Discover movies, series, anime, and live events on TOOSIIFLIX by Toosii Tech. Search, browse, stream, and download available titles on any device.',
+  keywords: 'TOOSIIFLIX, Toosii movies, Toosii series, movies online, HD streaming, anime, live TV, Toosii Tech',
   path: '/tools/movies',
 })
 
