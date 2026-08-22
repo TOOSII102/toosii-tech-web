@@ -87,7 +87,7 @@ export default function ToosiiAI() {
   const [input, setInput]                 = useState('')
   const [streaming, setStreaming]         = useState(false)
   const [models, setModels]               = useState([])
-  const [model, setModel]                 = useState('llama-3.3-70b-versatile')
+  const [model, setModel]                 = useState('toosii-qwen')
   const [sidebarOpen, setSidebarOpen]     = useState(false)   // false = SSR-safe (no overlay flash)
   const [conversations, setConversations] = useState([])
   const [activeConvId, setActiveConvId]   = useState(null)
@@ -113,7 +113,12 @@ export default function ToosiiAI() {
   useEffect(() => {
     setMounted(true)
     // Restore saved model
-    try { const s = localStorage.getItem('tai_model'); if (s) setModel(s) } catch {}
+    try {
+      const s = localStorage.getItem('tai_model')
+      const savedModel = s && !s.startsWith('llama-') ? s : 'toosii-qwen'
+      setModel(savedModel)
+      localStorage.setItem('tai_model', savedModel)
+    } catch {}
     // Restore history
     try { const s = localStorage.getItem('tai_history'); if (s) setConversations(JSON.parse(s)) } catch {}
     // Open sidebar on desktop
@@ -423,7 +428,7 @@ export default function ToosiiAI() {
                 </button>
             }
           </div>
-          <p className="tai-footer-note">Toosii fallback · Groq · Gemini · OpenAI · Claude · Grok — streaming · .zip · vision · voice</p>
+          <p className="tai-footer-note">Toosii Qwen · Toosii DeepSeek · Toosii Gemini · Groq · OpenAI · Claude · Grok — streaming · .zip · vision · voice</p>
         </div>
       </div>
     </div>

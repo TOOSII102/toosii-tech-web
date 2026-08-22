@@ -5,7 +5,14 @@ export const dynamic = 'force-dynamic'
 
 const GROQ_MODELS = new Set(['llama-3.3-70b-versatile','llama-3.1-8b-instant','mixtral-8x7b-32768','gemma2-9b-it'])
 const REFERENCE_AI_MODEL = 'toosii-gptlogic'
-const REFERENCE_AI_ENDPOINT = 'https://r-bots-free-apis.co08.art/api/gptlogic'
+const REFERENCE_AI_ENDPOINT = 'https://r-bots-free-apis.co08.art'
+const REFERENCE_AI_MODELS = {
+  'toosii-qwen': { path: '/api/qwen', acceptsPrompt: false },
+  'toosii-deepseek-v3': { path: '/api/deepseek-v3', acceptsPrompt: false },
+  'toosii-deepseek-r1': { path: '/api/deepseek-r1', acceptsPrompt: false },
+  'toosii-gemini': { path: '/api/gemini', acceptsPrompt: false },
+  'toosii-gptlogic': { path: '/api/gptlogic', acceptsPrompt: true },
+}
 const VISION_MODELS = new Set(['gpt-4o','gpt-4o-mini','claude-3-5-sonnet-20241022','claude-3-5-haiku-20241022','grok-2-vision-1212','gemini-2.0-flash','gemini-1.5-flash','gemini-1.5-pro'])
 const VISION_PRIORITY = [
   { id: 'gemini-2.0-flash',          key: 'GEMINI_API_KEY' },
@@ -16,6 +23,11 @@ const VISION_PRIORITY = [
   { id: 'grok-2-vision-1212',        key: 'XAI_API_KEY' },
 ]
 const GENERAL_MODEL_PRIORITY = [
+  { id: 'toosii-qwen',               key: null },
+  { id: 'toosii-deepseek-v3',        key: null },
+  { id: 'toosii-deepseek-r1',        key: null },
+  { id: 'toosii-gemini',             key: null },
+  { id: REFERENCE_AI_MODEL,          key: null },
   { id: 'llama-3.3-70b-versatile',   key: 'GROQ_API_KEY' },
   { id: 'llama-3.1-8b-instant',      key: 'GROQ_API_KEY' },
   { id: 'gemma2-9b-it',              key: 'GROQ_API_KEY' },
@@ -23,13 +35,12 @@ const GENERAL_MODEL_PRIORITY = [
   { id: 'gemini-1.5-flash',          key: 'GEMINI_API_KEY' },
   { id: 'gpt-4o-mini',               key: 'OPENAI_API_KEY' },
   { id: 'claude-3-5-haiku-20241022', key: 'ANTHROPIC_API_KEY' },
-    { id: 'grok-3-mini',              key: 'XAI_API_KEY' },
-  { id: REFERENCE_AI_MODEL,          key: null },
+  { id: 'grok-3-mini',              key: 'XAI_API_KEY' },
 ]
 const CONTEXT_BUDGET = { groq: 24_000, default: 120_000 }
 
 function getProvider(model) {
-  if (model === REFERENCE_AI_MODEL) return 'reference'
+  if (REFERENCE_AI_MODELS[model]) return 'reference'
   if (model.startsWith('claude-'))  return 'anthropic'
   if (model.startsWith('grok-'))    return 'grok'
   if (model.startsWith('gemini-'))  return 'gemini'
@@ -67,27 +78,38 @@ function buildOAIMessages(msgs, vision) {
     return { role: m.role, content: m.content ?? '' }
   })
 }
-function buildReferenceRequest(msgs) {
+function buildReferenceRequest(model, msgs) {
+  const reference = REFERENCE_AI_MODELS[model] || REFERENCE_AI_MODELS[REFERENCE_AI_MODEL]
   const conversation = msgs.filter(m => m.role !== 'system').slice(-8).map(m => `${m.role}: ${String(m.content || '').slice(0, 1400)}`).join('\n')
   const latest = [...msgs].reverse().find(m => m.role === 'user')?.content || 'Hello'
   const prompt = [
     'You are Toosii AI, a concise and professional coding assistant built by Toosii Tech.',
     'Answer the latest user request directly. Use markdown when code is needed.',
+    'Never identify yourself by an underlying provider or model name. Always identify yourself only as Toosii AI, built by Toosii Tech.',
     conversation ? `Conversation context:\n${conversation}` : '',
   ].filter(Boolean).join('\n\n').slice(0, 7200)
-  const params = new URLSearchParams({ q: String(latest).slice(0, 2400), prompt })
-  return `${REFERENCE_AI_ENDPOINT}?${params.toString()}`
+  const params = reference.acceptsPrompt
+    ? new URLSearchParams({ q: String(latest).slice(0, 2400), prompt })
+    : new URLSearchParams({ q: prompt.slice(0, 8000) })
+  return `${REFERENCE_AI_ENDPOINT}${reference.path}?${params.toString()}`
+}
+
+function brandReferenceText(value) {
+  return value
+    .replace(/\b(I\s*(?:am|'m|’m))\s+(?:gemini|qwen|deepseek(?:[- ]?(?:v3|r1))?|llama(?:[- ]?[0-9.]+)?|gpt)\b/gi, '$1 Toosii AI')
+    .replace(/\ba large language model built by (?:google|alibaba|deepseek|meta|openai)\b/gi, 'a professional AI assistant built by Toosii Tech')
+    .replace(/\b(?:gemini|qwen|deepseek(?:[- ]?(?:v3|r1))?|llama(?:[- ]?[0-9.]+)?|gpt)\s+(?:ai|assistant|model)\b/gi, 'Toosii AI')
 }
 
 function extractReferenceText(payload) {
-  if (typeof payload === 'string') return payload.trim()
-  const candidates = [payload?.response, payload?.answer, payload?.result, payload?.data?.response, payload?.data?.answer, payload?.data?.result]
+  if (typeof payload === 'string') return brandReferenceText(payload.trim())
+  const candidates = [payload?.response, payload?.answer, payload?.result, payload?.message, payload?.data?.response, payload?.data?.answer, payload?.data?.result, payload?.data?.message]
   const value = candidates.find(item => typeof item === 'string' && item.trim())
-  return value ? value.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/<\/?think>/gi, '').trim() : ''
+  return value ? brandReferenceText(value.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/<\/?think>/gi, '').trim()) : ''
 }
 
-async function requestReferenceAI(msgs) {
-  const res = await fetch(buildReferenceRequest(msgs), { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(30_000) })
+async function requestReferenceAI(model, msgs) {
+  const res = await fetch(buildReferenceRequest(model, msgs), { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(25_000) })
   const payload = await res.json().catch(() => null)
   if (!res.ok || payload?.status === false) throw new Error('Toosii AI fallback is temporarily unavailable')
   const text = extractReferenceText(payload)
@@ -111,7 +133,7 @@ export async function POST(req) {
   const rawMessages = body.messages ?? []
   if (!Array.isArray(rawMessages) || rawMessages.length === 0) return new Response(JSON.stringify({ error: 'messages array is required' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
 
-  let model = (body.model ?? '').trim() || 'llama-3.3-70b-versatile'
+  let model = (typeof body.model === 'string' ? body.model.trim() : '') || 'toosii-qwen'
   const originalModel = model
   const hasImage = rawMessages.some(m => m.imageBase64)
   if (hasImage && !VISION_MODELS.has(model)) { const best = VISION_PRIORITY.find(v => process.env[v.key])?.id; if (best) model = best }
@@ -132,7 +154,7 @@ export async function POST(req) {
           const vision = VISION_MODELS.has(attemptModel)
           try {
             if (ap === 'reference') {
-              const text = await requestReferenceAI(msgs)
+              const text = await requestReferenceAI(attemptModel, msgs)
               if (attemptModel !== originalModel) send({ modelSwitch: attemptModel })
               send({ content: text }); contentSent = true; succeeded = true; break
             }
@@ -153,7 +175,10 @@ export async function POST(req) {
             succeeded = true; break
           } catch (err) {
             const msg = String(err?.message ?? '')
-            if ((err?.status === 429 || msg.includes('429') || err?.status === 404 || msg.includes('404 status')) && !contentSent) continue
+            if (!contentSent) {
+              console.warn('[toosii-ai-provider-failed]', attemptModel, msg)
+              continue
+            }
             throw err
           }
         }

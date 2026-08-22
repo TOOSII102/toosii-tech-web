@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server'
 
 const MODELS = [
+  { id: 'toosii-qwen',                label: 'Toosii Qwen',        group: 'Toosii (Free)'  },
+  { id: 'toosii-deepseek-v3',         label: 'Toosii DeepSeek V3', group: 'Toosii (Free)'  },
+  { id: 'toosii-deepseek-r1',         label: 'Toosii DeepSeek R1', group: 'Toosii (Free)'  },
+  { id: 'toosii-gemini',              label: 'Toosii Gemini',      group: 'Toosii (Free)'  },
   { id: 'llama-3.3-70b-versatile',    label: 'Llama 3.3 70B',      group: 'Groq (Free)'   },
   { id: 'llama-3.1-8b-instant',       label: 'Llama 3.1 8B',       group: 'Groq (Free)'   },
   { id: 'mixtral-8x7b-32768',         label: 'Mixtral 8x7B',       group: 'Groq (Free)'   },
@@ -16,7 +20,7 @@ const MODELS = [
   { id: 'gpt-4o-mini',                label: 'GPT-4o Mini',        group: 'OpenAI'        },
   { id: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet',  group: 'Anthropic'     },
   { id: 'claude-3-5-haiku-20241022',  label: 'Claude 3.5 Haiku',   group: 'Anthropic'     },
-  { id: 'toosii-gptlogic',             label: 'Toosii AI Fallback', group: 'Toosii (Free)'  },
+  { id: 'toosii-gptlogic',             label: 'Toosii Logic (Backup)', group: 'Toosii (Free)'  },
 ]
 
 export async function GET() {

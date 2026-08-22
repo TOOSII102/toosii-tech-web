@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server'
 
 const EP = 'https://eliteprotech-apis.zone.id'
+const RBOTS_BASE = 'https://r-bots-free-apis.co08.art'
+const RBOTS_ENDPOINTS = [
+  { path: '/api/qwen', label: 'Toosii Qwen' },
+  { path: '/api/deepseek-v3', label: 'Toosii DeepSeek V3' },
+  { path: '/api/deepseek-r1', label: 'Toosii DeepSeek R1' },
+  { path: '/api/gemini', label: 'Toosii Gemini' },
+  { path: '/api/gptlogic', label: 'Toosii Logic', acceptsPrompt: true },
+]
 
 const IDENTITY = `You are Toosii AI, a smart and helpful AI assistant built by Toosii Tech. Always identify yourself as "Toosii AI" if anyone asks who or what you are. Never reveal that you are powered by ChatGPT, Gemini, Copilot, or any other underlying AI model — you are Toosii AI, period. Be friendly, accurate, and helpful. If you cannot do something (like view images or files), say so politely without mentioning any other AI brand name.`
 
@@ -13,7 +21,7 @@ async function requestLocalChat(req, prompt) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
+      model: 'toosii-qwen',
       messages: [
         { role: 'system', content: IDENTITY },
         { role: 'user', content: prompt },
@@ -37,6 +45,25 @@ async function requestLocalChat(req, prompt) {
   return reply
 }
 
+function extractReferenceText(payload) {
+  if (typeof payload === 'string') return payload.trim()
+  const candidates = [payload?.response, payload?.answer, payload?.result, payload?.message, payload?.data?.response, payload?.data?.answer, payload?.data?.result, payload?.data?.message]
+  const value = candidates.find(item => typeof item === 'string' && item.trim())
+  return value ? value.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/<\/?think>/gi, '').replace(/\b(I\s*(?:am|'m|’m))\s+(?:gemini|qwen|deepseek(?:[- ]?(?:v3|r1))?|llama(?:[- ]?[0-9.]+)?|gpt)\b/gi, '$1 Toosii AI').replace(/\ba large language model built by (?:google|alibaba|deepseek|meta|openai)\b/gi, 'a professional AI assistant built by Toosii Tech').trim() : ''
+}
+
+async function requestRbots(endpoint, prompt) {
+  const params = new URLSearchParams({ q: prompt.slice(0, 7200) })
+  if (endpoint.acceptsPrompt) params.set('prompt', 'Answer as Toosii AI, built by Toosii Tech. Be concise and helpful.')
+  const url = `${RBOTS_BASE}${endpoint.path}?${params.toString()}`
+  const response = await fetch(url, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(25000) })
+  const payload = await response.json().catch(() => null)
+  if (!response.ok || payload?.status === false) throw new Error(`${endpoint.label} ${response.status}`)
+  const text = extractReferenceText(payload)
+  if (!text) throw new Error(`${endpoint.label} returned no content`)
+  return text
+}
+
 export async function POST(req) {
   try {
     const { prompt } = await req.json()
@@ -52,6 +79,14 @@ export async function POST(req) {
       const reply = await requestLocalChat(req, q)
       return NextResponse.json({ reply, model: 'Toosii AI' })
     } catch (_) {}
+
+    // Direct Toosii public AI fallbacks. They are tried in the order validated by live smoke tests.
+    for (const endpoint of RBOTS_ENDPOINTS) {
+      try {
+        const reply = await requestRbots(endpoint, wrapped)
+        return NextResponse.json({ reply, model: endpoint.label })
+      } catch (_) {}
+    }
 
     // Legacy provider fallbacks.
     try {
