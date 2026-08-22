@@ -714,10 +714,11 @@ export default function MoviesPage({ shared = null }) {
   }, [])
 
   useEffect(() => {
-    if (!query.trim()) { setSuggestions([]); return undefined }
-    const timer = setTimeout(() => request('suggest', { q: query, limit: 6 }).then(payload => setSuggestions(payload?.data || [])).catch(() => setSuggestions([])), 250)
-    return () => clearTimeout(timer)
-  }, [query])
+    if (!query.trim() || results.length > 0) { setSuggestions([]); return undefined }
+    let active = true
+    const timer = setTimeout(() => request('suggest', { q: query, limit: 6 }).then(payload => { if (active) setSuggestions(payload?.data || []) }).catch(() => { if (active) setSuggestions([]) }), 250)
+    return () => { active = false; clearTimeout(timer) }
+  }, [query, results.length])
 
   useEffect(() => {
     if (!shared || sharedLoaded.current) return
@@ -731,10 +732,11 @@ export default function MoviesPage({ shared = null }) {
 
   const handleSearch = async event => {
     event?.preventDefault()
-    if (!query.trim()) { setResults([]); return }
+    if (!query.trim()) { setResults([]); setSuggestions([]); return }
+    setSuggestions([])
     setSearching(true)
     try { const payload = await request('search', { q: query, type }); setResults(payload?.data?.items || payload?.data?.subjectList || []) } catch { setResults([]) }
-    setSearching(false); setSuggestions([])
+    setSearching(false)
   }
 
   const shareMovie = async (movie = selected, season = movie?.season, episode = movie?.episode) => {
