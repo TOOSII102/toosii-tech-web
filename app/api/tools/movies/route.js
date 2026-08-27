@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { brandPublicResponse } from '../../../../lib/brandPublicResponse'
+import { movieFallback } from '../../../../lib/movieFallbacks'
 
 const DAVEX_BASE = 'https://davexmovieapi.zone.id'
 const LEGACY_BASE = 'https://movieapi.xcasper.space'
@@ -29,6 +30,10 @@ const LEGACY_JSON_HEADERS = {
   Accept: 'application/json',
   'Sec-Fetch-Dest': 'empty',
   'Sec-Fetch-Mode': 'cors',
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]))
 }
 
 const SOURCE_CACHE_TTL = 60 * 1000
@@ -612,6 +617,7 @@ export async function GET(req) {
   const action = searchParams.get('action') || 'trending'
   const id = searchParams.get('id') || ''
   const q = searchParams.get('q') || ''
+  const genre = searchParams.get('genre') || ''
   const type = searchParams.get('type') || ''
   const res = searchParams.get('res') || searchParams.get('resolution') || '720'
   const season = searchParams.get('se') || searchParams.get('season') || ''
@@ -620,6 +626,22 @@ export async function GET(req) {
   const resourceId = searchParams.get('resourceId') || ''
   const kind = searchParams.get('kind') || ''
   const retry = asNumber(searchParams.get('retry'), 0)
+  const useFallback = searchParams.get('fallback') === '1'
+
+  if (useFallback) {
+    try {
+      const result = await movieFallback({ action, q, genre, id, type: type || kind, season, episode, title })
+      const embedUrl = result.body?.data?.embedUrl
+      if (action === 'stream' && embedUrl) {
+        const html = `<!doctype html><html><head><meta name="referrer" content="no-referrer"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body,iframe{width:100%;height:100%;margin:0;border:0;background:#000;overflow:hidden}iframe{display:block}</style></head><body><iframe title="Fallback movie player" src="${escapeHtml(embedUrl)}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen referrerpolicy="no-referrer"></iframe></body></html>`
+        return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } })
+      }
+      return NextResponse.json(result.body, { status: result.status || 200 })
+    } catch (error) {
+      console.error('[movies:fallback]', error.message)
+      return NextResponse.json({ error: 'Fallback movie service is temporarily unavailable.' }, { status: 502 })
+    }
+  }
 
   if (action === 'download-check') {
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
