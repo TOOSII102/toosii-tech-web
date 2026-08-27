@@ -631,7 +631,11 @@ export async function GET(req) {
   if (useFallback) {
     try {
       const result = await movieFallback({ action, q, genre, id, type: type || kind, season, episode, title })
+      const directUrl = result.body?.data?.directUrl
       const embedUrl = result.body?.data?.embedUrl
+      if (action === 'stream' && directUrl) {
+        return new Response(null, { status: 307, headers: { Location: directUrl, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' } })
+      }
       if (action === 'stream' && embedUrl) {
         const html = `<!doctype html><html><head><meta name="referrer" content="no-referrer"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body,iframe{width:100%;height:100%;margin:0;border:0;background:#000;overflow:hidden}iframe{display:block}</style></head><body><iframe title="Fallback movie player" src="${escapeHtml(embedUrl)}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen referrerpolicy="no-referrer"></iframe></body></html>`
         return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } })

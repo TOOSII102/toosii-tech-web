@@ -773,7 +773,7 @@ function Modal({ movie, onClose, onSelect, onShare }) {
     return found?.episodes?.length ? found.episodes : Array.from({ length: 24 }, (_, index) => index + 1)
   }
   const currentEpisodes = episodesForSeason(season)
-  const fallbackPlayback = playData?.fallback && playData?.embedUrl
+  const fallbackPlayback = playData?.fallback && (playData?.embedUrl || playData?.directUrl)
   const stream = fallbackPlayback
     ? fallbackMediaUrl(movie.subjectId, episodic ? season : '', episodic ? episode : '', d.title, episodic ? '2' : '1')
     : mediaUrl(movie.subjectId, resolution, episodic ? season : '', episodic ? episode : '', 'stream')
