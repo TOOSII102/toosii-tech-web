@@ -9,11 +9,9 @@ const nextConfig = {
       { protocol: 'https', hostname: 'movieapi.xcasper.space' },
     ],
   },
-  experimental: {
-    serverComponentsExternalPackages: ['gifted-baileys', 'pino'],
-    outputFileTracingIncludes: {
-      '/api/tools/vocal-remover': ['./node_modules/ffmpeg-static/ffmpeg'],
-    },
+  serverExternalPackages: ['gifted-baileys', 'pino'],
+  outputFileTracingIncludes: {
+    '/api/tools/vocal-remover': ['./node_modules/ffmpeg-static/ffmpeg'],
   },
 }
 

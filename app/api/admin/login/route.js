@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
   import { cookies } from 'next/headers'
-
-  const ADMIN_EMAIL = 'toosii042@gmail.com'
+  import { ADMIN_EMAIL, getAdminCredentials } from '../../../../lib/adminAuth'
 
   export async function POST(req) {
     try {
@@ -11,18 +10,20 @@ import { NextResponse } from 'next/server'
         return NextResponse.json({ error: 'Email and password are required.' }, { status: 400 })
       }
 
-      const adminPass = process.env.ADMIN_PASSWORD
-      const secret    = process.env.ADMIN_SECRET || 'toosii-admin'
+      const credentials = getAdminCredentials()
+      if (!credentials) {
+        return NextResponse.json({ error: 'Admin authentication is not configured on the server.' }, { status: 503 })
+      }
 
       const emailMatch = email.toLowerCase() === ADMIN_EMAIL
-      const passMatch  = adminPass ? password === adminPass : password === secret
+      const passMatch  = password === credentials.password
 
       if (!emailMatch || !passMatch) {
         return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 })
       }
 
       const cookieStore = await cookies()
-      cookieStore.set('admin_token', secret, {
+      cookieStore.set('admin_token', credentials.secret, {
         httpOnly: true,
         secure:   process.env.NODE_ENV === 'production',
         sameSite: 'lax',
@@ -35,4 +36,3 @@ import { NextResponse } from 'next/server'
       return NextResponse.json({ error: 'Server error.' }, { status: 500 })
     }
   }
-  

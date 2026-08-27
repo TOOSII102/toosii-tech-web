@@ -29,8 +29,8 @@ export default function Contact() {
       <section className="contact-hero">
         <div className="page-wrapper">
           <p className="section-label">Get In Touch</p>
-          <h1 className="section-title">Let's Build Something <span className="gradient-text">Together</span></h1>
-          <p className="section-sub">Whether it's a bot setup question, a collaboration proposal, a custom project, or just a conversation — I'm always reachable and happy to connect.</p>
+          <h1 className="section-title">Let&apos;s Build Something <span className="gradient-text">Together</span></h1>
+          <p className="section-sub">Whether it&apos;s a bot setup question, a collaboration proposal, a custom project, or just a conversation — I&apos;m always reachable and happy to connect.</p>
         </div>
       </section>
 

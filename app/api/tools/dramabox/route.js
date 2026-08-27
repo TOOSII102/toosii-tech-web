@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server'
 import { brandPublicResponse } from '../../../../lib/brandPublicResponse'
 
+export const dynamic = 'force-dynamic'
+
 const BASE = Buffer.from('aHR0cHM6Ly9hcGlzLnhjYXNwZXIuc3BhY2UvYXBpL2RyYW1hYm94', 'base64').toString()
 const CDN_HEADERS = {
   'Referer': 'https://www.dramabox.com/',
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36',
+}
+const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, character => HTML_ESCAPES[character])
 }
 
 async function getStreamSrc(id, epIdx) {
@@ -43,6 +50,8 @@ export async function GET(req) {
       if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
       const epIdx = parseInt(episode, 10) || 0
       const { src, epNum } = await getStreamSrc(id, epIdx)
+      const safeSrc = escapeHtml(src)
+      const safeEpNum = escapeHtml(epNum)
 
       const html = `<!DOCTYPE html>
 <html>
@@ -85,12 +94,12 @@ export async function GET(req) {
 <body>
   ${src ? `
   <div class="wrap">
-    <video class="bg" src="${src}" autoplay muted loop playsinline preload="metadata"></video>
-    <video class="fg" src="${src}" controls autoplay playsinline preload="metadata"></video>
+  <video class="bg" src="${safeSrc}" autoplay muted loop playsinline preload="metadata"></video>
+    <video class="fg" src="${safeSrc}" controls autoplay playsinline preload="metadata"></video>
   </div>` : `
   <div class="err">
     <span class="err-icon">🔒</span>
-    <span class="err-msg">Episode ${epNum} is a premium episode on DramaBox and is not available for free streaming.<br>Try an earlier episode or search for a different drama.</span>
+    <span class="err-msg">Episode ${safeEpNum} is a premium episode on DramaBox and is not available for free streaming.<br>Try an earlier episode or search for a different drama.</span>
   </div>`}
 </body>
 </html>`

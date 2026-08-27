@@ -204,7 +204,7 @@ export default function TempEmail() {
                 <div className="te-warning">
                   <span className="te-warning-icon">⚠️</span>
                   <span>
-                    <strong>These addresses expire.</strong> Don't use them for accounts you need long-term. Inbox links open a third-party reader — no data is stored by this site.
+                    <strong>These addresses expire.</strong> Don&apos;t use them for accounts you need long-term. Inbox links open a third-party reader — no data is stored by this site.
                   </span>
                 </div>
               </>
@@ -243,9 +243,9 @@ export default function TempEmail() {
       <section className="section" style={{ paddingTop: '0.5rem', paddingBottom: '5rem' }}>
         <div className="page-wrapper">
           <div className="te-info-card glass-card">
-            <h3 className="te-info-heading">📬 Can't see your email in the inbox?</h3>
+            <h3 className="te-info-heading">📬 Can&apos;t see your email in the inbox?</h3>
             <p className="te-info-body">
-              If the inbox button doesn't show your message right away, wait 10–20 seconds and refresh. Some providers have a slight delay. You can also visit{' '}
+              If the inbox button doesn&apos;t show your message right away, wait 10–20 seconds and refresh. Some providers have a slight delay. You can also visit{' '}
               <a href="https://www.guerrillamail.com" target="_blank" rel="noopener noreferrer">guerrillamail.com</a>{' '}
               or{' '}
               <a href="https://yopmail.com" target="_blank" rel="noopener noreferrer">yopmail.com</a>{' '}

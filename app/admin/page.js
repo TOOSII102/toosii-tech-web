@@ -1,27 +1,28 @@
 'use client'
   import { useState, useEffect, useCallback } from 'react'
+  import Link from 'next/link'
   import { useRouter } from 'next/navigation'
   import './admin.css'
 
   /* ── Static site data ── */
   const API_ROUTES = [
-    { path: '/api/download/video',    label: 'Video Downloader',   method: 'GET'  },
-    { path: '/api/download/audio',    label: 'Audio Downloader',   method: 'GET'  },
-    { path: '/api/download/tiktok',   label: 'TikTok Downloader',  method: 'GET'  },
-    { path: '/api/download/spotify',  label: 'Spotify Download',   method: 'GET'  },
+    { path: '/api/download/video',    label: 'Video Downloader',   method: 'POST' },
+    { path: '/api/download/audio',    label: 'Audio Downloader',   method: 'POST' },
+    { path: '/api/download/tiktok',   label: 'TikTok Downloader',  method: 'POST' },
+    { path: '/api/download/spotify',  label: 'Spotify Download',   method: 'POST' },
     { path: '/api/pair',              label: 'WhatsApp Pair',      method: 'GET'  },
     { path: '/api/qr',                label: 'QR Generator',       method: 'GET'  },
     { path: '/api/search/youtube',    label: 'YouTube Search',     method: 'GET'  },
     { path: '/api/search/spotify',    label: 'Spotify Search',     method: 'GET'  },
     { path: '/api/tools/ai',          label: 'Toosii AI',          method: 'POST' },
-    { path: '/api/tools/apk',         label: 'APK Downloader',     method: 'GET'  },
+    { path: '/api/tools/apk',         label: 'APK Downloader',     method: 'POST' },
     { path: '/api/tools/movies',      label: 'Movies',             method: 'GET'  },
     { path: '/api/tools/tempemail',   label: 'Temp Email',         method: 'GET'  },
     { path: '/api/tools/vocal-remover', label: 'Vocal Remover',   method: 'POST' },
-    { path: '/api/tools/firelogo',    label: 'Fire Logo',          method: 'GET'  },
-    { path: '/api/tools/story',       label: 'Story Generator',    method: 'GET'  },
+    { path: '/api/tools/firelogo',    label: 'Fire Logo',          method: 'POST' },
+    { path: '/api/tools/story',       label: 'Story Generator',    method: 'POST' },
     { path: '/api/tools/dramabox',    label: 'Dramabox',           method: 'GET'  },
-    { path: '/api/tools/spotify',     label: 'Spotify Tools',      method: 'GET'  },
+    { path: '/api/tools/spotify',     label: 'Spotify Tools',      method: 'POST' },
   ]
 
   const PAGES = [
@@ -179,10 +180,10 @@
         {/* HEADER */}
         <header className="ad-header">
           <div className="ad-header-left">
-            <a href="/" className="ad-brand-link" title="View live site">
+            <Link href="/" className="ad-brand-link" title="View live site">
                 <img src="/logo.png" alt="Toosii Tech" className="ad-brand-logo" />
                 <span className="ad-brand">Toosii Tech</span>
-              </a>
+              </Link>
               <span className="ad-badge">ADMIN</span>
             </div>
           <div className="ad-header-right">
@@ -228,10 +229,10 @@
                   <h2 className="ad-card-title">📦 Repository</h2>
                   <div className="ad-rows">
                     {[
-                      ['Repository',   <a href={gh.html_url} target="_blank" rel="noopener" className="ad-link">{gh.full_name}</a>],
+                      ['Repository',   <a key="repository" href={gh.html_url} target="_blank" rel="noopener" className="ad-link">{gh.full_name}</a>],
                       ['Description',  gh.description],
-                      ['Language',     <span className="ad-chip ad-chip--blue">{gh.language}</span>],
-                      ['Visibility',   <span className={`ad-chip ${gh.private ? 'ad-chip--red' : 'ad-chip--green'}`}>{gh.private ? '🔒 Private' : '🌐 Public'}</span>],
+                      ['Language',     <span key="language" className="ad-chip ad-chip--blue">{gh.language}</span>],
+                      ['Visibility',   <span key="visibility" className={`ad-chip ${gh.private ? 'ad-chip--red' : 'ad-chip--green'}`}>{gh.private ? '🔒 Private' : '🌐 Public'}</span>],
                       ['Last Push',    timeAgo(gh.pushed_at)],
                       ['Watchers',     gh.watchers_count],
                       ['Size',         `${gh.size} KB`],
@@ -298,7 +299,7 @@
                         {va.debug.tokenMismatch ? (
                           <>
                             <div className="ad-va-setup-icon">🔑</div>
-                            <div className="ad-va-setup-title">VERCEL_TOKEN doesn't match this project</div>
+                            <div className="ad-va-setup-title">VERCEL_TOKEN doesn&apos;t match this project</div>
                             <div className="ad-va-setup-body">
                               The token belongs to a different Vercel account than this project (<code>{va.debug.projectId}</code>).
                             </div>
@@ -438,7 +439,7 @@
               </div>
 
               {Object.keys(health).length === 0 && !checkingHealth && (
-                <p className="ad-muted">Click "Check All" to run health checks.</p>
+                <p className="ad-muted">Click &quot;Check All&quot; to run health checks.</p>
               )}
 
               {checkingHealth && (
@@ -531,7 +532,7 @@
                   ['Platform',        sv.platform],
                   ['Memory Used',     `${sv.memoryMB} MB`],
                   ['Uptime',          formatUptime(sv.uptime)],
-                  ['Environment',     <span className={`ad-chip ${sv.env === 'production' ? 'ad-chip--green' : 'ad-chip--blue'}`}>{sv.env}</span>],
+                  ['Environment',     <span key="environment" className={`ad-chip ${sv.env === 'production' ? 'ad-chip--green' : 'ad-chip--blue'}`}>{sv.env}</span>],
                   ['Total Requests',  sv.totalRequests],
                 ].map(([label, val]) => (
                   <div key={label} className="ad-row">
@@ -560,4 +561,3 @@
       </div>
     )
   }
-  

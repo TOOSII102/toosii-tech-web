@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
   import { cookies } from 'next/headers'
   import { getStats } from '../../../../lib/analytics'
+  import { isValidAdminSession } from '../../../../lib/adminAuth'
 
   const OWNER = 'TOOSII102'
   const REPO  = 'toosii-tech-web'
@@ -25,9 +26,8 @@ import { NextResponse } from 'next/server'
     // Auth check
     const cookieStore = await cookies()
     const token  = cookieStore.get('admin_token')?.value
-    const secret = process.env.ADMIN_SECRET || 'toosii-admin'
 
-    if (!token || token !== secret) {
+    if (!isValidAdminSession(token)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -51,4 +51,3 @@ import { NextResponse } from 'next/server'
       },
     })
   }
-  

@@ -216,7 +216,7 @@ export default function VocalRemover() {
             ) : (
               <div>
                 <p style={{ margin: '0 0 0.6rem', color: '#94a3b8', fontSize: '0.85rem' }}>
-                  Paste a <strong>direct audio file link</strong> — must end in <code style={{ color: '#25d366', background: 'rgba(37,211,102,0.08)', padding: '0 4px', borderRadius: 4 }}>.mp3</code>, <code style={{ color: '#25d366', background: 'rgba(37,211,102,0.08)', padding: '0 4px', borderRadius: 4 }}>.wav</code>, <code style={{ color: '#25d366', background: 'rgba(37,211,102,0.08)', padding: '0 4px', borderRadius: 4 }}>.m4a</code> etc. YouTube/SoundCloud links won't work.
+                  Paste a <strong>direct audio file link</strong> — must end in <code style={{ color: '#25d366', background: 'rgba(37,211,102,0.08)', padding: '0 4px', borderRadius: 4 }}>.mp3</code>, <code style={{ color: '#25d366', background: 'rgba(37,211,102,0.08)', padding: '0 4px', borderRadius: 4 }}>.wav</code>, <code style={{ color: '#25d366', background: 'rgba(37,211,102,0.08)', padding: '0 4px', borderRadius: 4 }}>.m4a</code> etc. YouTube/SoundCloud links won&apos;t work.
                 </p>
                 <div className="dl-search-wrapper" style={{ marginBottom: '0.75rem' }}>
                     <span className="dl-search-icon">🔗</span>
