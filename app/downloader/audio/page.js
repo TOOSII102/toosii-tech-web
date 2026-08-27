@@ -2,6 +2,7 @@
 import Layout from '../../../components/Layout'
 import { useState, useEffect, useRef } from 'react'
 import { shareOrCopy } from '../../../lib/clientShare'
+import { supportsBackgroundFetch, createStreamDownload, createBackgroundDownload, claimBackgroundDownload, saveBlobToDevice } from '../../../lib/downloadManager'
 import './audio.css'
 
 const GT = 'https://api.giftedtech.co.ke/api/download'
@@ -72,6 +73,10 @@ export default function AudioDownloader({ shared = null }) {
   const [result, setResult]           = useState(null)
   const [loading, setLoading]         = useState(false)
   const [downloadState, setDownloadState] = useState({ phase: 'idle', loaded: 0, total: 0, percent: 0, speed: 0, eta: null })
+  const [background, setBackground]   = useState(false)
+  const downloadModeRef               = useRef(null) // 'stream' | 'background'
+  const downloadSessionRef            = useRef(null)
+  const bgSupported                   = supportsBackgroundFetch()
   const [step, setStep]               = useState(0)
   const [error, setError]             = useState('')
   const [selectedId, setSelectedId]   = useState(null)
@@ -90,6 +95,22 @@ export default function AudioDownloader({ shared = null }) {
       .then(d => { if (d.results?.length) setTrending(d.results) })
       .catch(() => {})
       .finally(() => setTrendingLoading(false))
+  }, [])
+
+  // Reached when the user taps the "Download complete" notification the service worker
+  // shows once a background MP3 download finishes after the app was closed — pull the
+  // finished file back out of the cache and hand it to the normal save-to-device flow.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const resumeId = new URLSearchParams(window.location.search).get('resumeDownload')
+    if (!resumeId) return
+    claimBackgroundDownload(resumeId).then(result => {
+      if (result?.blob) saveBlobToDevice(result.blob, result.filename)
+    }).finally(() => {
+      const link = new URL(window.location.href)
+      link.searchParams.delete('resumeDownload')
+      window.history.replaceState({}, '', link.toString())
+    })
   }, [])
 
   useEffect(() => {
@@ -162,74 +183,74 @@ export default function AudioDownloader({ shared = null }) {
     if (!result?.download_url || downloadState.phase === 'downloading') return
 
     const downloadUrl = proxyUrl(result.download_url, result.title, result.author, result.thumbnail)
-    const startedAt = performance.now()
+    const filename = `${[result.author, result.title].filter(Boolean).join(' - ') || 'audio'}.mp3`
     setError('')
-    setDownloadState({ phase: 'downloading', loaded: 0, total: 0, percent: 0, speed: 0, eta: null })
+    downloadSessionRef.current = null
 
-    try {
-      const response = await fetch(downloadUrl)
-      if (!response.ok) throw new Error(`Download failed (${response.status})`)
-
-      const total = Number(response.headers.get('content-length')) || 0
-      if (!response.body) {
-        const blob = await response.blob()
-        const objectUrl = URL.createObjectURL(blob)
-        const anchor = document.createElement('a')
-        anchor.href = objectUrl
-        anchor.download = 'audio.mp3'
-        anchor.click()
-        URL.revokeObjectURL(objectUrl)
-        setDownloadState({ phase: 'complete', loaded: blob.size, total: blob.size, percent: 100, speed: 0, eta: 0 })
-        return
+    if (background && bgSupported) {
+      downloadModeRef.current = 'background'
+      setDownloadState({ phase: 'downloading', loaded: 0, total: 0, percent: 0, speed: 0, eta: null })
+      try {
+        const session = await createBackgroundDownload({
+          url: downloadUrl,
+          filename,
+          title: result.title || filename,
+          onProgress: ({ loaded, total }) => {
+            setDownloadState({ phase: 'downloading', loaded, total, percent: total ? Math.min(100, Math.round((loaded / total) * 100)) : 0, speed: 0, eta: null })
+          },
+          onStateChange: next => {
+            if (next === 'complete') setDownloadState(current => ({ ...current, phase: 'complete', percent: 100 }))
+            if (next === 'error') { setDownloadState({ phase: 'error', loaded: 0, total: 0, percent: 0, speed: 0, eta: null }); setError('Background download failed — please try again.') }
+          },
+        })
+        downloadSessionRef.current = session
+      } catch (backgroundError) {
+        console.error('[audio:download:background]', backgroundError)
+        setBackground(false)
+        runStreamDownload(downloadUrl, filename)
       }
+      return
+    }
 
-      const reader = response.body.getReader()
-      const chunks = []
-      let loaded = 0
-      let lastUpdate = startedAt
-      let lastLoaded = 0
-      let speed = 0
+    runStreamDownload(downloadUrl, filename)
+  }
 
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        chunks.push(value)
-        loaded += value.byteLength
-
-        const now = performance.now()
-        const elapsed = (now - lastUpdate) / 1000
-        if (elapsed >= 0.25 || loaded === total) {
-          const instantSpeed = (loaded - lastLoaded) / Math.max(elapsed, 0.001)
-          speed = speed ? speed * 0.7 + instantSpeed * 0.3 : instantSpeed
-          const remaining = total > loaded && speed > 0 ? (total - loaded) / speed : null
-          setDownloadState({
-            phase: 'downloading',
-            loaded,
-            total,
-            percent: total ? Math.min(100, Math.round((loaded / total) * 100)) : 0,
-            speed,
-            eta: remaining,
-          })
-          lastUpdate = now
-          lastLoaded = loaded
-        }
-      }
-
-      const blob = new Blob(chunks, { type: response.headers.get('content-type') || 'audio/mpeg' })
-      const objectUrl = URL.createObjectURL(blob)
-      const anchor = document.createElement('a')
-      anchor.href = objectUrl
-      anchor.download = `${[result.author, result.title].filter(Boolean).join(' - ') || 'audio'}.mp3`
-      document.body.appendChild(anchor)
-      anchor.click()
-      anchor.remove()
-      URL.revokeObjectURL(objectUrl)
-      setDownloadState({ phase: 'complete', loaded, total: total || loaded, percent: 100, speed, eta: 0 })
-    } catch (downloadError) {
+  const runStreamDownload = (downloadUrl, filename) => {
+    downloadModeRef.current = 'stream'
+    let lastReported = 0
+    const session = createStreamDownload({
+      url: downloadUrl,
+      onProgress: ({ loaded, total, speed }) => {
+        const remaining = total > loaded && speed > 0 ? (total - loaded) / speed : null
+        setDownloadState({ phase: 'downloading', loaded, total, percent: total ? Math.min(100, Math.round((loaded / total) * 100)) : 0, speed, eta: remaining })
+        lastReported = loaded
+      },
+      onStateChange: next => {
+        if (next === 'connecting') setDownloadState({ phase: 'downloading', loaded: 0, total: 0, percent: 0, speed: 0, eta: null })
+        if (next === 'paused') setDownloadState(current => ({ ...current, phase: 'paused' }))
+        if (next === 'error') { setDownloadState({ phase: 'error', loaded: lastReported, total: 0, percent: 0, speed: 0, eta: null }); setError('Download failed — please try again.') }
+      },
+    })
+    downloadSessionRef.current = session
+    session.start().then(() => {
+      if (session.state !== 'complete') return
+      saveBlobToDevice(session.getBlob(), filename)
+      setDownloadState({ phase: 'complete', loaded: session.loaded, total: session.total || session.loaded, percent: 100, speed: 0, eta: 0 })
+    }).catch(downloadError => {
+      if (session.state === 'canceled' || session.state === 'paused') return
       console.error('[audio:download]', downloadError)
       setDownloadState({ phase: 'error', loaded: 0, total: 0, percent: 0, speed: 0, eta: null })
       setError('Download failed — please try again.')
-    }
+    })
+  }
+
+  const pauseDownload = () => { if (downloadModeRef.current === 'stream') downloadSessionRef.current?.pause() }
+  const resumeDownload = () => { if (downloadModeRef.current === 'stream') downloadSessionRef.current?.resume() }
+  const cancelDownload = () => {
+    downloadSessionRef.current?.cancel?.()
+    downloadSessionRef.current = null
+    downloadModeRef.current = null
+    setDownloadState({ phase: 'idle', loaded: 0, total: 0, percent: 0, speed: 0, eta: null })
   }
 
   const pickResult = (item, e) => {
@@ -399,10 +420,16 @@ export default function AudioDownloader({ shared = null }) {
                     {result.duration && <span className="badge">⏱ {result.duration}</span>}
                   </div>
                   <p className="expire-note">⚡ Download now — this link expires soon</p>
-                  {downloadState.phase === 'downloading' && (
-                    <div className="audio-download-progress" role="status" aria-live="polite">
+                  {(downloadState.phase === 'idle' || downloadState.phase === 'ready') && bgSupported && (
+                    <label className="audio-bg-toggle">
+                      <input type="checkbox" checked={background} onChange={e => setBackground(e.target.checked)} />
+                      <span>Background download (keeps going if you close the app)</span>
+                    </label>
+                  )}
+                  {(downloadState.phase === 'downloading' || downloadState.phase === 'paused') && (
+                    <div className={`audio-download-progress${downloadState.phase === 'paused' ? ' is-paused' : ''}`} role="status" aria-live="polite">
                       <div className="audio-progress-heading">
-                        <span>Downloading MP3</span>
+                        <span>{downloadState.phase === 'paused' ? 'Paused' : downloadModeRef.current === 'background' ? 'Downloading in background… 📱' : 'Downloading MP3'}</span>
                         <strong>{downloadState.total ? `${downloadState.percent}%` : 'Starting…'}</strong>
                       </div>
                       <div className="audio-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={downloadState.percent}>
@@ -410,8 +437,13 @@ export default function AudioDownloader({ shared = null }) {
                       </div>
                       <div className="audio-progress-stats">
                         <span>{formatBytes(downloadState.loaded)}{downloadState.total ? ` / ${formatBytes(downloadState.total)}` : ''}</span>
-                        <span>{downloadState.speed > 0 ? `${formatBytes(downloadState.speed)}/s` : 'Connecting…'}</span>
-                        <span>{formatEta(downloadState.eta)}</span>
+                        <span>{downloadState.speed > 0 ? `${formatBytes(downloadState.speed)}/s` : downloadState.phase === 'paused' ? 'Paused' : 'Connecting…'}</span>
+                        <span>{downloadState.phase === 'paused' ? 'Tap resume to continue' : formatEta(downloadState.eta)}</span>
+                      </div>
+                      <div className="audio-progress-controls">
+                        {downloadModeRef.current === 'stream' && downloadState.phase === 'downloading' && <button type="button" className="audio-mini-btn" onClick={pauseDownload}>⏸ Pause</button>}
+                        {downloadModeRef.current === 'stream' && downloadState.phase === 'paused' && <button type="button" className="audio-mini-btn" onClick={resumeDownload}>▶ Resume</button>}
+                        <button type="button" className="audio-mini-btn is-cancel" onClick={cancelDownload}>✕ Cancel</button>
                       </div>
                     </div>
                   )}
@@ -419,8 +451,8 @@ export default function AudioDownloader({ shared = null }) {
                     <div className="audio-download-complete" role="status">✓ MP3 saved — {formatBytes(downloadState.loaded)}</div>
                   )}
                   <div className="dl-buttons">
-                    <button type="button" onClick={downloadFile} disabled={downloadState.phase === 'downloading'} className="btn-primary" style={{ width: 'fit-content' }}>
-                      {downloadState.phase === 'downloading' ? `Downloading ${downloadState.percent}%` : downloadState.phase === 'complete' ? '⬇ Download Again' : '⬇ Download MP3'}
+                    <button type="button" onClick={downloadFile} disabled={downloadState.phase === 'downloading' || downloadState.phase === 'paused'} className="btn-primary" style={{ width: 'fit-content' }}>
+                      {downloadState.phase === 'downloading' ? `Downloading ${downloadState.percent}%` : downloadState.phase === 'paused' ? '⏸ Paused' : downloadState.phase === 'complete' ? '⬇ Download Again' : '⬇ Download MP3'}
                     </button>
                     <button type="button" onClick={() => shareAudio({ sourceUrl: url, title: result.title, artist: result.author, thumbnail: result.thumbnail, duration: result.duration, quality: result.quality })} className="btn-secondary">↗ Share Song</button>
                     {mode === 'search' && <button onClick={() => { setResult(null); setSelectedId(null) }} className="btn-outline" style={{ width: 'fit-content', fontSize: '0.85rem' }}>← Back</button>}
