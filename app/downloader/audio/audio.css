@@ -629,6 +629,33 @@
   font-size: 0.8rem;
 }
 
+.audio-download-progress.is-paused {
+  border-color: rgba(250, 204, 21, 0.35);
+  background: rgba(250, 204, 21, 0.06);
+}
+.audio-download-progress.is-paused .audio-progress-heading,
+.audio-download-progress.is-paused .audio-progress-stats { color: #fde68a; }
+.audio-download-progress.is-paused .audio-progress-heading strong { color: #fbbf24; }
+
+.audio-bg-toggle {
+  display: flex; align-items: flex-start; gap: 0.5rem;
+  margin-top: 0.75rem; font-size: 0.72rem; color: #94a3b8; line-height: 1.35;
+  cursor: pointer; user-select: none;
+}
+.audio-bg-toggle input { margin-top: 0.15rem; accent-color: #25d366; cursor: pointer; }
+
+.audio-progress-controls { display: flex; gap: 0.5rem; margin-top: 0.7rem; }
+.audio-mini-btn {
+  flex: 1; min-height: 34px;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14);
+  color: #e2e8f0; font-size: 0.72rem; font-weight: 700;
+  border-radius: 8px; cursor: pointer; font-family: inherit;
+  transition: all 0.18s;
+}
+.audio-mini-btn:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.28); }
+.audio-mini-btn.is-cancel { color: #fca5a5; border-color: rgba(248,113,113,.3); }
+.audio-mini-btn.is-cancel:hover { background: rgba(248,113,113,0.12); border-color: rgba(248,113,113,.5); }
+
 @media (max-width: 480px) {
   .audio-progress-stats { flex-wrap: wrap; }
   .audio-progress-stats span:last-child { width: 100%; }
