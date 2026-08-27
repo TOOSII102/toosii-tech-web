@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cookies }         from 'next/headers'
 import { getVisitorStats } from '../../../../lib/visitorStore'
-import { isValidAdminSession } from '../../../../lib/adminAuth'
 
 const VA = 'https://vercel.com/api/web/insights'
 
@@ -50,7 +49,8 @@ async function verifyProject(token, projectId, teamId) {
 export async function GET() {
   const cookieStore  = await cookies()
   const sessionToken = cookieStore.get('admin_token')?.value
-  if (!isValidAdminSession(sessionToken)) {
+  const secret       = process.env.ADMIN_SECRET || 'toosii-admin'
+  if (!sessionToken || sessionToken !== secret) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

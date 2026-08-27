@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
   import { cookies } from 'next/headers'
   import { consumeResetToken } from '../../../../lib/tokens'
-  import { getAdminCredentials } from '../../../../lib/adminAuth'
 
   export async function POST(req) {
     try {
@@ -17,13 +16,9 @@ import { NextResponse } from 'next/server'
       }
 
       // Token is valid — log the admin in
-      const credentials = getAdminCredentials()
-      if (!credentials) {
-        return NextResponse.json({ error: 'Admin authentication is not configured on the server.' }, { status: 503 })
-      }
-
+      const secret      = process.env.ADMIN_SECRET || 'toosii-admin'
       const cookieStore = await cookies()
-      cookieStore.set('admin_token', credentials.secret, {
+      cookieStore.set('admin_token', secret, {
         httpOnly: true,
         secure:   process.env.NODE_ENV === 'production',
         sameSite: 'strict',
@@ -37,3 +32,4 @@ import { NextResponse } from 'next/server'
       return NextResponse.json({ error: 'Server error.' }, { status: 500 })
     }
   }
+  

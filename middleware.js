@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-  import { isValidAdminSession } from './lib/adminAuth'
 
   const PUBLIC_ADMIN_PATHS = [
     '/admin/login',
@@ -20,8 +19,9 @@ import { NextResponse } from 'next/server'
     }
 
     const token  = request.cookies.get('admin_token')?.value
+    const secret = process.env.ADMIN_SECRET || 'toosii-admin'
 
-    if (!isValidAdminSession(token)) {
+    if (!token || token !== secret) {
       return NextResponse.redirect(new URL('/admin/login', request.url))
     }
 
@@ -31,3 +31,4 @@ import { NextResponse } from 'next/server'
   export const config = {
     matcher: ['/admin/:path*'],
   }
+  
