@@ -40,25 +40,57 @@ export async function GET(request) {
     const isMp3 = contentType.toLowerCase().includes('audio/mpeg') || /\.mp3(?:$|[?#])/i.test(filename) || /\.mp3(?:$|[?#])/i.test(fileUrl)
     const safeFilename = filename.replace(/[\r\n"]/g, '').trim() || 'download'
     const asciiFilename = safeFilename.normalize('NFKD').replace(/[^\x20-\x7E]/g, '_')
-    const headers = {
-      'Content-Type':        contentType,
+
+    // Buffer the full body (mp3 already had to be buffered for ID3 tagging) so we can
+    // honestly answer Range requests below — this is what makes pause/resume on the
+    // client (lib/downloadManager.js) safe instead of silently duplicating bytes.
+    let bodyBuffer
+    let finalContentType = contentType
+    if (isMp3) {
+      const sourceBuffer = Buffer.from(await res.arrayBuffer())
+      bodyBuffer = await tagMp3Buffer(sourceBuffer, { title, artist, album, thumbnail })
+      finalContentType = 'audio/mpeg'
+    } else {
+      bodyBuffer = Buffer.from(await res.arrayBuffer())
+    }
+
+    const totalSize = bodyBuffer.length
+    const baseHeaders = {
+      'Content-Type':        finalContentType,
       'Content-Disposition': `attachment; filename="${asciiFilename}"; filename*=UTF-8''${encodeURIComponent(safeFilename)}`,
       'Cache-Control':       'no-store',
       'Access-Control-Allow-Origin': '*',
+      'Accept-Ranges':       'bytes',
+      ...(isMp3 ? { 'X-ID3-Tagged': '1' } : {}),
     }
 
-    if (isMp3) {
-      const sourceBuffer = Buffer.from(await res.arrayBuffer())
-      const taggedBuffer = await tagMp3Buffer(sourceBuffer, { title, artist, album, thumbnail })
-      headers['Content-Type'] = 'audio/mpeg'
-      headers['Content-Length'] = String(taggedBuffer.length)
-      headers['X-ID3-Tagged'] = '1'
-      return new Response(taggedBuffer, { status: 200, headers })
+    const rangeHeader = request.headers.get('range')
+    if (rangeHeader) {
+      const match = /bytes=(\d*)-(\d*)/.exec(rangeHeader)
+      if (match) {
+        let start = match[1] ? parseInt(match[1], 10) : 0
+        let end = match[2] ? parseInt(match[2], 10) : totalSize - 1
+        if (Number.isNaN(start) || start < 0) start = 0
+        if (Number.isNaN(end) || end >= totalSize) end = totalSize - 1
+        if (start > end || start >= totalSize) {
+          return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${totalSize}`, 'Accept-Ranges': 'bytes' } })
+        }
+        const chunk = bodyBuffer.subarray(start, end + 1)
+        return new Response(chunk, {
+          status: 206,
+          headers: {
+            ...baseHeaders,
+            'Content-Length': String(chunk.length),
+            'Content-Range': `bytes ${start}-${end}/${totalSize}`,
+          },
+        })
+      }
     }
 
-    const contentLen = res.headers.get('content-length')
-    if (contentLen) headers['Content-Length'] = contentLen
-    return new Response(res.body, { status: 200, headers })
+    return new Response(bodyBuffer, {
+      status: 200,
+      headers: { ...baseHeaders, 'Content-Length': String(totalSize) },
+    })
   } catch (e) {
     return NextResponse.json({ error: 'Proxy error: ' + e.message }, { status: 500 })
   }
