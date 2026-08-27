@@ -617,6 +617,27 @@
 .mv-download-progress-stats { color: #94a3b8; font-size: 0.64rem; }
 .mv-download-progress.is-complete { border-color: rgba(37, 211, 102, 0.4); }
 .mv-download-progress.is-error { border-color: rgba(248, 113, 113, 0.45); color: #fca5a5; }
+.mv-download-progress.is-paused { border-color: rgba(250, 204, 21, 0.35); background: rgba(250, 204, 21, 0.06); color: #fde68a; }
+.mv-download-btn.is-paused { border-color: rgba(250, 204, 21, 0.45); color: #fde68a; }
+
+.mv-download-bg-toggle {
+  display: flex; align-items: flex-start; gap: 0.5rem;
+  font-size: 0.68rem; color: #94a3b8; line-height: 1.35;
+  cursor: pointer; user-select: none; padding: 0.1rem 0.1rem 0.2rem;
+}
+.mv-download-bg-toggle input { margin-top: 0.15rem; accent-color: #60a5fa; cursor: pointer; }
+
+.mv-download-controls { display: flex; gap: 0.5rem; }
+.mv-download-mini-btn {
+  flex: 1; min-height: 34px;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14);
+  color: #e2e8f0; font-size: 0.72rem; font-weight: 700;
+  border-radius: 8px; cursor: pointer; font-family: inherit;
+  transition: all 0.18s;
+}
+.mv-download-mini-btn:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.28); }
+.mv-download-mini-btn.is-cancel { color: #fca5a5; border-color: rgba(248,113,113,.3); }
+.mv-download-mini-btn.is-cancel:hover { background: rgba(248,113,113,0.12); border-color: rgba(248,113,113,.5); }
 @media (max-width: 480px) {
   .mv-download-control { width: 100%; }
   .mv-download-control .mv-download-btn { width: 100%; justify-content: space-between; }
