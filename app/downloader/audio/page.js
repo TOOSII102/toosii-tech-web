@@ -2,7 +2,7 @@
 import Layout from '../../../components/Layout'
 import { useState, useEffect, useRef } from 'react'
 import { shareOrCopy } from '../../../lib/clientShare'
-import { supportsBackgroundFetch, createStreamDownload, createBackgroundDownload, claimBackgroundDownload, saveBlobToDevice } from '../../../lib/downloadManager'
+import { supportsBackgroundFetch, createStreamDownload, createBackgroundDownload, claimBackgroundDownload, claimAllPendingBackgroundDownloads, saveBlobToDevice } from '../../../lib/downloadManager'
 import './audio.css'
 
 const GT = 'https://api.giftedtech.co.ke/api/download'
@@ -113,6 +113,10 @@ export default function AudioDownloader({ shared = null }) {
     })
   }, [])
 
+  // Sweep up any background downloads that finished while no tab was open to receive
+  // the postMessage and whose completion notification was dismissed/never tapped.
+  useEffect(() => { claimAllPendingBackgroundDownloads() }, [])
+
   useEffect(() => {
     if (!shared || sharedLoaded.current) return
     sharedLoaded.current = true
@@ -190,6 +194,7 @@ export default function AudioDownloader({ shared = null }) {
     if (background && bgSupported) {
       downloadModeRef.current = 'background'
       setDownloadState({ phase: 'downloading', loaded: 0, total: 0, percent: 0, speed: 0, eta: null })
+      let fellBack = false
       try {
         const session = await createBackgroundDownload({
           url: downloadUrl,
@@ -200,7 +205,13 @@ export default function AudioDownloader({ shared = null }) {
           },
           onStateChange: next => {
             if (next === 'complete') setDownloadState(current => ({ ...current, phase: 'complete', percent: 100 }))
-            if (next === 'error') { setDownloadState({ phase: 'error', loaded: 0, total: 0, percent: 0, speed: 0, eta: null }); setError('Background download failed — please try again.') }
+            if (next === 'error' && !fellBack) {
+              // Stalled registration or a lost cache entry — fall back to the direct
+              // engine instead of leaving the user stuck at "Connecting…".
+              fellBack = true
+              setBackground(false)
+              runStreamDownload(downloadUrl, filename)
+            }
           },
         })
         downloadSessionRef.current = session
