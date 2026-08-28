@@ -5,6 +5,7 @@ import './globals.css'
   import { SpeedInsights } from '@vercel/speed-insights/next'
 import PageTracker from '../components/PageTracker'
 import PwaRegister from '../components/PwaRegister'
+import InstallPrompt from '../components/InstallPrompt'
 import { createShareMetadata } from '../lib/shareMetadata'
 
 export const metadata = createShareMetadata({
@@ -31,6 +32,7 @@ export const metadata = createShareMetadata({
           <PwaRegister />
           <AnimatedBackground />
           {children}
+          <InstallPrompt />
           <PageTracker />
           <Analytics />
           <SpeedInsights />
@@ -38,4 +40,3 @@ export const metadata = createShareMetadata({
       </html>
     )
   }
-  
