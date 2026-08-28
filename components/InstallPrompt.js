@@ -5,7 +5,7 @@ import './InstallPrompt.css'
 
 const DISMISS_KEY = 'toosii-install-dismissed-at'
 const INSTALLED_KEY = 'toosii-install-completed'
-const COOLDOWN_MS = 14 * 24 * 60 * 60 * 1000 // don't re-ask for 2 weeks after "Not now"
+const COOLDOWN_MS = 24 * 60 * 60 * 1000 // don't re-ask for 24 hours after "Not now"
 const SHOW_DELAY_MS = 6000 // let the page settle before asking — feels invited, not intrusive
 
 function isStandalone() {
