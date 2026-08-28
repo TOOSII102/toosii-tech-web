@@ -44,6 +44,16 @@ self.addEventListener('backgroundfetchsuccess', event => {
     } catch {
       // fall through to notification either way so the user still gets told
     }
+
+    // Tell any open tab right away so it can save the file to disk immediately
+    // instead of waiting for a notification tap (this is the fix for downloads that
+    // "complete" but never actually land on the device while the app stays open).
+    const clientsList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+    clientsList.forEach(client => client.postMessage({ type: 'bg-download-ready', id: bgFetch.id }))
+
+    // Always also show a notification — belt-and-suspenders backup for when no tab
+    // was open, or the auto-save above fails for any reason (e.g. the browser blocks
+    // a programmatic save outside a user gesture).
     await self.registration.showNotification('Download complete', {
       body: `${bgFetch.title || 'Your video'} finished downloading. Tap to save it to this device.`,
       icon: '/logo.png',
