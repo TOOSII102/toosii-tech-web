@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { shareOrCopy } from '../../../lib/clientShare'
 import { isInMyList, recordDownload, recordWatched, toggleMyList } from '../../../lib/clientMediaState'
-import { supportsBackgroundFetch, createStreamDownload, createBackgroundDownload, claimBackgroundDownload, saveBlobToDevice } from '../../../lib/downloadManager'
+import { supportsBackgroundFetch, createStreamDownload, createBackgroundDownload, claimBackgroundDownload, claimAllPendingBackgroundDownloads, saveBlobToDevice } from '../../../lib/downloadManager'
 import '../tools.css'
 import './movies.css'
 
@@ -18,7 +18,6 @@ const STREAM_STALL_TIMEOUT = 8000
 const STREAM_INITIAL_LOAD_TIMEOUT = 20000
 const DOWNLOAD_CHECK_TIMEOUT = 10000
 const clientMetadataCache = new Map()
-const FALLBACK_ON_EMPTY = new Set(['home', 'trending', 'hot', 'search', 'suggest', 'movie-popular', 'movie-new', 'movie-top', 'tv-popular', 'tv-trending', 'tv-new', 'anime-home', 'anime-trending', 'anime-browse'])
 
 const putClientMetadata = (url, payload) => {
   if (!clientMetadataCache.has(url) && clientMetadataCache.size >= CLIENT_CACHE_MAX) {
@@ -204,17 +203,6 @@ function normalizeDavePayload(action, raw, params) {
   return { data: unwrapDave(raw) }
 }
 
-const fallbackRequest = async (action, params = {}) => {
-  const query = new URLSearchParams({ action, fallback: '1' })
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') query.set(key, String(value))
-  })
-  const response = await fetch(`/api/tools/movies?${query.toString()}`, { headers: { Accept: 'application/json' }, cache: 'no-store' })
-  const payload = await response.json().catch(() => ({}))
-  if (!response.ok) throw new Error(payload?.error || `Fallback service unavailable (${response.status})`)
-  return payload
-}
-
 const request = async (action, params = {}) => {
   const path = davePath(action, params)
   const url = DAVE_BASE + path
@@ -233,23 +221,11 @@ const request = async (action, params = {}) => {
       throw error
     }
     const payload = normalizeDavePayload(action, raw, params)
-    const items = payload?.data?.items || payload?.data?.subjectList || payload?.data?.sections?.flatMap(section => section.items || []) || []
-    if (FALLBACK_ON_EMPTY.has(action) && !items.length) {
-      const fallback = await fallbackRequest(action, params)
-      if (cacheable) putClientMetadata(url, fallback)
-      return fallback
-    }
     if (cacheable) putClientMetadata(url, payload)
     return payload
   } catch (error) {
     if (cached) return cached.payload
-    try {
-      const fallback = await fallbackRequest(action, params)
-      if (cacheable) putClientMetadata(url, fallback)
-      return fallback
-    } catch {
-      throw error
-    }
+    throw error
   } finally {
     window.clearTimeout(timeout)
   }
@@ -300,13 +276,6 @@ function mediaUrl(id, resolution, season, episode, action = 'stream', title = ''
     params.set('episode', String(episode))
   }
   return DAVE_BASE + '/bff/stream/' + encodeURIComponent(String(id)) + '?' + params.toString()
-}
-
-function fallbackMediaUrl(id, season, episode, title, type) {
-  const params = new URLSearchParams({ action: 'stream', fallback: '1', id: String(id || ''), title: String(title || 'movie'), type: String(type || '1') })
-  if (season) params.set('season', String(season))
-  if (episode) params.set('episode', String(episode))
-  return `/api/tools/movies?${params.toString()}`
 }
 
 function Skeleton() {
@@ -406,6 +375,7 @@ function DownloadButton({ href, label, size, filename, item, season, episode, me
     setMode('background')
     setStatus('loading')
     setProgress({ phase: 'downloading', loaded: 0, total: 0, percent: 0, speed: 0, eta: null })
+    let fellBack = false
     try {
       const session = await createBackgroundDownload({
         url: href,
@@ -416,7 +386,14 @@ function DownloadButton({ href, label, size, filename, item, season, episode, me
         },
         onStateChange: next => {
           if (next === 'complete') { setStatus('idle'); setProgress(current => ({ ...current, phase: 'complete', percent: 100 })) }
-          if (next === 'error') { setStatus('error'); setProgress({ phase: 'error', loaded: 0, total: 0, percent: 0, speed: 0, eta: null }); window.setTimeout(() => setStatus('idle'), 4000) }
+          if (next === 'error' && !fellBack) {
+            // The background registration stalled or the finished file couldn't be
+            // pulled from cache — silently fall back to the reliable direct engine
+            // instead of leaving the user stuck at "Connecting…".
+            fellBack = true
+            setBackground(false)
+            runStreamDownload()
+          }
         },
       })
       sessionRef.current = session
@@ -659,14 +636,6 @@ function DetailChips({ title, items, className = 'mv-detail-chip' }) {
   )
 }
 
-function FallbackEmbed({ src }) {
-  return (
-    <div className="mv-stable-video mv-fallback-embed">
-      <iframe title="Fallback movie player" src={src} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen referrerPolicy="no-referrer" />
-    </div>
-  )
-}
-
 function Modal({ movie, onClose, onSelect, onShare }) {
   const [detail, setDetail] = useState(movie)
   const [playData, setPlayData] = useState(null)
@@ -707,16 +676,15 @@ function Modal({ movie, onClose, onSelect, onShare }) {
     const id = movie.subjectId
     setSaved(isInMyList(movie, { season: movie.season, episode: movie.episode }))
     setLoadInfo(true); setError(''); setPlaying(false)
-    const fallbackType = animeHint ? 'anime' : tvHint ? '2' : '1'
     const requests = [
-      request(animeHint ? 'anime-info' : 'detail', { id, title: movie.title, type: fallbackType }),
-      request(animeHint ? 'anime-play' : liveHint ? 'live-stream-meta' : tvHint ? 'tv-seasons' : 'play', { id, title: movie.title, type: fallbackType, res: 720, se: tvHint && !liveHint ? season : '', ep: tvHint && !liveHint ? episode : '' }),
-      liveHint ? Promise.resolve({ data: { items: [] } }) : request(tvHint ? 'tv-recommend' : 'movie-recommend', { id, title: movie.title, type: fallbackType }),
-      liveHint ? Promise.resolve({ data: null }) : request('trailer', { id, title: movie.title, type: fallbackType }),
-      liveHint ? Promise.resolve({ data: [] }) : request('cast', { id, title: movie.title, type: fallbackType }),
-      liveHint ? Promise.resolve({ data: [] }) : request('dubs', { id, title: movie.title, type: fallbackType }),
-      liveHint ? Promise.resolve({ data: [] }) : request(animeHint ? 'anime-captions' : 'captions', { id, title: movie.title, type: fallbackType, res: 720, se: tvHint ? season : '', ep: tvHint ? episode : '' }),
-      liveHint ? Promise.resolve({ data: { files: [] } }) : request(animeHint ? 'anime-downloads' : 'downloads', { id, title: movie.title, type: fallbackType, res: 720, se: tvHint ? season : '', ep: tvHint ? episode : '' }),
+      request(animeHint ? 'anime-info' : 'detail', { id }),
+      request(animeHint ? 'anime-play' : liveHint ? 'live-stream-meta' : tvHint ? 'tv-seasons' : 'play', { id, res: 720, se: tvHint && !liveHint ? season : '', ep: tvHint && !liveHint ? episode : '' }),
+      liveHint ? Promise.resolve({ data: { items: [] } }) : request(tvHint ? 'tv-recommend' : 'movie-recommend', { id }),
+      liveHint ? Promise.resolve({ data: null }) : request('trailer', { id }),
+      liveHint ? Promise.resolve({ data: [] }) : request('cast', { id }),
+      liveHint ? Promise.resolve({ data: [] }) : request('dubs', { id }),
+      liveHint ? Promise.resolve({ data: [] }) : request(animeHint ? 'anime-captions' : 'captions', { id, res: 720, se: tvHint ? season : '', ep: tvHint ? episode : '' }),
+      liveHint ? Promise.resolve({ data: { files: [] } }) : request(animeHint ? 'anime-downloads' : 'downloads', { id, res: 720, se: tvHint ? season : '', ep: tvHint ? episode : '', title: movie.title }),
     ]
     Promise.allSettled(requests).then(results => {
       if (!active) return
@@ -748,10 +716,9 @@ function Modal({ movie, onClose, onSelect, onShare }) {
   useEffect(() => {
     if (liveHint) return undefined
     let active = true
-    const fallbackType = animeHint ? 'anime' : tvHint ? '2' : '1'
     Promise.allSettled([
-      request(animeHint ? 'anime-captions' : 'captions', { id: movie.subjectId, title: movie.title, type: fallbackType, res: 720, se: tvHint ? season : '', ep: tvHint ? episode : '' }),
-      request(animeHint ? 'anime-downloads' : 'downloads', { id: movie.subjectId, title: movie.title, type: fallbackType, res: 720, se: tvHint ? season : '', ep: tvHint ? episode : '' }),
+      request(animeHint ? 'anime-captions' : 'captions', { id: movie.subjectId, res: 720, se: tvHint ? season : '', ep: tvHint ? episode : '' }),
+      request(animeHint ? 'anime-downloads' : 'downloads', { id: movie.subjectId, res: 720, se: tvHint ? season : '', ep: tvHint ? episode : '', title: movie.title }),
     ]).then(([captionResult, downloadResult]) => {
       if (!active) return
       if (captionResult.status === 'fulfilled' && (captionResult.value?.data || []).some(caption => caption?.url)) setCaptions(captionResult.value.data)
@@ -773,11 +740,8 @@ function Modal({ movie, onClose, onSelect, onShare }) {
     return found?.episodes?.length ? found.episodes : Array.from({ length: 24 }, (_, index) => index + 1)
   }
   const currentEpisodes = episodesForSeason(season)
-  const fallbackPlayback = playData?.fallback && (playData?.embedUrl || playData?.directUrl)
-  const stream = fallbackPlayback
-    ? fallbackMediaUrl(movie.subjectId, episodic ? season : '', episodic ? episode : '', d.title, episodic ? '2' : '1')
-    : mediaUrl(movie.subjectId, resolution, episodic ? season : '', episodic ? episode : '', 'stream')
-  const directDownload = live || fallbackPlayback ? '' : mediaUrl(movie.subjectId, resolution, episodic ? season : '', episodic ? episode : '', 'download', d.title)
+  const stream = mediaUrl(movie.subjectId, resolution, episodic ? season : '', episodic ? episode : '', 'stream')
+  const directDownload = live ? '' : mediaUrl(movie.subjectId, resolution, episodic ? season : '', episodic ? episode : '', 'download', d.title)
   const trailerUrl = trailer?.url || ''
 
   const watchEpisode = (nextSeason, nextEpisode) => {
@@ -831,7 +795,7 @@ function Modal({ movie, onClose, onSelect, onShare }) {
             <section className="mv-player-section">
               <div className="mv-player-head"><span className="mv-player-label"><span className="mv-player-dot" />{live ? 'Live event — Stream Now' : episodic ? `S${season} E${episode} — Stream Now` : 'Full Movie — Stream Now'}</span><span className="mv-live-label">{live ? 'LIVE' : 'LIVE SOURCE'}</span></div>
               <div className="mv-quality-row"><span className="mv-quality-label">Quality</span>{RESOLUTIONS.map(value => <button key={value} className={`mv-quality-btn${resolution === value ? ' active' : ''}`} onClick={() => { setResolution(value); setStreamRetry(0) }}>{value}p</button>)}{!live && <DownloadButton href={directDownload} label={`Download ${resolution}p`} filename={`${positionedTitle(d.title, episodic ? season : '', episodic ? episode : '')}-${resolution}p.mp4`} item={d} season={episodic ? season : ''} episode={episodic ? episode : ''} mediaKind={kind} />}</div>
-              {playing ? fallbackPlayback ? <FallbackEmbed key={`${movie.subjectId}:${season}:${episode}:${streamRetry}`} src={stream} /> : <StableVideo key={`${movie.subjectId}:${season}:${episode}:${resolution}:${streamRetry}`} resetKey={`${movie.subjectId}:${season}:${episode}:${resolution}:${streamRetry}`} src={stream} captions={captions} poster={cover(d)} onRetry={() => setStreamRetry(value => value + 1)} /> : <div className="mv-video-wrap mv-video-placeholder" onClick={() => setPlaying(true)}><img src={cover(d)} alt="" /><div className="mv-placeholder-content"><span className="mv-play-large">▶</span><span>{live ? 'Click to watch live' : episodic ? `Select an episode or play S${season} E${episode}` : 'Click to stream'}</span></div></div>}
+              {playing ? <StableVideo key={`${movie.subjectId}:${season}:${episode}:${resolution}:${streamRetry}`} resetKey={`${movie.subjectId}:${season}:${episode}:${resolution}:${streamRetry}`} src={stream} captions={captions} poster={cover(d)} onRetry={() => setStreamRetry(value => value + 1)} /> : <div className="mv-video-wrap mv-video-placeholder" onClick={() => setPlaying(true)}><img src={cover(d)} alt="" /><div className="mv-placeholder-content"><span className="mv-play-large">▶</span><span>{live ? 'Click to watch live' : episodic ? `Select an episode or play S${season} E${episode}` : 'Click to stream'}</span></div></div>}
               <p className="mv-stream-caption">⚡ TOOSIIFLIX player · {resolution}p direct MP4{live ? ' · live relay' : episodic ? ` · S${season} E${episode}` : ''}</p>
             </section>
 
@@ -918,6 +882,10 @@ export default function MoviesPage({ shared = null }) {
       window.history.replaceState({}, '', url.toString())
     })
   }, [])
+
+  // Sweep up any background downloads that finished while no tab was open to receive
+  // the postMessage and whose completion notification was dismissed/never tapped.
+  useEffect(() => { claimAllPendingBackgroundDownloads() }, [])
 
   useEffect(() => {
     if (!query.trim() || results.length > 0) { setSuggestions([]); return undefined }
