@@ -470,7 +470,7 @@ export default function AudioDownloader({ shared = null }) {
                   {(downloadState.phase === 'idle' || downloadState.phase === 'ready') && bgSupported && (
                     <label className="audio-bg-toggle">
                       <input type="checkbox" checked={background} onChange={e => setBackground(e.target.checked)} />
-                      <span>Background download (keeps going if you close the app)</span>
+                      <span>Background download — keeps going if you close the app, but you'll still need to tap "Save" once it's done</span>
                     </label>
                   )}
                   {(downloadState.phase === 'downloading' || downloadState.phase === 'paused') && (
