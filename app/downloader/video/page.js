@@ -2,7 +2,7 @@
 import Layout from '../../../components/Layout'
 import { useState, useEffect, useRef } from 'react'
 import { shareOrCopy } from '../../../lib/clientShare'
-import { supportsBackgroundFetch, createStreamDownload, createBackgroundDownload, claimBackgroundDownload, claimAllPendingBackgroundDownloads, saveBlobToDevice } from '../../../lib/downloadManager'
+import { supportsBackgroundFetch, createStreamDownload, createBackgroundDownload, claimBackgroundDownload, claimAllPendingBackgroundDownloads, saveBlobToDevice, isRestrictiveWebView } from '../../../lib/downloadManager'
 import './video.css'
 
 const GT = 'https://api.giftedtech.co.ke/api/download'
@@ -76,8 +76,9 @@ const IDLE_PROGRESS = { phase: 'idle', loaded: 0, total: 0, percent: 0, speed: 0
  * even if the tab or app is closed.
  */
 function DownloadLink({ href, label, filename, className, style, background, bgSupported }) {
-  const [status, setStatus] = useState('idle') // idle | loading | paused | error
+  const [status, setStatus] = useState('idle') // idle | loading | paused | ready | error
   const [progress, setProgress] = useState(IDLE_PROGRESS)
+  const [saving, setSaving] = useState(false)
   const modeRef = useRef(null) // 'stream' | 'background'
   const sessionRef = useRef(null)
 
@@ -101,11 +102,12 @@ function DownloadLink({ href, label, filename, className, style, background, bgS
       },
     })
     sessionRef.current = session
-    session.start().then(() => {
+    session.start().then(async () => {
       if (session.state !== 'complete') return
       if (!session.loaded) throw new Error('Empty download')
-      saveBlobToDevice(session.getBlob(), filename)
-      setProgress({ phase: 'complete', loaded: session.loaded, total: session.total || session.loaded, percent: 100, speed: 0, eta: 0 })
+      const saveResult = await saveBlobToDevice(session.getBlob(), filename)
+      if (saveResult?.canceled) { setStatus('idle'); setProgress(IDLE_PROGRESS); return }
+      setProgress({ phase: 'complete', loaded: session.loaded, total: session.total || session.loaded, percent: 100, speed: 0, eta: 0, savedVia: saveResult?.method })
       setStatus('idle')
     }).catch(() => {
       if (session.state === 'canceled' || session.state === 'paused') return
@@ -128,8 +130,9 @@ function DownloadLink({ href, label, filename, className, style, background, bgS
         onProgress: ({ loaded, total }) => {
           setProgress({ phase: 'downloading', loaded, total, percent: total ? Math.min(100, Math.round((loaded / total) * 100)) : 0, speed: 0, eta: null })
         },
-        onStateChange: next => {
-          if (next === 'complete') { setStatus('idle'); setProgress(current => ({ ...current, phase: 'complete', percent: 100 })) }
+        onStateChange: (next, meta) => {
+          if (next === 'ready') { setStatus('ready'); setProgress(current => ({ ...current, phase: 'ready', percent: 100 })) }
+          if (next === 'canceled') { setStatus('idle'); setProgress(IDLE_PROGRESS) }
           if (next === 'error' && !fellBack) {
             // Stalled registration or a lost cache entry — fall back to the direct
             // engine instead of leaving the user stuck at "Connecting…".
@@ -146,7 +149,7 @@ function DownloadLink({ href, label, filename, className, style, background, bgS
 
   const start = event => {
     event.preventDefault()
-    if (status === 'loading' || status === 'paused') return
+    if (status === 'loading' || status === 'paused' || status === 'ready') return
     sessionRef.current = null
     if (background && bgSupported) runBackground()
     else runStream()
@@ -161,27 +164,41 @@ function DownloadLink({ href, label, filename, className, style, background, bgS
     setStatus('idle')
     setProgress(IDLE_PROGRESS)
   }
+  const saveReady = async () => {
+    if (!sessionRef.current?.saveNow) return
+    setSaving(true)
+    try {
+      const result = await sessionRef.current.saveNow()
+      if (result?.canceled) { setStatus('ready'); return }
+      setStatus('idle')
+      setProgress(current => ({ ...current, phase: 'complete', savedVia: result?.method }))
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const busy = status === 'loading' || status === 'paused'
 
   return (
     <div className="vd-download-wrap">
-      <a href={href} download={filename} className={className} style={style} onClick={start} aria-busy={status === 'loading'}>
-        {status === 'loading' ? (progress.total ? `Downloading ${progress.percent}%` : 'Starting…') : status === 'paused' ? '⏸ Paused' : status === 'error' ? '⚠ Retry' : label}
-      </a>
+      {status === 'ready'
+        ? <button type="button" className={className} style={style} onClick={saveReady} disabled={saving}>{saving ? 'Saving…' : '💾 Save to device'}</button>
+        : <a href={href} download={filename} className={className} style={style} onClick={start} aria-busy={status === 'loading'}>
+            {status === 'loading' ? (progress.total ? `Downloading ${progress.percent}%` : 'Starting…') : status === 'paused' ? '⏸ Paused' : status === 'error' ? '⚠ Retry' : label}
+          </a>}
       {busy && <div className="vd-download-controls">
         {modeRef.current === 'stream' && status === 'loading' && <button type="button" className="vd-mini-btn" onClick={pause}>⏸ Pause</button>}
         {modeRef.current === 'stream' && status === 'paused' && <button type="button" className="vd-mini-btn" onClick={resume}>▶ Resume</button>}
         <button type="button" className="vd-mini-btn is-cancel" onClick={cancel}>✕ Cancel</button>
       </div>}
-      {progress.phase !== 'idle' && <div className={`vd-download-progress${progress.phase === 'error' ? ' is-error' : progress.phase === 'complete' ? ' is-complete' : status === 'paused' ? ' is-paused' : ''}`} role="status" aria-live="polite">
+      {progress.phase !== 'idle' && <div className={`vd-download-progress${progress.phase === 'error' ? ' is-error' : progress.phase === 'complete' ? ' is-complete' : progress.phase === 'ready' ? ' is-ready' : status === 'paused' ? ' is-paused' : ''}`} role="status" aria-live="polite">
         <div className="vd-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={progress.total ? progress.percent : undefined}>
-          <span style={{ width: `${progress.total ? progress.percent : (progress.phase === 'complete' ? 100 : 6)}%` }} />
+          <span style={{ width: `${progress.total ? progress.percent : (progress.phase === 'complete' || progress.phase === 'ready' ? 100 : 6)}%` }} />
         </div>
         <div className="vd-progress-stats">
           <span>{formatBytes(progress.loaded)}{progress.total ? ` / ${formatBytes(progress.total)}` : ''}</span>
-          <span>{progress.speed > 0 ? `${formatBytes(progress.speed)}/s` : progress.phase === 'complete' ? 'Saved' : status === 'paused' ? 'Paused' : 'Connecting…'}</span>
-          <span>{progress.phase === 'complete' ? '✓ Done' : progress.phase === 'error' ? 'Failed' : status === 'paused' ? 'Tap resume' : formatEta(progress.eta)}</span>
+          <span>{progress.speed > 0 ? `${formatBytes(progress.speed)}/s` : progress.phase === 'ready' ? 'Not saved yet' : progress.phase === 'complete' ? (progress.savedVia === 'share' ? 'Check Files app' : 'Saved') : status === 'paused' ? 'Paused' : 'Connecting…'}</span>
+          <span>{progress.phase === 'ready' ? 'Tap above to save' : progress.phase === 'complete' ? '✓ Done' : progress.phase === 'error' ? 'Failed' : status === 'paused' ? 'Tap resume' : formatEta(progress.eta)}</span>
         </div>
       </div>}
     </div>
@@ -209,6 +226,7 @@ export default function VideoDownloader({ shared = null }) {
   const [trending, setTrending]       = useState([])
   const [trendingLoading, setTrendingLoading] = useState(true)
   const [background, setBackground]   = useState(false)
+  const [pendingSaves, setPendingSaves] = useState([]) // background downloads claimed but not yet saved (need a real tap)
   const bgSupported = supportsBackgroundFetch()
 
   useEffect(() => {
@@ -220,13 +238,16 @@ export default function VideoDownloader({ shared = null }) {
   }, [])
 
   // Reached when the user taps the "Download complete" notification the service worker
-  // shows once a background video download finishes after the app was closed.
+  // shows once a background video download finishes after the app was closed — pull the
+  // finished file back out of the cache and queue it for a real tap-to-save (auto-saving
+  // here has no live user gesture behind it and browsers can silently drop that, which is
+  // exactly the "says saved, isn't on disk" bug this avoids).
   useEffect(() => {
     if (typeof window === 'undefined') return
     const resumeId = new URLSearchParams(window.location.search).get('resumeDownload')
     if (!resumeId) return
     claimBackgroundDownload(resumeId).then(result => {
-      if (result?.blob) saveBlobToDevice(result.blob, result.filename)
+      if (result?.blob) setPendingSaves(current => [...current, { id: resumeId, blob: result.blob, filename: result.filename }])
     }).finally(() => {
       const link = new URL(window.location.href)
       link.searchParams.delete('resumeDownload')
@@ -236,7 +257,16 @@ export default function VideoDownloader({ shared = null }) {
 
   // Sweep up any background downloads that finished while no tab was open to receive
   // the postMessage and whose completion notification was dismissed/never tapped.
-  useEffect(() => { claimAllPendingBackgroundDownloads() }, [])
+  useEffect(() => {
+    claimAllPendingBackgroundDownloads().then(found => {
+      if (found.length) setPendingSaves(current => [...current, ...found])
+    })
+  }, [])
+
+  const savePending = async entry => {
+    const result = await saveBlobToDevice(entry.blob, entry.filename)
+    if (!result?.canceled) setPendingSaves(current => current.filter(item => item.id !== entry.id))
+  }
 
   const search = async () => {
     const q = query.trim()
@@ -480,6 +510,7 @@ export default function VideoDownloader({ shared = null }) {
                     {result.duration && <span className="badge">⏱ {result.duration}</span>}
                   </div>
                   <p className="expire-note">⚡ Download now — this link expires soon</p>
+                  {isRestrictiveWebView() && <p className="vd-webview-note">⚠ Downloads may not save properly inside this in-app browser. For a reliable save, tap ⋮ and choose "Open in Chrome" or "Open in Safari".</p>}
                   {bgSupported && <label className="vd-bg-toggle">
                     <input type="checkbox" checked={background} onChange={e => setBackground(e.target.checked)} />
                     <span>Background download (keeps going if you close the app)</span>
@@ -560,6 +591,16 @@ export default function VideoDownloader({ shared = null }) {
           </div>
         </div>
       </section>
+      {pendingSaves.length > 0 && (
+        <div className="vd-pending-saves" role="status" aria-live="polite">
+          {pendingSaves.map(entry => (
+            <div key={entry.id} className="vd-pending-save-item">
+              <span>💾 {entry.filename}</span>
+              <button type="button" onClick={() => savePending(entry)}>Save to device</button>
+            </div>
+          ))}
+        </div>
+      )}
     </Layout>
   )
 }
