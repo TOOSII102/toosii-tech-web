@@ -102,13 +102,14 @@ function DownloadLink({ href, label, filename, className, style, background, bgS
       },
     })
     sessionRef.current = session
-    session.start().then(async () => {
+    session.start().then(() => {
       if (session.state !== 'complete') return
       if (!session.loaded) throw new Error('Empty download')
-      const saveResult = await saveBlobToDevice(session.getBlob(), filename)
-      if (saveResult?.canceled) { setStatus('idle'); setProgress(IDLE_PROGRESS); return }
-      setProgress({ phase: 'complete', loaded: session.loaded, total: session.total || session.loaded, percent: 100, speed: 0, eta: 0, savedVia: saveResult?.method })
-      setStatus('idle')
+      // Don't auto-save here — this runs from an async fetch-completion callback with
+      // no live user gesture behind it, and browsers can silently drop a programmatic
+      // save in that situation. Land in 'ready' and require a real tap instead.
+      setStatus('ready')
+      setProgress({ phase: 'ready', loaded: session.loaded, total: session.total || session.loaded, percent: 100, speed: 0, eta: 0 })
     }).catch(() => {
       if (session.state === 'canceled' || session.state === 'paused') return
       setStatus('error')
@@ -165,10 +166,15 @@ function DownloadLink({ href, label, filename, className, style, background, bgS
     setProgress(IDLE_PROGRESS)
   }
   const saveReady = async () => {
-    if (!sessionRef.current?.saveNow) return
+    if (!sessionRef.current) return
     setSaving(true)
     try {
-      const result = await sessionRef.current.saveNow()
+      let result
+      if (modeRef.current === 'background' && sessionRef.current.saveNow) {
+        result = await sessionRef.current.saveNow()
+      } else if (sessionRef.current.getBlob) {
+        result = await saveBlobToDevice(sessionRef.current.getBlob(), filename)
+      }
       if (result?.canceled) { setStatus('ready'); return }
       setStatus('idle')
       setProgress(current => ({ ...current, phase: 'complete', savedVia: result?.method }))
