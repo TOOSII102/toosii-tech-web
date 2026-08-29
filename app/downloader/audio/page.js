@@ -78,6 +78,7 @@ export default function AudioDownloader({ shared = null }) {
   const [pendingSaves, setPendingSaves] = useState([]) // background downloads claimed but not yet saved (need a real tap)
   const downloadModeRef               = useRef(null) // 'stream' | 'background'
   const downloadSessionRef            = useRef(null)
+  const filenameRef                   = useRef('')
   const bgSupported                   = supportsBackgroundFetch()
   const [step, setStep]               = useState(0)
   const [error, setError]             = useState('')
@@ -200,6 +201,7 @@ export default function AudioDownloader({ shared = null }) {
 
     const downloadUrl = proxyUrl(result.download_url, result.title, result.author, result.thumbnail)
     const filename = `${[result.author, result.title].filter(Boolean).join(' - ') || 'audio'}.mp3`
+    filenameRef.current = filename
     setError('')
     downloadSessionRef.current = null
 
@@ -216,7 +218,7 @@ export default function AudioDownloader({ shared = null }) {
             setDownloadState({ phase: 'downloading', loaded, total, percent: total ? Math.min(100, Math.round((loaded / total) * 100)) : 0, speed: 0, eta: null })
           },
           onStateChange: (next, meta) => {
-            if (next === 'ready') setDownloadState(current => ({ ...current, phase: 'ready', percent: 100 }))
+            if (next === 'ready') setDownloadState(current => ({ ...current, phase: 'saveReady', percent: 100 }))
             if (next === 'canceled') setDownloadState({ phase: 'idle', loaded: 0, total: 0, percent: 0, speed: 0, eta: null })
             if (next === 'error' && !fellBack) {
               // Stalled registration or a lost cache entry — fall back to the direct
@@ -256,11 +258,12 @@ export default function AudioDownloader({ shared = null }) {
       },
     })
     downloadSessionRef.current = session
-    session.start().then(async () => {
+    session.start().then(() => {
       if (session.state !== 'complete') return
-      const saveResult = await saveBlobToDevice(session.getBlob(), filename)
-      if (saveResult?.canceled) { setDownloadState({ phase: 'idle', loaded: 0, total: 0, percent: 0, speed: 0, eta: null }); return }
-      setDownloadState({ phase: 'complete', loaded: session.loaded, total: session.total || session.loaded, percent: 100, speed: 0, eta: 0, savedVia: saveResult?.method })
+      // Don't auto-save here — this runs from an async fetch-completion callback with
+      // no live user gesture behind it, and browsers can silently drop a programmatic
+      // save in that situation. Land in 'ready' and require a real tap instead.
+      setDownloadState({ phase: 'saveReady', loaded: session.loaded, total: session.total || session.loaded, percent: 100, speed: 0, eta: 0 })
     }).catch(downloadError => {
       if (session.state === 'canceled' || session.state === 'paused') return
       console.error('[audio:download]', downloadError)
@@ -278,11 +281,16 @@ export default function AudioDownloader({ shared = null }) {
     setDownloadState({ phase: 'idle', loaded: 0, total: 0, percent: 0, speed: 0, eta: null })
   }
   const saveReadyDownload = async () => {
-    if (!downloadSessionRef.current?.saveNow) return
+    if (!downloadSessionRef.current) return
     setSaving(true)
     try {
-      const result = await downloadSessionRef.current.saveNow()
-      if (result?.canceled) { setDownloadState(current => ({ ...current, phase: 'ready' })); return }
+      let result
+      if (downloadModeRef.current === 'background' && downloadSessionRef.current.saveNow) {
+        result = await downloadSessionRef.current.saveNow()
+      } else if (downloadSessionRef.current.getBlob) {
+        result = await saveBlobToDevice(downloadSessionRef.current.getBlob(), filenameRef.current)
+      }
+      if (result?.canceled) { setDownloadState(current => ({ ...current, phase: 'saveReady' })); return }
       setDownloadState(current => ({ ...current, phase: 'complete', savedVia: result?.method }))
     } finally {
       setSaving(false)
@@ -486,7 +494,7 @@ export default function AudioDownloader({ shared = null }) {
                       </div>
                     </div>
                   )}
-                  {downloadState.phase === 'ready' && (
+                  {downloadState.phase === 'saveReady' && (
                     <div className="audio-download-ready" role="status">
                       <span>📥 Downloaded — not saved yet</span>
                       <button type="button" onClick={saveReadyDownload} disabled={saving}>{saving ? 'Saving…' : '💾 Save to device'}</button>
@@ -496,9 +504,11 @@ export default function AudioDownloader({ shared = null }) {
                     <div className="audio-download-complete" role="status">✓ {downloadState.savedVia === 'share' ? 'MP3 saved — check your Files app' : 'MP3 saved to Downloads'} — {formatBytes(downloadState.loaded)}</div>
                   )}
                   <div className="dl-buttons">
-                    <button type="button" onClick={downloadFile} disabled={downloadState.phase === 'downloading' || downloadState.phase === 'paused' || downloadState.phase === 'ready'} className="btn-primary" style={{ width: 'fit-content' }}>
-                      {downloadState.phase === 'downloading' ? `Downloading ${downloadState.percent}%` : downloadState.phase === 'paused' ? '⏸ Paused' : downloadState.phase === 'ready' ? '📥 Ready to save above' : downloadState.phase === 'complete' ? '⬇ Download Again' : '⬇ Download MP3'}
-                    </button>
+                    {downloadState.phase !== 'saveReady' && (
+                      <button type="button" onClick={downloadFile} disabled={downloadState.phase === 'downloading' || downloadState.phase === 'paused'} className="btn-primary" style={{ width: 'fit-content' }}>
+                        {downloadState.phase === 'downloading' ? `Downloading ${downloadState.percent}%` : downloadState.phase === 'paused' ? '⏸ Paused' : downloadState.phase === 'complete' ? '⬇ Download Again' : '⬇ Download MP3'}
+                      </button>
+                    )}
                     <button type="button" onClick={() => shareAudio({ sourceUrl: url, title: result.title, artist: result.author, thumbnail: result.thumbnail, duration: result.duration, quality: result.quality })} className="btn-secondary">↗ Share Song</button>
                     {mode === 'search' && <button onClick={() => { setResult(null); setSelectedId(null) }} className="btn-outline" style={{ width: 'fit-content', fontSize: '0.85rem' }}>← Back</button>}
                   </div>
