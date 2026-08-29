@@ -149,6 +149,81 @@
 }
 .quality-chip:hover { background: rgba(59,130,246,0.2); }
 
+/* ── Download control (pause/resume/cancel + background) ── */
+.vd-download-wrap { display: flex; flex-direction: column; gap: 0.4rem; }
+
+.vd-bg-toggle {
+  display: flex; align-items: flex-start; gap: 0.5rem;
+  font-size: 0.72rem; color: #94a3b8; line-height: 1.35;
+  cursor: pointer; user-select: none; margin-top: -0.25rem;
+}
+.vd-bg-toggle input { margin-top: 0.15rem; accent-color: #3b82f6; cursor: pointer; }
+
+.vd-webview-note {
+  font-size: 0.7rem; line-height: 1.4; color: #fbbf24;
+  background: rgba(250, 204, 21, 0.06); border: 1px solid rgba(250, 204, 21, 0.2);
+  border-radius: 8px; padding: 0.5rem 0.65rem; margin-top: 0.75rem;
+}
+
+.vd-download-controls { display: flex; gap: 0.5rem; }
+.vd-mini-btn {
+  flex: 1; min-height: 32px; padding: 0 0.6rem;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14);
+  color: #e2e8f0; font-size: 0.72rem; font-weight: 700;
+  border-radius: 8px; cursor: pointer; font-family: inherit;
+  transition: all 0.18s;
+}
+.vd-mini-btn:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.28); }
+.vd-mini-btn.is-cancel { color: #fca5a5; border-color: rgba(248,113,113,.3); }
+.vd-mini-btn.is-cancel:hover { background: rgba(248,113,113,0.12); border-color: rgba(248,113,113,.5); }
+
+.vd-download-progress {
+  border: 1px solid rgba(59,130,246,0.2);
+  background: rgba(59,130,246,0.06);
+  border-radius: 9px;
+  padding: 0.5rem 0.65rem;
+  min-width: 220px;
+}
+.vd-download-progress.is-complete { border-color: rgba(37, 211, 102, 0.4); background: rgba(37,211,102,0.06); }
+.vd-download-progress.is-error { border-color: rgba(248, 113, 113, 0.45); background: rgba(248,113,113,0.06); }
+.vd-download-progress.is-paused { border-color: rgba(250, 204, 21, 0.35); background: rgba(250, 204, 21, 0.06); }
+.vd-download-progress.is-ready { border-color: rgba(96, 165, 250, 0.4); background: rgba(96, 165, 250, 0.08); }
+
+.vd-progress-track {
+  width: 100%; height: 6px; border-radius: 999px;
+  background: rgba(255,255,255,0.08); overflow: hidden;
+}
+.vd-progress-track span { display: block; height: 100%; background: linear-gradient(90deg, #3b82f6, #60a5fa); transition: width 0.2s ease; border-radius: 999px; }
+.vd-download-progress.is-complete .vd-progress-track span { background: linear-gradient(90deg, #22c55e, #4ade80); }
+.vd-download-progress.is-error .vd-progress-track span { background: linear-gradient(90deg, #ef4444, #f87171); }
+.vd-download-progress.is-paused .vd-progress-track span { background: linear-gradient(90deg, #eab308, #fbbf24); }
+.vd-download-progress.is-ready .vd-progress-track span { background: linear-gradient(90deg, #3b82f6, #93c5fd); animation: vd-ready-pulse 1.6s ease-in-out infinite; }
+@keyframes vd-ready-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+
+.vd-progress-stats { display: flex; gap: 0.6rem; justify-content: space-between; margin-top: 0.35rem; font-size: 0.68rem; color: #94a3b8; }
+
+.vd-pending-saves {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 998;
+  display: flex; flex-direction: column; gap: 0.5rem;
+  padding: 0.75rem; padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  pointer-events: none;
+}
+.vd-pending-save-item {
+  pointer-events: auto;
+  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+  max-width: 420px; margin: 0 auto; width: 100%;
+  background: linear-gradient(180deg, rgba(18,20,28,0.98), rgba(10,11,16,0.98));
+  border: 1px solid rgba(96,165,250,0.35);
+  border-radius: 12px; padding: 0.7rem 0.9rem;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.45);
+}
+.vd-pending-save-item span { font-size: 0.78rem; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vd-pending-save-item button {
+  flex-shrink: 0; background: linear-gradient(135deg, #3b82f6, #60a5fa); border: none;
+  color: #fff; font-size: 0.75rem; font-weight: 700; padding: 0.5rem 0.85rem;
+  border-radius: 8px; cursor: pointer; font-family: inherit;
+}
+
   /* ── Professional search bar ── */
   .dl-search-wrapper {
     display: flex;
