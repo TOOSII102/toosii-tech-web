@@ -40,22 +40,27 @@ self.addEventListener('backgroundfetchsuccess', event => {
         const response = await record.responseReady
         await cache.put(record.request, response)
       }))
-      await bgFetch.updateUI({ title: `${bgFetch.title || 'Download'} — ready` })
+      // This updates the OS-level progress UI the Background Fetch spec shows
+      // automatically while the transfer runs — it is NOT a real Downloads-manager
+      // entry (it won't appear in chrome://downloads), and no file has been written
+      // to the device yet. Word it so that can't be mistaken for "already saved".
+      await bgFetch.updateUI({ title: `${bgFetch.title || 'Download'} — tap to save to device` })
     } catch {
       // fall through to notification either way so the user still gets told
     }
 
-    // Tell any open tab right away so it can save the file to disk immediately
-    // instead of waiting for a notification tap (this is the fix for downloads that
-    // "complete" but never actually land on the device while the app stays open).
+    // Tell any open tab right away so it can surface the "Save to device" prompt
+    // immediately instead of waiting for a notification tap.
     const clientsList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
     clientsList.forEach(client => client.postMessage({ type: 'bg-download-ready', id: bgFetch.id }))
 
     // Always also show a notification — belt-and-suspenders backup for when no tab
-    // was open, or the auto-save above fails for any reason (e.g. the browser blocks
-    // a programmatic save outside a user gesture).
-    await self.registration.showNotification('Download complete', {
-      body: `${bgFetch.title || 'Your video'} finished downloading. Tap to save it to this device.`,
+    // was open. IMPORTANT: the transfer finishing does NOT mean the file is on the
+    // device yet — browsers require a live tap to actually write it to disk, so this
+    // notification's whole job is to make that unmistakable and get the person back
+    // to the page to do it.
+    await self.registration.showNotification('📥 Ready — tap to save', {
+      body: `"${bgFetch.title || 'Your file'}" finished downloading but ISN'T saved yet. Tap this notification to finish saving it to your device.`,
       icon: '/logo.png',
       badge: '/logo.png',
       tag: bgFetch.id,
