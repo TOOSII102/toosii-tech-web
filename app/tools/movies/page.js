@@ -535,7 +535,7 @@ function DownloadButton({ href, label, size, filename, item, season, episode, me
       {!isLocalResolver && status === 'idle' && isRestrictiveWebView() && <p className="mv-webview-note">⚠ Downloads may not save properly inside this in-app browser. For a reliable save, tap ⋮ and choose "Open in Chrome" or "Open in Safari".</p>}
       {!isLocalResolver && status === 'idle' && bgSupported && <label className="mv-download-bg-toggle">
         <input type="checkbox" checked={background} onChange={event => setBackground(event.target.checked)} />
-        <span>Background download (keeps going if you close the app)</span>
+        <span>Background download — keeps going if you close the app, but you'll still need to tap "Save" once it's done</span>
       </label>}
       {status === 'ready'
         ? <button type="button" className="mv-download-btn is-ready" onClick={saveReadyDownload} disabled={saving}>
