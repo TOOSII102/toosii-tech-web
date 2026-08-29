@@ -519,7 +519,7 @@ export default function VideoDownloader({ shared = null }) {
                   {isRestrictiveWebView() && <p className="vd-webview-note">⚠ Downloads may not save properly inside this in-app browser. For a reliable save, tap ⋮ and choose "Open in Chrome" or "Open in Safari".</p>}
                   {bgSupported && <label className="vd-bg-toggle">
                     <input type="checkbox" checked={background} onChange={e => setBackground(e.target.checked)} />
-                    <span>Background download (keeps going if you close the app)</span>
+                    <span>Background download — keeps going if you close the app, but you'll still need to tap "Save" once it's done</span>
                   </label>}
                   <div className="dl-buttons">
                     <DownloadLink href={proxyUrl(result.download_url, result.title)} filename={(result.title ? result.title.replace(/[^a-z0-9\s-]/gi, '').trim().slice(0, 60) : 'video') + '.mp4'} label={`⬇ Download ${result.quality || 'Video'}`} className="btn-primary" style={{ width: 'fit-content' }} background={background} bgSupported={bgSupported} />
