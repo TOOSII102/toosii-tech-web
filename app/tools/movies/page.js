@@ -407,10 +407,15 @@ function DownloadButton({ href, label, size, filename, item, season, episode, me
   }
 
   const saveReadyDownload = async () => {
-    if (!sessionRef.current?.saveNow) return
+    if (!sessionRef.current) return
     setSaving(true)
     try {
-      const result = await sessionRef.current.saveNow()
+      let result
+      if (mode === 'background' && sessionRef.current.saveNow) {
+        result = await sessionRef.current.saveNow()
+      } else if (sessionRef.current.getBlob) {
+        result = await saveBlobToDevice(sessionRef.current.getBlob(), filename || fallbackName)
+      }
       if (result?.canceled) { setStatus('ready'); return }
       setStatus('idle')
       setProgress(current => ({ ...current, phase: 'complete', savedVia: result?.method }))
@@ -439,19 +444,15 @@ function DownloadButton({ href, label, size, filename, item, season, episode, me
       },
     })
     sessionRef.current = session
-    session.start().then(async () => {
+    session.start().then(() => {
       if (session.state !== 'complete') return
       if (!session.loaded) throw new Error('The download returned an empty file')
-      const saveResult = await saveBlobToDevice(session.getBlob(), filename || fallbackName)
-      if (saveResult?.canceled) {
-        // Person dismissed the iOS share sheet without picking "Save to Files" —
-        // don't claim success, let them tap the button again when ready.
-        setStatus('idle')
-        setProgress(IDLE_DOWNLOAD_PROGRESS)
-        return
-      }
-      setProgress({ phase: 'complete', loaded: session.loaded, total: session.total || session.loaded, percent: 100, speed: 0, eta: 0, savedVia: saveResult?.method })
-      setStatus('idle')
+      // Don't auto-save here — this runs from an async fetch-completion callback with
+      // no live user gesture behind it, and browsers can silently drop a programmatic
+      // save in that situation (that was the exact "says saved, isn't on disk" bug).
+      // Land in 'ready' and require a real tap on "Save to device" instead.
+      setStatus('ready')
+      setProgress({ phase: 'ready', loaded: session.loaded, total: session.total || session.loaded, percent: 100, speed: 0, eta: 0 })
     }).catch(error => {
       if (session.state === 'canceled' || session.state === 'paused') return
       const canFallbackToNative = error instanceof TypeError || error?.name === 'TypeError'
