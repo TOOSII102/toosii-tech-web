@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { shareOrCopy } from '../../../lib/clientShare'
 import { isInMyList, recordDownload, recordWatched, toggleMyList } from '../../../lib/clientMediaState'
-import { supportsBackgroundFetch, createStreamDownload, createBackgroundDownload, claimBackgroundDownload, claimAllPendingBackgroundDownloads, saveBlobToDevice, isRestrictiveWebView } from '../../../lib/downloadManager'
+import { isRestrictiveWebView } from '../../../lib/downloadManager'
 import '../tools.css'
 import './movies.css'
 
@@ -33,28 +33,6 @@ const numberValue = (value, fallback = 0) => {
   const parsed = Number(value)
   return Number.isFinite(parsed) ? parsed : fallback
 }
-const formatBytes = bytes => {
-  const value = Number(bytes)
-  if (!Number.isFinite(value) || value <= 0) return '0 B'
-  const units = ['B', 'KB', 'MB', 'GB']
-  const index = Math.min(Math.floor(Math.log(value) / Math.log(1024)), units.length - 1)
-  return `${(value / (1024 ** index)).toFixed(index === 0 ? 0 : 1)} ${units[index]}`
-}
-const formatEta = seconds => {
-  if (seconds === null || seconds === undefined || !Number.isFinite(Number(seconds)) || Number(seconds) < 0) return 'Calculating…'
-  const value = Number(seconds)
-  if (value < 60) return `${Math.max(1, Math.ceil(value))}s left`
-  const minutes = Math.floor(value / 60)
-  const remaining = Math.ceil(value % 60)
-  return `${minutes}m ${String(remaining).padStart(2, '0')}s left`
-}
-const responseTotal = response => {
-  const length = Number(response.headers.get('content-length'))
-  if (Number.isFinite(length) && length > 0) return length
-  const match = String(response.headers.get('content-range') || '').match(/\/(\d+)$/)
-  return match ? Number(match[1]) : 0
-}
-const IDLE_DOWNLOAD_PROGRESS = { phase: 'idle', loaded: 0, total: 0, percent: 0, speed: 0, eta: null }
 const DaveType = value => ({ movie: 'MOVIE', tv: 'TV_SERIES', series: 'TV_SERIES', anime: 'ANIME', live: 'ALL' }[String(value || '').toLowerCase()] || 'ALL')
 const unwrapDave = payload => payload?.data || payload?.result || payload || {}
 
@@ -330,155 +308,26 @@ function Rail({ title, items, onSelect, onShare }) {
 
 function DownloadButton({ href, label, size, filename, item, season, episode, mediaKind: kind }) {
   const fallbackName = `${String(label || 'movie').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'movie'}.mp4`
-  const [status, setStatus] = useState('idle') // idle | loading | paused | ready | error
-  const [progress, setProgress] = useState(IDLE_DOWNLOAD_PROGRESS)
-  const [mode, setMode] = useState(null) // 'stream' | 'background'
-  const [background, setBackground] = useState(false)
-  const [saving, setSaving] = useState(false)
+  const [status, setStatus] = useState('idle') // idle | checking | error
   const isLocalResolver = String(href || '').startsWith('/')
-  const handoffRef = useRef(null)
-  const sessionRef = useRef(null)
-  const startedAtRef = useRef(0)
-  const bgSupported = supportsBackgroundFetch()
 
-  useEffect(() => () => {
-    if (mode === 'stream') sessionRef.current?.pause?.()
-    handoffRef.current?.remove()
-    handoffRef.current = null
-  }, [mode])
-
-  const startNativeHandoff = () => {
-    setStatus('loading')
-    setMode(null)
-    setProgress({ phase: 'handoff', loaded: 0, total: 0, percent: 0, speed: 0, eta: null })
-    handoffRef.current?.remove()
-    const frame = document.createElement('iframe')
-    frame.setAttribute('aria-hidden', 'true')
-    frame.tabIndex = -1
-    frame.style.position = 'fixed'
-    frame.style.width = '1px'
-    frame.style.height = '1px'
-    frame.style.left = '-9999px'
-    frame.style.opacity = '0'
-    frame.style.pointerEvents = 'none'
-    frame.src = href
-    handoffRef.current = frame
-    document.body.appendChild(frame)
-    window.setTimeout(() => {
-      frame.remove()
-      if (handoffRef.current === frame) handoffRef.current = null
-      setStatus('idle')
-      setProgress(current => current.phase === 'handoff' ? IDLE_DOWNLOAD_PROGRESS : current)
-    }, 5000)
-  }
-
-  const runBackgroundDownload = async () => {
-    setMode('background')
-    setStatus('loading')
-    setProgress({ phase: 'downloading', loaded: 0, total: 0, percent: 0, speed: 0, eta: null })
-    let fellBack = false
-    try {
-      const session = await createBackgroundDownload({
-        url: href,
-        filename: filename || fallbackName,
-        title: filename || label,
-        onProgress: ({ loaded, total }) => {
-          setProgress({ phase: 'downloading', loaded, total, percent: total ? Math.min(100, Math.round((loaded / total) * 100)) : null, speed: 0, eta: null })
-        },
-        onStateChange: (next, meta) => {
-          if (next === 'ready') { setStatus('ready'); setProgress(current => ({ ...current, phase: 'ready', percent: 100 })) }
-          if (next === 'canceled') { setStatus('idle'); setProgress(IDLE_DOWNLOAD_PROGRESS) }
-          if (next === 'error' && !fellBack) {
-            // The background registration stalled or the finished file couldn't be
-            // pulled from cache — silently fall back to the reliable direct engine
-            // instead of leaving the user stuck at "Connecting…".
-            fellBack = true
-            setBackground(false)
-            runStreamDownload()
-          }
-        },
-      })
-      sessionRef.current = session
-    } catch {
-      // background fetch unavailable/denied — fall back to the manual streaming engine
-      setBackground(false)
-      runStreamDownload()
-    }
-  }
-
-  const saveReadyDownload = async () => {
-    if (!sessionRef.current) return
-    setSaving(true)
-    try {
-      let result
-      if (mode === 'background' && sessionRef.current.saveNow) {
-        result = await sessionRef.current.saveNow()
-      } else if (sessionRef.current.getBlob) {
-        result = await saveBlobToDevice(sessionRef.current.getBlob(), filename || fallbackName)
-      }
-      if (result?.canceled) { setStatus('ready'); return }
-      setStatus('idle')
-      setProgress(current => ({ ...current, phase: 'complete', savedVia: result?.method }))
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const runStreamDownload = () => {
-    setMode('stream')
-    startedAtRef.current = performance.now()
-    let lastReported = 0
-    const session = createStreamDownload({
-      url: href,
-      headers: { Accept: 'video/mp4, video/*, application/octet-stream' },
-      onProgress: ({ loaded, total, speed }) => {
-        const remaining = total > loaded && speed > 0 ? (total - loaded) / speed : null
-        setProgress({ phase: 'downloading', loaded, total, percent: total ? Math.min(100, Math.round((loaded / total) * 100)) : null, speed, eta: remaining })
-        lastReported = loaded
-      },
-      onStateChange: next => {
-        if (next === 'connecting') { setStatus('loading'); setProgress({ phase: 'preparing', loaded: 0, total: 0, percent: 0, speed: 0, eta: null }) }
-        if (next === 'downloading') setStatus('loading')
-        if (next === 'paused') setStatus('paused')
-        if (next === 'error') { setStatus('error'); setProgress({ phase: 'error', loaded: lastReported, total: 0, percent: 0, speed: 0, eta: null }); window.setTimeout(() => setStatus('idle'), 4000) }
-      },
-    })
-    sessionRef.current = session
-    session.start().then(() => {
-      if (session.state !== 'complete') return
-      if (!session.loaded) throw new Error('The download returned an empty file')
-      // Don't auto-save here — this runs from an async fetch-completion callback with
-      // no live user gesture behind it, and browsers can silently drop a programmatic
-      // save in that situation (that was the exact "says saved, isn't on disk" bug).
-      // Land in 'ready' and require a real tap on "Save to device" instead.
-      setStatus('ready')
-      setProgress({ phase: 'ready', loaded: session.loaded, total: session.total || session.loaded, percent: 100, speed: 0, eta: 0 })
-    }).catch(error => {
-      if (session.state === 'canceled' || session.state === 'paused') return
-      const canFallbackToNative = error instanceof TypeError || error?.name === 'TypeError'
-      if (canFallbackToNative) { startNativeHandoff(); return }
-      setStatus('error')
-      setProgress({ phase: 'error', loaded: 0, total: 0, percent: 0, speed: 0, eta: null })
-      window.setTimeout(() => setStatus('idle'), 4000)
-    })
-  }
-
+  // Plain, browser-native download: the anchor's `download` attribute hands the whole
+  // transfer to the browser's own download manager end to end. It's what actually
+  // registers in chrome://downloads, shows the real OS download notification, and
+  // lands in the device's real Downloads folder automatically — no JS in the middle
+  // that can silently fail to save.
   const startDownload = async event => {
     if (!href) return
     if (!isLocalResolver) {
-      event.preventDefault()
-      if (status === 'loading' || status === 'paused') return
+      // External source: record the download and let the click navigate normally.
       item && recordDownload(item, { season, episode, mediaKind: kind, filename: filename || fallbackName, resolution: label })
-      sessionRef.current = null
-      setStatus('loading')
-      setProgress({ phase: 'preparing', loaded: 0, total: 0, percent: 0, speed: 0, eta: null })
-      if (background && bgSupported) runBackgroundDownload()
-      else runStreamDownload()
       return
     }
+    // Local resolver: confirm the source is actually available before navigating,
+    // since a dead link here would just open an error page instead of downloading.
     event.preventDefault()
-    if (status === 'loading') return
-    setStatus('loading')
+    if (status === 'checking') return
+    setStatus('checking')
     const controller = new AbortController()
     const timeout = window.setTimeout(() => controller.abort(), DOWNLOAD_CHECK_TIMEOUT)
     try {
@@ -501,63 +350,16 @@ function DownloadButton({ href, label, size, filename, item, season, episode, me
     }
   }
 
-  const pauseDownload = () => { if (mode === 'stream') sessionRef.current?.pause() }
-  const resumeDownload = () => { if (mode === 'stream') sessionRef.current?.resume() }
-  const cancelDownload = () => {
-    sessionRef.current?.cancel?.()
-    sessionRef.current = null
-    setMode(null)
-    setStatus('idle')
-    setProgress(IDLE_DOWNLOAD_PROGRESS)
-  }
-
-  const progressLabel = progress.phase === 'ready'
-    ? 'Downloaded — tap to save'
-    : progress.phase === 'complete'
-      ? 'Download complete'
-      : progress.phase === 'error'
-        ? 'Download failed'
-        : progress.phase === 'handoff'
-          ? 'Starting device download…'
-          : progress.phase === 'preparing'
-            ? 'Preparing video…'
-            : status === 'paused'
-              ? 'Paused'
-              : mode === 'background'
-                ? 'Downloading in background…'
-                : 'Downloading video…'
-  const progressPercent = progress.total ? Math.min(100, progress.percent || 0) : (progress.phase === 'complete' || progress.phase === 'ready' ? 100 : 6)
-  const busyLabel = progress.phase === 'downloading' && progress.total ? `Downloading ${progress.percent}%` : status === 'paused' ? 'Paused' : 'Starting download…'
-  const showControls = !isLocalResolver && (status === 'loading' || status === 'paused') && progress.phase !== 'handoff' && progress.phase !== 'complete'
-
   return (
     <div className="mv-download-control">
-      {!isLocalResolver && status === 'idle' && isRestrictiveWebView() && <p className="mv-webview-note">⚠ Downloads may not save properly inside this in-app browser. For a reliable save, tap ⋮ and choose "Open in Chrome" or "Open in Safari".</p>}
-      {!isLocalResolver && status === 'idle' && bgSupported && <label className="mv-download-bg-toggle">
-        <input type="checkbox" checked={background} onChange={event => setBackground(event.target.checked)} />
-        <span>Background download — keeps going if you close the app, but you'll still need to tap "Save" once it's done</span>
-      </label>}
-      {status === 'ready'
-        ? <button type="button" className="mv-download-btn is-ready" onClick={saveReadyDownload} disabled={saving}>
-            <span className="mv-download-status">{saving ? <span className="mv-download-spinner" aria-hidden="true" /> : null}{saving ? 'Saving…' : '💾 Save to device'}</span>
-          </button>
-        : <a className={`mv-download-btn${status === 'error' ? ' is-error' : ''}${status === 'paused' ? ' is-paused' : ''}`} href={href || '#'} download={filename || fallbackName} rel="noopener noreferrer" referrerPolicy="no-referrer" aria-busy={status === 'loading'} onClick={startDownload}>
-            <span className="mv-download-status" role={status === 'loading' ? 'status' : undefined}>
-              {status === 'loading' ? <span className="mv-download-spinner" aria-hidden="true" /> : null}
-              {status === 'loading' ? busyLabel : status === 'paused' ? '⏸ Paused — tap resume' : status === 'error' ? '⚠ Retry download' : `⬇ ${label}`}
-            </span>
-            {size ? <span className="mv-download-size">{size}</span> : null}
-          </a>}
-      {showControls && <div className="mv-download-controls">
-        {mode === 'stream' && status === 'loading' && <button type="button" className="mv-download-mini-btn" onClick={pauseDownload}>⏸ Pause</button>}
-        {mode === 'stream' && status === 'paused' && <button type="button" className="mv-download-mini-btn" onClick={resumeDownload}>▶ Resume</button>}
-        <button type="button" className="mv-download-mini-btn is-cancel" onClick={cancelDownload}>✕ Cancel</button>
-      </div>}
-      {progress.phase !== 'idle' && <div className={`mv-download-progress${progress.phase === 'error' ? ' is-error' : progress.phase === 'complete' ? ' is-complete' : progress.phase === 'ready' ? ' is-ready' : status === 'paused' ? ' is-paused' : ''}`} role="status" aria-live="polite">
-        <div className="mv-download-progress-head"><span>{progressLabel}{mode === 'background' && progress.phase === 'downloading' ? ' 📱' : ''}</span><strong>{progress.total || progress.phase === 'complete' || progress.phase === 'ready' ? `${progress.total ? progress.percent : 100}%` : '…'}</strong></div>
-        <div className="mv-download-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={progress.total || progress.phase === 'complete' ? progressPercent : undefined} aria-valuetext={progress.total || progress.phase === 'complete' ? `${progressPercent}%` : 'Download starting'}><span style={{ width: `${progressPercent}%` }} /></div>
-        <div className="mv-download-progress-stats"><span>{formatBytes(progress.loaded)}{progress.total ? ` / ${formatBytes(progress.total)}` : ''}</span><span>{progress.speed > 0 ? `${formatBytes(progress.speed)}/s` : progress.phase === 'complete' ? 'Ready' : status === 'paused' ? 'Paused' : 'Connecting…'}</span><span>{progress.phase === 'ready' ? 'Not saved yet' : progress.phase === 'complete' ? (progress.savedVia === 'share' ? 'Saved — check Files app' : 'Saved to Downloads') : progress.phase === 'error' ? 'Try again' : status === 'paused' ? 'Tap resume to continue' : progress.total && progress.phase === 'downloading' ? formatEta(progress.eta) : 'Preparing…'}</span></div>
-      </div>}
+      {isRestrictiveWebView() && <p className="mv-webview-note">⚠ Downloads may not save properly inside this in-app browser. For a reliable save, tap ⋮ and choose "Open in Chrome" or "Open in Safari".</p>}
+      <a className={`mv-download-btn${status === 'error' ? ' is-error' : ''}`} href={href || '#'} download={filename || fallbackName} rel="noopener noreferrer" referrerPolicy="no-referrer" aria-busy={status === 'checking'} onClick={startDownload}>
+        <span className="mv-download-status" role={status === 'checking' ? 'status' : undefined}>
+          {status === 'checking' ? <span className="mv-download-spinner" aria-hidden="true" /> : null}
+          {status === 'checking' ? 'Checking…' : status === 'error' ? '⚠ Unavailable — retry' : `⬇ ${label}`}
+        </span>
+        {size ? <span className="mv-download-size">{size}</span> : null}
+      </a>
     </div>
   )
 }
@@ -862,7 +664,6 @@ export default function MoviesPage({ shared = null }) {
   const [suggestions, setSuggestions] = useState([])
   const [catalogMode, setCatalogMode] = useState('moviePopular')
   const [selected, setSelected] = useState(null)
-  const [pendingSaves, setPendingSaves] = useState([]) // background downloads claimed but not yet saved (need a real tap)
   const sharedLoaded = useRef(false)
 
   const loadRail = useCallback(async (mode, params = {}) => {
@@ -897,37 +698,6 @@ export default function MoviesPage({ shared = null }) {
     const requestedCatalog = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('catalog') : ''
     if (requestedCatalog && ['trending', 'moviePopular', 'movieNew', 'movieTop', 'tvPopular', 'tvTrending', 'tvNew', 'animeTrending', 'animeBrowse', 'live'].includes(requestedCatalog)) setCatalogMode(requestedCatalog)
   }, [])
-
-  // Reached when the user taps the "Download complete" notification the service worker
-  // shows once a background download finishes after the app was closed — pull the
-  // finished file back out of the cache and queue it for the person to tap-save
-  // (auto-saving here has no live user gesture behind it and browsers can silently
-  // drop that, which is exactly the "says saved, isn't on disk" bug this avoids).
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const resumeId = new URLSearchParams(window.location.search).get('resumeDownload')
-    if (!resumeId) return
-    claimBackgroundDownload(resumeId).then(result => {
-      if (result?.blob) setPendingSaves(current => [...current, { id: resumeId, blob: result.blob, filename: result.filename }])
-    }).finally(() => {
-      const url = new URL(window.location.href)
-      url.searchParams.delete('resumeDownload')
-      window.history.replaceState({}, '', url.toString())
-    })
-  }, [])
-
-  // Sweep up any background downloads that finished while no tab was open to receive
-  // the postMessage and whose completion notification was dismissed/never tapped.
-  useEffect(() => {
-    claimAllPendingBackgroundDownloads().then(found => {
-      if (found.length) setPendingSaves(current => [...current, ...found])
-    })
-  }, [])
-
-  const savePending = async entry => {
-    const result = await saveBlobToDevice(entry.blob, entry.filename)
-    if (!result?.canceled) setPendingSaves(current => current.filter(item => item.id !== entry.id))
-  }
 
   useEffect(() => {
     if (!query.trim() || results.length > 0) { setSuggestions([]); return undefined }
@@ -1007,16 +777,6 @@ export default function MoviesPage({ shared = null }) {
       <section className="mv-discover-bar" id="discover"><div><span className="mv-catalog-eyebrow">DISCOVER ON TOOSIIFLIX</span><h2>Find by genre</h2></div><div className="mv-discover-actions">{['Action', 'Drama', 'Comedy', 'Romance', 'Sci-Fi'].map(genre => <button key={genre} onClick={() => loadRail('discover', { contentType: 'MOVIE', genre })}>{genre}</button>)}</div></section>
 
       {selected && <Modal movie={selected} onClose={() => setSelected(null)} onSelect={setSelected} onShare={shareMovie} />}
-      {pendingSaves.length > 0 && (
-        <div className="mv-pending-saves" role="status" aria-live="polite">
-          {pendingSaves.map(entry => (
-            <div key={entry.id} className="mv-pending-save-item">
-              <span className="mv-pending-save-name">💾 {entry.filename}</span>
-              <button type="button" onClick={() => savePending(entry)}>Save to device</button>
-            </div>
-          ))}
-        </div>
-      )}
       <footer className="mv-footer">
         <div className="mv-footer-main"><div><a className="mv-footer-brand" href="/tools/movies"><span className="mv-brand-mark">T</span> TOOSIIFLIX</a><p>Your next watch is waiting. Explore movies, series, anime, and live events with Toosii Tech.</p></div><div className="mv-footer-links"><div><strong>Browse</strong><a href="#catalog">Catalog</a><a href="/tools/movies?catalog=movieNew">New Releases</a><a href="/tools/movies?catalog=live">Live TV</a></div><div><strong>Toosii Tech</strong><a href="/contact">Contact</a><a href="/copyright">Copyright</a><a href="/terms">Terms</a></div></div></div>
         <div className="mv-footer-bottom">© {new Date().getFullYear()} Toosii Tech · TOOSIIFLIX · Use responsibly</div>
