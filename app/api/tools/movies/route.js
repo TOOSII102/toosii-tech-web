@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { brandPublicResponse } from '../../../../lib/brandPublicResponse'
-import { movieFallback } from '../../../../lib/movieFallbacks'
 
 const DAVEX_BASE = 'https://davexmovieapi.zone.id'
 const LEGACY_BASE = 'https://movieapi.xcasper.space'
@@ -30,10 +29,6 @@ const LEGACY_JSON_HEADERS = {
   Accept: 'application/json',
   'Sec-Fetch-Dest': 'empty',
   'Sec-Fetch-Mode': 'cors',
-}
-
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]))
 }
 
 const SOURCE_CACHE_TTL = 60 * 1000
@@ -165,6 +160,46 @@ function safeFilename(title, res, season, episode) {
   const clean = String(title || 'movie').replace(/[^a-z0-9._ -]/gi, '').trim() || 'movie'
   const position = season && episode ? '-S' + season + 'E' + episode : ''
   return clean + position + '-' + (res || 720) + 'p.mp4'
+}
+
+/* ── Trailers: sourced from YouTube (search + resolve), not DAVE ── */
+const YT_TRAILER_API = 'https://apiskeith2-production-3020.up.railway.app'
+const YT_TRAILER_RESOLVE_PATHS = ['/download/video', '/download/ytmp4', '/download/dlmp4', '/download/mp4']
+
+async function searchYoutubeTrailer(title) {
+  const query = title + ' official trailer'
+  const res = await fetchWithTimeout(
+    'https://eliteprotech-apis.zone.id/ytsearch?q=' + encodeURIComponent(query),
+    { headers: { 'User-Agent': UA } },
+    12000,
+    'ytsearch',
+  )
+  if (!res.ok) throw new Error('ytsearch ' + res.status)
+  const data = await res.json()
+  const video = data?.results?.videos?.[0]
+  if (!video?.id) throw new Error('no-youtube-result')
+  return { url: video.url || 'https://youtu.be/' + video.id, thumbnail: video.thumbnail || '', duration: video.duration || '' }
+}
+
+async function resolveTrailerDownloadUrl(youtubeUrl) {
+  let lastError = null
+  for (const path of YT_TRAILER_RESOLVE_PATHS) {
+    try {
+      const res = await fetchWithTimeout(
+        YT_TRAILER_API + path + '?url=' + encodeURIComponent(youtubeUrl),
+        { headers: { 'User-Agent': UA, Accept: 'application/json' } },
+        20000,
+        'trailer-resolve',
+      )
+      if (!res.ok) throw new Error(path + ' ' + res.status)
+      const data = await res.json()
+      if (data?.status && typeof data.result === 'string' && /^https?:\/\//.test(data.result)) return data.result
+      throw new Error(path + ' returned no result')
+    } catch (error) {
+      lastError = error
+    }
+  }
+  throw lastError || new Error('trailer-resolve-failed')
 }
 
 function legacyStreamUrl(id, res, season, episode) {
@@ -617,7 +652,6 @@ export async function GET(req) {
   const action = searchParams.get('action') || 'trending'
   const id = searchParams.get('id') || ''
   const q = searchParams.get('q') || ''
-  const genre = searchParams.get('genre') || ''
   const type = searchParams.get('type') || ''
   const res = searchParams.get('res') || searchParams.get('resolution') || '720'
   const season = searchParams.get('se') || searchParams.get('season') || ''
@@ -626,26 +660,6 @@ export async function GET(req) {
   const resourceId = searchParams.get('resourceId') || ''
   const kind = searchParams.get('kind') || ''
   const retry = asNumber(searchParams.get('retry'), 0)
-  const useFallback = searchParams.get('fallback') === '1'
-
-  if (useFallback) {
-    try {
-      const result = await movieFallback({ action, q, genre, id, type: type || kind, season, episode, title })
-      const directUrl = result.body?.data?.directUrl
-      const embedUrl = result.body?.data?.embedUrl
-      if (action === 'stream' && directUrl) {
-        return new Response(null, { status: 307, headers: { Location: directUrl, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' } })
-      }
-      if (action === 'stream' && embedUrl) {
-        const html = `<!doctype html><html><head><meta name="referrer" content="no-referrer"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body,iframe{width:100%;height:100%;margin:0;border:0;background:#000;overflow:hidden}iframe{display:block}</style></head><body><iframe title="Fallback movie player" src="${escapeHtml(embedUrl)}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen referrerpolicy="no-referrer"></iframe></body></html>`
-        return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } })
-      }
-      return NextResponse.json(result.body, { status: result.status || 200 })
-    } catch (error) {
-      console.error('[movies:fallback]', error.message)
-      return NextResponse.json({ error: 'Fallback movie service is temporarily unavailable.' }, { status: 502 })
-    }
-  }
 
   if (action === 'download-check') {
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
@@ -823,7 +837,22 @@ export async function GET(req) {
 
     if (action === 'trailer') {
       if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
-      return NextResponse.json(brandPublicResponse({ success: true, api: 'Toosii API', operation: 'movies.trailer', data: normalizeTrailer(await daveJson('/item/' + encodeURIComponent(id) + '/trailer')) }))
+      const trailerTitle = title && title !== 'movie' ? title : (await daveJson('/item/' + encodeURIComponent(id)).then(detail => normalizeMovie(detail).title).catch(() => 'movie'))
+      try {
+        const found = await searchYoutubeTrailer(trailerTitle)
+        const resolved = await resolveTrailerDownloadUrl(found.url)
+        const filename = String(trailerTitle).replace(/[^a-z0-9._ -]/gi, '').trim() + ' - Official Trailer.mp4'
+        const proxyUrl = '/api/download/proxy?' + new URLSearchParams({ url: resolved, name: filename }).toString()
+        return NextResponse.json(brandPublicResponse({
+          success: true,
+          api: 'Toosii API',
+          operation: 'movies.trailer',
+          data: { url: proxyUrl, cover: found.thumbnail, duration: found.duration, definition: 'YouTube', source: 'youtube' },
+        }))
+      } catch (error) {
+        console.warn('[movies:trailer]', error.message)
+        return NextResponse.json({ error: 'Trailer is currently unavailable.', retryable: true }, { status: 503, headers: { 'Retry-After': '5' } })
+      }
     }
 
     if (action === 'cast') {
