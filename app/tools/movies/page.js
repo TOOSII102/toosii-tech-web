@@ -181,6 +181,30 @@ function normalizeDavePayload(action, raw, params) {
 }
 
 const request = async (action, params = {}) => {
+  if (action === 'trailer') {
+    // Trailers are sourced from YouTube via our own server (which does the search +
+    // resolve step server-side), not DAVE directly — so this routes through our own
+    // API instead of the generic DAVE_BASE fetch below.
+    const cacheKey = 'trailer:' + String(params.id || '')
+    const cached = clientMetadataCache.get(cacheKey)
+    if (cached && cached.expiresAt > Date.now()) return cached.payload
+    const controller = new AbortController()
+    const timeout = window.setTimeout(() => controller.abort(), DAVE_REQUEST_TIMEOUT)
+    try {
+      const qs = new URLSearchParams({ action: 'trailer', id: String(params.id || ''), title: params.title || '' })
+      const response = await fetch('/api/tools/movies?' + qs.toString(), { headers: { Accept: 'application/json' }, signal: controller.signal })
+      const raw = await response.json().catch(() => ({}))
+      if (!response.ok || raw?.success === false) throw new Error(raw?.error || 'Trailer unavailable')
+      const payload = { data: raw?.data || null }
+      putClientMetadata(cacheKey, payload)
+      return payload
+    } catch (error) {
+      if (cached) return cached.payload
+      throw error
+    } finally {
+      window.clearTimeout(timeout)
+    }
+  }
   const path = davePath(action, params)
   const url = DAVE_BASE + path
   const cacheable = CACHEABLE_ACTIONS.has(action)
@@ -484,7 +508,7 @@ function Modal({ movie, onClose, onSelect, onShare }) {
       request(animeHint ? 'anime-info' : 'detail', { id }),
       request(animeHint ? 'anime-play' : liveHint ? 'live-stream-meta' : tvHint ? 'tv-seasons' : 'play', { id, res: 720, se: tvHint && !liveHint ? season : '', ep: tvHint && !liveHint ? episode : '' }),
       liveHint ? Promise.resolve({ data: { items: [] } }) : request(tvHint ? 'tv-recommend' : 'movie-recommend', { id }),
-      liveHint ? Promise.resolve({ data: null }) : request('trailer', { id }),
+      liveHint ? Promise.resolve({ data: null }) : request('trailer', { id, title: movie.title }),
       liveHint ? Promise.resolve({ data: [] }) : request('cast', { id }),
       liveHint ? Promise.resolve({ data: [] }) : request('dubs', { id }),
       liveHint ? Promise.resolve({ data: [] }) : request(animeHint ? 'anime-captions' : 'captions', { id, res: 720, se: tvHint ? season : '', ep: tvHint ? episode : '' }),
