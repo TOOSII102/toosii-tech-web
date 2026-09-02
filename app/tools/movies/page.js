@@ -16,7 +16,6 @@ const MAX_AUTO_STREAM_RETRIES = 3
 const DAVE_REQUEST_TIMEOUT = 15000
 const STREAM_STALL_TIMEOUT = 8000
 const STREAM_INITIAL_LOAD_TIMEOUT = 20000
-const DOWNLOAD_CHECK_TIMEOUT = 10000
 const clientMetadataCache = new Map()
 
 const putClientMetadata = (url, payload) => {
@@ -246,7 +245,12 @@ function mediaUrl(id, resolution, season, episode, action = 'stream', title = ''
       params.set('season', String(season))
       params.set('episode', String(episode))
     }
-    return DAVE_BASE + '/proxy/download?' + params.toString()
+    const daveUrl = DAVE_BASE + '/proxy/download?' + params.toString()
+    // Route through our own domain instead of linking straight to the external API —
+    // this is what makes the browser's download entry show "toosiitech.org" as the
+    // source (and the real save destination) instead of the upstream API's domain.
+    const proxyParams = new URLSearchParams({ url: daveUrl, name: daveFilename(title, quality, season, episode) })
+    return '/api/download/proxy?' + proxyParams.toString()
   }
   const params = new URLSearchParams({ resolution: quality })
   if (season && episode) {
@@ -308,56 +312,24 @@ function Rail({ title, items, onSelect, onShare }) {
 
 function DownloadButton({ href, label, size, filename, item, season, episode, mediaKind: kind }) {
   const fallbackName = `${String(label || 'movie').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'movie'}.mp4`
-  const [status, setStatus] = useState('idle') // idle | checking | error
-  const isLocalResolver = String(href || '').startsWith('/')
 
   // Plain, browser-native download: the anchor's `download` attribute hands the whole
   // transfer to the browser's own download manager end to end. It's what actually
   // registers in chrome://downloads, shows the real OS download notification, and
   // lands in the device's real Downloads folder automatically — no JS in the middle
-  // that can silently fail to save.
-  const startDownload = async event => {
+  // that can silently fail to save. The href itself is routed through our own
+  // /api/download/proxy (see mediaUrl above) so the browser attributes the download
+  // to toosiitech.org rather than the upstream API's domain.
+  const startDownload = () => {
     if (!href) return
-    if (!isLocalResolver) {
-      // External source: record the download and let the click navigate normally.
-      item && recordDownload(item, { season, episode, mediaKind: kind, filename: filename || fallbackName, resolution: label })
-      return
-    }
-    // Local resolver: confirm the source is actually available before navigating,
-    // since a dead link here would just open an error page instead of downloading.
-    event.preventDefault()
-    if (status === 'checking') return
-    setStatus('checking')
-    const controller = new AbortController()
-    const timeout = window.setTimeout(() => controller.abort(), DOWNLOAD_CHECK_TIMEOUT)
-    try {
-      const checkUrl = new URL(href, window.location.origin)
-      checkUrl.searchParams.set('action', 'download-check')
-      const response = await fetch(checkUrl.pathname + checkUrl.search, { cache: 'no-store', signal: controller.signal })
-      const payload = await response.json().catch(() => ({}))
-      if (response.ok && payload?.available === true) {
-        item && recordDownload(item, { season, episode, mediaKind: kind, filename: filename || fallbackName, resolution: label })
-        setStatus('idle')
-        window.location.assign(href)
-        return
-      }
-      throw new Error(payload?.error || 'Download source is temporarily unavailable')
-    } catch (error) {
-      setStatus('error')
-      window.setTimeout(() => setStatus('idle'), 4000)
-    } finally {
-      window.clearTimeout(timeout)
-    }
+    item && recordDownload(item, { season, episode, mediaKind: kind, filename: filename || fallbackName, resolution: label })
   }
 
   return (
     <div className="mv-download-control">
       {isRestrictiveWebView() && <p className="mv-webview-note">⚠ Downloads may not save properly inside this in-app browser. For a reliable save, tap ⋮ and choose "Open in Chrome" or "Open in Safari".</p>}
-      <a className={`mv-download-btn${status === 'error' ? ' is-error' : ''}`} href={href || '#'} download={filename || fallbackName} rel="noopener noreferrer" referrerPolicy="no-referrer" aria-busy={status === 'checking'} onClick={startDownload}>
-        <span className="mv-download-status" role={status === 'checking' ? 'status' : undefined}>
-          {status === 'checking' ? <span className="mv-download-spinner" aria-hidden="true" /> : null}
-          {status === 'checking' ? 'Checking…' : status === 'error' ? '⚠ Unavailable — retry' : `⬇ ${label}`}
-        </span>
+      <a className="mv-download-btn" href={href || '#'} download={filename || fallbackName} rel="noopener noreferrer" referrerPolicy="no-referrer" onClick={startDownload}>
+        <span className="mv-download-status">⬇ {label}</span>
         {size ? <span className="mv-download-size">{size}</span> : null}
       </a>
     </div>
