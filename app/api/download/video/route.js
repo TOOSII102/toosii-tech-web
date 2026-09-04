@@ -27,6 +27,8 @@ const execFileAsync = promisify(execFile)
 const GT_BASE = 'https://api.giftedtech.co.ke/api/download'
 const GT_KEY  = process.env.GIFTED_API_KEY || 'gifted'
 const EP      = 'https://eliteprotech-apis.zone.id'
+const KEITH_BASE = 'https://apiskeith2-production-3020.up.railway.app'
+const KEITH_PATHS = ['/download/video', '/download/ytmp4', '/download/dlmp4', '/download/mp4']
 
 function detect(url) {
   if (/youtube\.com|youtu\.be/i.test(url))      return 'youtube'
@@ -34,6 +36,26 @@ function detect(url) {
   if (/instagram\.com/i.test(url))               return 'instagram'
   if (/facebook\.com|fb\.watch/i.test(url))      return 'facebook'
   if (/twitter\.com|x\.com/i.test(url))          return 'twitter'
+  return null
+}
+
+// Generic URL-in, MP4-out resolver — works across platforms (used here for Instagram,
+// but not tied to it). Tries each path in turn since a couple of these have been flaky
+// individually; first one that returns a usable direct link wins.
+async function keithFetch(url) {
+  for (const path of KEITH_PATHS) {
+    try {
+      const res = await fetch(
+        `${KEITH_BASE}${path}?url=${encodeURIComponent(url)}`,
+        { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(20000) }
+      )
+      if (!res.ok) continue
+      const data = await res.json()
+      if (data?.status && typeof data.result === 'string' && /^https?:\/\//.test(data.result)) {
+        return { download_url: data.result }
+      }
+    } catch { /* try next path */ }
+  }
   return null
 }
 
@@ -185,9 +207,21 @@ export async function POST(request) {
       } catch {}
     }
 
-    // ── Instagram — GiftedTech → EliteProTech → yt-dlp ──────────────────────
+    // ── Instagram — Keith (fast, keyless) → GiftedTech → EliteProTech → yt-dlp ──
     if (platform === 'instagram') {
-      // Source 1: GiftedTech
+      // Source 1: Keith
+      try {
+        const keith = await keithFetch(trimmed)
+        if (keith?.download_url) {
+          return NextResponse.json({
+            platform,
+            download_url: keith.download_url,
+            title: 'Instagram Video',
+          })
+        }
+      } catch (e) { console.error('[video:instagram:keith]', e.message) }
+
+      // Source 2: GiftedTech
       try {
         const d = await giftedFetch('instadl', trimmed)
         if (d.success && d.result?.download_url) {
@@ -200,7 +234,7 @@ export async function POST(request) {
         }
       } catch {}
 
-      // Source 2: EliteProTech /instagram
+      // Source 3: EliteProTech /instagram
       try {
         const ep = await fetch(
           `${EP}/instagram?url=${enc}`,
@@ -217,7 +251,7 @@ export async function POST(request) {
         }
       } catch (e) { console.error('[video:instagram:eliteprotech]', e.message) }
 
-      // Source 3: yt-dlp
+      // Source 4: yt-dlp
       try {
         const info = await ytdlpJson(trimmed)
         const fmt = info?.formats?.find(f => f.vcodec !== 'none' && f.acodec !== 'none') || info?.formats?.[0]
