@@ -1,6 +1,7 @@
 'use client'
 import Layout from '../../../components/Layout'
 import { useState } from 'react'
+import { useBackNavigation } from '../../../lib/useBackNavigation'
 import './spotify.css'
 
 const STEPS = ['Fetching track info…', 'Converting to MP3…', 'Finalising…']
@@ -24,6 +25,7 @@ export default function SpotifyDownloader() {
   const [searching, setSearching] = useState(false)
   const [searchError, setSearchError] = useState('')
   const [result, setResult]       = useState(null)
+  const closeResult = useBackNavigation(!!result, () => setResult(null))
   const [loading, setLoading]     = useState(false)
   const [loadingId, setLoadingId] = useState(null)
   const [step, setStep]           = useState(0)
@@ -184,7 +186,7 @@ export default function SpotifyDownloader() {
                   <p className="expire-note">⚡ Download now — this link expires soon</p>
                   <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap' }}>
                     <a href={proxyUrl(result.download_url || result.download, result.title)} download className="btn-primary" style={{ width: 'fit-content', marginTop: '0.25rem' }}>⬇ Download MP3</a>
-                    {mode === 'search' && <button onClick={() => { setResult(null); setLoadingId(null) }} className="btn-outline" style={{ width: 'fit-content', marginTop: '0.25rem', fontSize: '0.85rem' }}>← Back</button>}
+                    {mode === 'search' && <button onClick={() => { closeResult(); setLoadingId(null) }} className="btn-outline" style={{ width: 'fit-content', marginTop: '0.25rem', fontSize: '0.85rem' }}>← Back</button>}
                   </div>
                 </div>
               </div>
