@@ -1,6 +1,7 @@
 'use client'
 import Layout from '../../../components/Layout'
 import { useState, useRef } from 'react'
+import { useBackNavigation } from '../../../lib/useBackNavigation'
 import '../tools.css'
 
 const STEPS = {
@@ -8,6 +9,9 @@ const STEPS = {
   removing:   'Separating vocals and instrumental tracks…',
   url_send:   'Sending audio URL for processing…',
 }
+
+const MAX_UPLOAD_MB = 4.3
+const MAX_URL_MB = 20
 
 function baseName(str) {
   // Extract filename without extension from a path or URL
@@ -30,6 +34,7 @@ export default function VocalRemover() {
   const [origName, setOrigName] = useState('audio')
   const [drag, setDrag]       = useState(false)
   const [result, setResult]   = useState(null)
+  const closeResult = useBackNavigation(!!result, () => setResult(null))
   const [loading, setLoading] = useState(false)
   const [step, setStep]       = useState('')
   const [error, setError]     = useState('')
@@ -42,8 +47,8 @@ export default function VocalRemover() {
       setError('Please upload an audio file — MP3, WAV, M4A, OGG, FLAC, or AAC.')
       return
     }
-    if (f.size > 4 * 1024 * 1024) {
-      setError(`File is too large (${(f.size/1024/1024).toFixed(1)} MB). Maximum is 4 MB. For larger files, use the 🔗 URL mode — upload your audio to Dropbox, Google Drive, or any file host and paste the direct link.`)
+    if (f.size > MAX_UPLOAD_MB * 1024 * 1024) {
+      setError(`File is too large (${(f.size/1024/1024).toFixed(1)} MB). Direct upload is capped at ${MAX_UPLOAD_MB} MB by the hosting platform. Switch to 🔗 URL mode instead — upload your audio to Dropbox, Google Drive, or any file host and paste the direct link (up to ${MAX_URL_MB} MB).`)
       return
     }
     setFile(f); setOrigName(sanitize(f.name.replace(/\.[^.]+$/, ''))); setError(''); setResult(null)
@@ -192,9 +197,12 @@ export default function VocalRemover() {
                   <span style={{ fontSize: '2.5rem' }}>🎵</span>
                   {file
                     ? <p style={{ color: '#25d366', fontWeight: 600 }}>✓ {file.name} ({(file.size / 1024 / 1024).toFixed(1)} MB)</p>
-                    : <p>Drag & drop your audio file here<br /><span style={{ fontSize: '0.75rem' }}>MP3, WAV, M4A, OGG, FLAC, AAC — max 4 MB</span></p>
+                    : <p>Drag & drop your audio file here<br /><span style={{ fontSize: '0.75rem' }}>MP3, WAV, M4A, OGG, FLAC, AAC — max {MAX_UPLOAD_MB} MB</span></p>
                   }
                 </div>
+                <p className="upload-limit-note">
+                  Why so small? Uploaded files pass through our server in one request, and our hosting platform hard-caps that at ~4.5 MB — it can't be raised. For bigger files, switch to <strong>🔗 Paste URL</strong> above and link the audio instead (up to {MAX_URL_MB} MB) — that path skips the upload limit entirely.
+                </p>
 
                 <button
                   type="button"
@@ -209,7 +217,7 @@ export default function VocalRemover() {
                 {file && (
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.5rem', padding: '0.6rem 0.9rem', background: 'rgba(37,211,102,0.07)', borderRadius: 8, border: '1px solid rgba(37,211,102,0.2)' }}>
                     <span style={{ color: '#25d366', fontSize: '0.875rem', fontWeight: 600 }}>✓ {file.name}</span>
-                    <button onClick={() => { setFile(null); setResult(null) }} style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: '1.1rem' }}>✕</button>
+                    <button onClick={() => { setFile(null); closeResult() }} style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: '1.1rem' }}>✕</button>
                   </div>
                 )}
               </div>
