@@ -1,6 +1,7 @@
 'use client'
 import Layout from '../../components/Layout'
 import { useState } from 'react'
+import { useBackNavigation } from '../../lib/useBackNavigation'
 import './blog.css'
 
 const blogPosts = [
@@ -206,6 +207,7 @@ const categories = ["All Topics", "WhatsApp Bots", "Artificial Intelligence", "D
 export default function Blog() {
   const [selectedCategory, setSelectedCategory] = useState("All Topics")
   const [selectedArticle, setSelectedArticle] = useState(null)
+  const closeArticle = useBackNavigation(!!selectedArticle, () => setSelectedArticle(null))
 
   const filtered = selectedCategory === "All Topics"
     ? blogPosts
@@ -220,7 +222,7 @@ export default function Blog() {
         <div className="article-page">
           <div className="article-back">
             <div className="page-wrapper">
-              <button onClick={() => setSelectedArticle(null)} className="back-btn">← Back to Blog</button>
+              <button onClick={closeArticle} className="back-btn">← Back to Blog</button>
             </div>
           </div>
           <div className="article-inner page-wrapper">
