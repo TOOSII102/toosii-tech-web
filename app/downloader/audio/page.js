@@ -3,6 +3,7 @@ import Layout from '../../../components/Layout'
 import { useState, useEffect, useRef } from 'react'
 import { shareOrCopy } from '../../../lib/clientShare'
 import { isRestrictiveWebView } from '../../../lib/downloadManager'
+import { useBackNavigation } from '../../../lib/useBackNavigation'
 import './audio.css'
 
 const GT = 'https://api.giftedtech.co.ke/api/download'
@@ -61,10 +62,12 @@ export default function AudioDownloader({ shared = null }) {
   const [step, setStep]               = useState(0)
   const [error, setError]             = useState('')
   const [selectedId, setSelectedId]   = useState(null)
+  const closeResult = useBackNavigation(!!result, () => setResult(null))
     const [playingId,     setPlayingId]     = useState(null)
   const [playingTitle, setPlayingTitle] = useState('')
   const [playingArtist, setPlayingArtist] = useState('')
   const [playingUrl,    setPlayingUrl]    = useState('')
+  const closePlaying = useBackNavigation(!!playingId, () => setPlayingId(null))
   const sharedLoaded = useRef(false)
 
   const [trending, setTrending]       = useState([])
@@ -251,7 +254,7 @@ export default function AudioDownloader({ shared = null }) {
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                     <button onClick={() => shareAudio()} className="player-share-btn">↗ Share</button>
-                    <button onClick={() => setPlayingId(null)} className="player-close-btn">✕ Close</button>
+                    <button onClick={closePlaying} className="player-close-btn">✕ Close</button>
                   </div>
                 </div>
                 <div className="player-frame-wrap">
@@ -269,7 +272,7 @@ export default function AudioDownloader({ shared = null }) {
                     className="btn-primary"
                     disabled={loading}
                   >{loading ? 'Converting…' : '🎵 Download as MP3'}</button>
-                  <button onClick={() => setPlayingId(null)} className="btn-outline">← Back to results</button>
+                  <button onClick={closePlaying} className="btn-outline">← Back to results</button>
                 </div>
               </div>
             )}
@@ -333,7 +336,7 @@ export default function AudioDownloader({ shared = null }) {
                   <div className="dl-buttons">
                     <a href={downloadHref} download={downloadFilename} onClick={onDownloadClick} className="btn-primary" style={{ width: 'fit-content' }}>⬇ Download MP3</a>
                     <button type="button" onClick={() => shareAudio({ sourceUrl: url, title: result.title, artist: result.author, thumbnail: result.thumbnail, duration: result.duration, quality: result.quality })} className="btn-secondary">↗ Share Song</button>
-                    {mode === 'search' && <button onClick={() => { setResult(null); setSelectedId(null) }} className="btn-outline" style={{ width: 'fit-content', fontSize: '0.85rem' }}>← Back</button>}
+                    {mode === 'search' && <button onClick={() => { closeResult(); setSelectedId(null) }} className="btn-outline" style={{ width: 'fit-content', fontSize: '0.85rem' }}>← Back</button>}
                   </div>
                 </div>
               </div>
