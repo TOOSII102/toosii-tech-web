@@ -3,6 +3,7 @@ import Layout from '../../../components/Layout'
 import { useState, useEffect, useRef } from 'react'
 import { shareOrCopy } from '../../../lib/clientShare'
 import { isRestrictiveWebView } from '../../../lib/downloadManager'
+import { useBackNavigation } from '../../../lib/useBackNavigation'
 import './video.css'
 
 const GT = 'https://api.giftedtech.co.ke/api/download'
@@ -78,9 +79,11 @@ export default function VideoDownloader({ shared = null }) {
   const [step, setStep]               = useState(0)
   const [error, setError]             = useState('')
   const [selectedId, setSelectedId]   = useState(null)
+  const closeResult = useBackNavigation(!!result, () => setResult(null))
   const [playingId, setPlayingId]     = useState(null)
   const [playingTitle, setPlayingTitle] = useState('')
   const [playingUrl, setPlayingUrl]   = useState('')
+  const closePlaying = useBackNavigation(!!playingId, () => setPlayingId(null))
   const sharedLoaded = useRef(false)
   const [trending, setTrending]       = useState([])
   const [trendingLoading, setTrendingLoading] = useState(true)
@@ -263,7 +266,7 @@ export default function VideoDownloader({ shared = null }) {
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                     <button onClick={() => shareVideo()} className="player-share-btn">↗ Share</button>
-                    <button onClick={() => setPlayingId(null)} className="player-close-btn">✕ Close</button>
+                    <button onClick={closePlaying} className="player-close-btn">✕ Close</button>
                   </div>
                 </div>
                 <div className="player-frame-wrap">
@@ -281,7 +284,7 @@ export default function VideoDownloader({ shared = null }) {
                     className="btn-primary"
                     disabled={loading}
                   >{loading ? 'Processing…' : '⬇ Download Video'}</button>
-                  <button onClick={() => setPlayingId(null)} className="btn-outline">← Back to results</button>
+                  <button onClick={closePlaying} className="btn-outline">← Back to results</button>
                 </div>
               </div>
             )}
@@ -340,7 +343,7 @@ export default function VideoDownloader({ shared = null }) {
                     <DownloadLink href={proxyUrl(result.download_url, result.title)} filename={(result.title ? result.title.replace(/[^a-z0-9\s-]/gi, '').trim().slice(0, 60) : 'video') + '.mp4'} label={`⬇ Download ${result.quality || 'Video'}`} className="btn-primary" style={{ width: 'fit-content' }} />
                     <button type="button" onClick={() => shareVideo({ url, title: result.title, thumbnail: result.thumbnail, platform: result.platform })} className="btn-secondary">↗ Share Video</button>
                     {result.download_url_sd && <DownloadLink href={proxyUrl(result.download_url_sd, result.title ? result.title + ' SD' : null)} filename={(result.title ? result.title + ' SD' : 'video') + '.mp4'} label="⬇ SD Quality" className="btn-secondary" style={{ width: 'fit-content' }} />}
-                    {mode === 'search' && <button onClick={() => { setResult(null); setSelectedId(null) }} className="btn-outline" style={{ width: 'fit-content', fontSize: '0.85rem' }}>← Back</button>}
+                    {mode === 'search' && <button onClick={() => { closeResult(); setSelectedId(null) }} className="btn-outline" style={{ width: 'fit-content', fontSize: '0.85rem' }}>← Back</button>}
                   </div>
                   {result.all_qualities?.length > 1 && (
                     <div className="quality-list">
