@@ -20,6 +20,13 @@ export async function GET(request) {
   try {
     const isXcasper = fileUrl.includes('xcasper.space')
     const xcasperHdrs = isXcasper ? { 'Referer': 'https://xcasper.space/', 'Origin': 'https://xcasper.space' } : {}
+    // Instagram's CDN checks for a plausible Referer/Origin before serving these signed
+    // URLs — without it, it returns a JSON/HTML error instead of the video, which we'd
+    // otherwise faithfully proxy through (that's what caused downloads to save as
+    // "video.mp4.json" and fail: the browser detected the real Content-Type didn't
+    // match the .mp4 filename because the body was actually an error payload).
+    const isInstagramCdn = /(^|\.)cdninstagram\.com$|(^|\.)fbcdn\.net$/i.test(new URL(fileUrl).hostname)
+    const instagramHdrs = isInstagramCdn ? { 'Referer': 'https://www.instagram.com/', 'Origin': 'https://www.instagram.com' } : {}
 
     // The download manager (lib/downloadManager.js) always sends a Range header so it
     // can pause/resume without losing bytes. Forward it upstream so large video files
@@ -36,6 +43,7 @@ export async function GET(request) {
         'Accept':     '*/*',
         ...(rangeHeader ? { Range: rangeHeader } : {}),
         ...xcasperHdrs,
+        ...instagramHdrs,
       },
       signal: AbortSignal.timeout(120000),
     })
@@ -49,6 +57,19 @@ export async function GET(request) {
 
     const contentType = res.headers.get('content-type') || 'application/octet-stream'
     const isMp3 = contentType.toLowerCase().includes('audio/mpeg') || /\.mp3(?:$|[?#])/i.test(filename) || /\.mp3(?:$|[?#])/i.test(fileUrl)
+
+    // If we were expecting a video file but the upstream actually sent back JSON/HTML
+    // (a CDN error page, an expired-link response, etc.), don't pass it through — that
+    // would save on the device as a mislabeled/corrupted ".mp4" that the browser then
+    // flags as failed once it notices the mismatch. Fail cleanly instead.
+    const looksLikeErrorPayload = /^(application\/json|text\/html|text\/plain)/i.test(contentType)
+    if (!isMp3 && looksLikeErrorPayload) {
+      return NextResponse.json(
+        { error: 'The video link is no longer valid (it may have expired or been blocked by the source). Please try downloading again.' },
+        { status: 502 }
+      )
+    }
+
     const safeFilename = filename.replace(/[\r\n"]/g, '').trim() || 'download'
     const asciiFilename = safeFilename.normalize('NFKD').replace(/[^\x20-\x7E]/g, '_')
     const baseHeaders = {
