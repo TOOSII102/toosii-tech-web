@@ -14,11 +14,14 @@ export const metadata = createShareMetadata({
 
 export default function Home() {
 
+  // Every figure here is checkable on the site itself. "Users served" was
+  // removed — it was a claim no visitor could verify, which undercuts the
+  // numbers that are real.
   const stats = [
-    { num: '150+', label: 'Bot Commands',  accent: '#25d366' },
-    { num: '11+',  label: 'Free Tools',    accent: '#3b82f6' },
-    { num: '6+',   label: 'AI Models',     accent: '#8b5cf6' },
-    { num: '5K+',  label: 'Users Served',  accent: '#f59e0b' },
+    { num: '8,400+', label: 'Live TV Channels', accent: '#72f0ba' },
+    { num: '150+',   label: 'Bot Commands',     accent: '#25d366' },
+    { num: '17',     label: 'Free Tools',       accent: '#3b82f6' },
+    { num: '15',     label: 'API Endpoints',    accent: '#8b5cf6' },
   ]
 
   const pillars = [
@@ -49,20 +52,30 @@ export default function Home() {
       href: '/tools/ai',
       accent: '#8b5cf6',
     },
+    {
+      num: '04',
+      icon: '⚡',
+      title: 'Developer API',
+      desc: 'A free, key-free REST API for downloads, AI, configuration inspection and live TV listings. Documented endpoints with live examples you can call from the browser.',
+      cta: 'Read the Docs',
+      href: '/api',
+      accent: '#75d6ff',
+    },
   ]
 
   const tools = [
     { icon: '🤖', title: 'Toosii AI',          desc: 'GPT-4o & Gemini powered chat.', href: '/tools/ai',           color: '#8b5cf6' },
+    { icon: '📺', title: 'Live TV',             desc: '8,400+ channels, checked live.', href: '/live-tv',            color: '#72f0ba' },
+    { icon: '🎬', title: 'Movies & Series',     desc: 'HD films and TV, free to stream.', href: '/tools/movies',      color: '#a78bfa' },
     { icon: '🎬', title: 'Video Downloader',    desc: 'YouTube, TikTok, Instagram — HD.', href: '/downloader/video',  color: '#ef4444' },
     { icon: '🎧', title: 'MP3 Downloader',      desc: 'Extract audio from any YouTube video.', href: '/downloader/audio',  color: '#f59e0b' },
     { icon: '🎵', title: 'Spotify Downloader',  desc: 'Spotify link → MP3, no premium needed.', href: '/downloader/spotify', color: '#25d366' },
-    { icon: '🎬', title: 'Movies & Streams',    desc: 'HD movies & TV series, free.', href: '/tools/movies',        color: '#a78bfa' },
     { icon: '🎤', title: 'Vocal Remover',        desc: 'Isolate vocals or get instrumentals.', href: '/tools/vocal-remover', color: '#06b6d4' },
+    { icon: '🛡️', title: 'Config Inspector',    desc: 'Read VPN configs with secrets hidden.', href: '/tools/config-inspector', color: '#22d3ee' },
     { icon: '🔑', title: 'Session Generator',   desc: 'WhatsApp session ID in seconds.', href: '/session',           color: '#25d366' },
     { icon: '🔥', title: 'Fire Logo Maker',      desc: 'Striking fire-style logo, instant.', href: '/tools/firelogo', color: '#f97316' },
     { icon: '📖', title: 'AI Story Generator',  desc: 'Idea → full creative story in 20s.', href: '/tools/story',    color: '#a855f7' },
     { icon: '📧', title: 'Temp Email',           desc: 'Instant disposable email, no trace.', href: '/tools/tempemail', color: '#ec4899' },
-    { icon: '📱', title: 'APK Search',           desc: 'Find and download any Android APK.', href: '/tools/apk',     color: '#10b981' },
   ]
 
   const botFeatures = [
@@ -94,9 +107,9 @@ export default function Home() {
           </h1>
 
           <p className="hero-sub">
-            A developer platform featuring powerful web tools, AI features, a full
-            WhatsApp bot suite, and free movie streaming. Built in Kenya.
-            All free. No sign-up.
+            Live TV from 177 countries, HD movies, media downloaders, AI tools, a
+            150-command WhatsApp bot and a free public API — built in Kenya, and
+            free to use without an account.
           </p>
 
           <div className="hero-cta">
@@ -134,7 +147,7 @@ export default function Home() {
           <div className="section-header centered">
             <p className="section-eyebrow">What We Offer</p>
             <h2 className="section-title">Everything in one place</h2>
-            <p className="section-sub">Three core areas. One platform. Start using anything right now.</p>
+            <p className="section-sub">Four areas, one platform — and every one of them is free to use right now, without an account.</p>
           </div>
           <div className="pillars-grid">
             {pillars.map(p => (
@@ -177,6 +190,60 @@ export default function Home() {
                 <span className="tool-arrow">↗</span>
               </Link>
             ))}
+          </div>
+        </div>
+      </section>
+
+
+      {/* ══════════════ LIVE TV + API ══════════════ */}
+      <section className="section platform-section">
+        <div className="page-wrapper">
+          <div className="section-header centered">
+            <p className="section-eyebrow">Newest on the platform</p>
+            <h2 className="section-title">Built this year</h2>
+            <p className="section-sub">Two additions that changed what the platform can do.</p>
+          </div>
+
+          <div className="platform-grid">
+
+            <article className="platform-card platform-card--tv">
+              <header className="platform-card-head">
+                <span className="platform-icon">📺</span>
+                <div>
+                  <h3 className="platform-title">Live TV</h3>
+                  <p className="platform-kicker">Free-to-air television, in the browser</p>
+                </div>
+              </header>
+              <p className="platform-desc">
+                Thousands of channels from 177 countries — news, sport, music, kids and
+                local stations. Every stream is checked before it appears, so the
+                channels you see are the channels that actually play.
+              </p>
+              <ul className="platform-facts">
+                <li><strong>8,400+</strong><span>channels verified live</span></li>
+                <li><strong>177</strong><span>countries covered</span></li>
+                <li><strong>0</strong><span>sign-ups required</span></li>
+              </ul>
+              <Link href="/live-tv" className="platform-cta">Watch now →</Link>
+            </article>
+
+            <article className="platform-card platform-card--api">
+              <header className="platform-card-head">
+                <span className="platform-icon">⚡</span>
+                <div>
+                  <h3 className="platform-title">Toosii API</h3>
+                  <p className="platform-kicker">A public API with no key required</p>
+                </div>
+              </header>
+              <p className="platform-desc">
+                The same engines behind the tools, exposed as documented REST endpoints —
+                media downloads, AI, configuration inspection and live TV listings. Call
+                them straight from the browser or your own project.
+              </p>
+              <pre className="platform-code" aria-label="Example API request"><code>{`curl https://www.toosiitech.org/api/v1/live-tv?country=KE`}</code></pre>
+              <Link href="/api" className="platform-cta">Read the docs →</Link>
+            </article>
+
           </div>
         </div>
       </section>
