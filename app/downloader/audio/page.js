@@ -328,7 +328,7 @@ export default function AudioDownloader({ shared = null }) {
                   </div>
                   <p className="expire-note">⚡ Download now — this link expires soon</p>
                   {isRestrictiveWebView() && (
-                    <p className="audio-webview-note">⚠ Downloads may not save properly inside this in-app browser. For a reliable save, tap ⋮ and choose "Open in Chrome" or "Open in Safari".</p>
+                    <p className="audio-webview-note">⚠ Downloads may not save properly inside this in-app browser. For a reliable save, tap ⋮ and choose &quot;Open in Chrome&quot; or &quot;Open in Safari&quot;.</p>
                   )}
                   {downloadState.phase === 'complete' && (
                     <div className="audio-download-complete" role="status">✓ Download started — check your notifications or Downloads folder</div>

@@ -196,11 +196,11 @@ export default function Projects() {
             <div className="pf-hero-text">
               <span className="pf-eyebrow">Portfolio · Kenya</span>
               <h1 className="pf-hero-title">
-                Things I've<br />
+                Things I&apos;ve<br />
                 <span className="gradient-text">Actually Built</span>
               </h1>
               <p className="pf-hero-sub">
-                Real projects. Real users. Every one started as a personal need or a community request — not a tutorial clone. Here's what I've built, launched, and kept running.
+                Real projects. Real users. Every one started as a personal need or a community request — not a tutorial clone. Here&apos;s what I&apos;ve built, launched, and kept running.
               </p>
               <div className="pf-hero-btns">
                 <a href="#featured" className="pf-btn-primary">Browse Projects ↓</a>
@@ -422,7 +422,7 @@ export default function Projects() {
         <div className="page-wrapper">
           <div className="pf-cta-inner">
             <h2 className="pf-cta-title">Built something you want to talk about?</h2>
-            <p className="pf-cta-sub">I'm always open to interesting projects, collabs, and conversations about what can be built next.</p>
+            <p className="pf-cta-sub">I&apos;m always open to interesting projects, collabs, and conversations about what can be built next.</p>
             <div className="pf-cta-btns">
               <Link href="/contact" className="pf-btn-primary">Get in Touch →</Link>
               <a href="https://github.com/TOOSII102" target="_blank" rel="noopener noreferrer" className="pf-btn-ghost">GitHub ↗</a>

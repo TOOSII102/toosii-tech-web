@@ -351,7 +351,7 @@ function DownloadButton({ href, label, size, filename, item, season, episode, me
 
   return (
     <div className="mv-download-control">
-      {isRestrictiveWebView() && <p className="mv-webview-note">⚠ Downloads may not save properly inside this in-app browser. For a reliable save, tap ⋮ and choose "Open in Chrome" or "Open in Safari".</p>}
+      {isRestrictiveWebView() && <p className="mv-webview-note">⚠ Downloads may not save properly inside this in-app browser. For a reliable save, tap ⋮ and choose &quot;Open in Chrome&quot; or &quot;Open in Safari&quot;.</p>}
       <a className="mv-download-btn" href={href || '#'} download={filename || fallbackName} rel="noopener noreferrer" referrerPolicy="no-referrer" onClick={startDownload}>
         <span className="mv-download-status">⬇ {label}</span>
         {size ? <span className="mv-download-size">{size}</span> : null}

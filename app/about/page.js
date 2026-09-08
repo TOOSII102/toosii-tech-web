@@ -49,7 +49,7 @@ export default function About() {
             <span className="gradient-text">Driven by purpose.</span>
           </h1>
           <p className="section-sub" style={{ maxWidth: '640px', margin: '0 auto' }}>
-            I'm Toosii Tech — a self-taught software developer from Kenya who turned
+            I&apos;m Toosii Tech — a self-taught software developer from Kenya who turned
             curiosity into a platform that serves thousands of users across Africa and beyond.
           </p>
           <div className="hero-cta" style={{ marginTop: '2rem' }}>
@@ -95,7 +95,7 @@ export default function About() {
                 and anti-delete recovery all running in a single multi-device instance.
               </p>
               <p>
-                Today, Toosii Tech is more than a bot. It's a growing platform of free tools — built
+                Today, Toosii Tech is more than a bot. It&apos;s a growing platform of free tools — built
                 for real people, designed to work without accounts or paywalls, and shipped by a
                 single developer who still believes the best products come from genuine passion.
               </p>
@@ -170,13 +170,13 @@ export default function About() {
       {/* CTA */}
       <section className="section" style={{ paddingBottom: '6rem' }}>
         <div className="page-wrapper" style={{ textAlign: 'center' }}>
-          <p className="section-label">Let's Build Together</p>
+          <p className="section-label">Let&apos;s Build Together</p>
           <h2 className="section-title" style={{ fontSize: '2rem', marginBottom: '1rem' }}>
-            Have an idea? I'd love to hear it.
+            Have an idea? I&apos;d love to hear it.
           </h2>
           <p style={{ color: '#94a3b8', maxWidth: '500px', margin: '0 auto 2rem', lineHeight: 1.7 }}>
-            Whether it's a custom bot, a web tool, an API integration, or something entirely new —
-            I'm open to collaborations, commissions, and conversations.
+            Whether it&apos;s a custom bot, a web tool, an API integration, or something entirely new —
+            I&apos;m open to collaborations, commissions, and conversations.
           </p>
           <div className="hero-cta" style={{ justifyContent: 'center' }}>
             <Link href="/contact" className="btn-primary">Start a Conversation →</Link>
