@@ -18,6 +18,7 @@ const mainNav = [
 const toolsNav = [
   { href: '/tools/ai',            icon: '🤖', label: 'Toosii AI',         desc: 'GPT-4o & Gemini chat' },
   { href: '/tools/movies',        icon: '🎬', label: 'Movies & Streams',    desc: 'Stream & download free movies' },
+  { href: '/live-tv',             icon: '📺', label: 'Live TV',            desc: '8,000+ free live channels' },
   { href: '/tools/movies?catalog=animeTrending', icon: '✨', label: 'Anime & Live TV', desc: 'Anime episodes and live events' },
   { href: '/downloader/video',    icon: '🎬', label: 'Video Downloader',   desc: 'YouTube, TikTok & more' },
   { href: '/downloader/audio',    icon: '🎧', label: 'MP3 Downloader',     desc: 'YouTube to MP3 fast' },
