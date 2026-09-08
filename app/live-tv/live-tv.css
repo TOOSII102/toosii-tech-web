@@ -274,15 +274,6 @@
   cursor: pointer;
 }
 
-.lt-site {
-  padding: 0.7rem 1.2rem;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: #cbd5e1;
-  text-decoration: none;
-  font-size: 0.9rem;
-}
-.lt-site:hover { border-color: rgba(114, 240, 186, 0.45); color: #eafff4; }
 
 .lt-alt { margin: 0.9rem 0 0; color: #64748b; font-size: 0.76rem; line-height: 1.6; }
 

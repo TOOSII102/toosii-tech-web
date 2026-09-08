@@ -1,5 +1,6 @@
 import { apiError, apiResponse, optionsResponse } from '../../../../lib/publicApi'
 import { getIptvIndex, queryChannels } from '../../../../lib/iptv'
+import { keepWorking } from '../../../../lib/streamHealth'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -28,6 +29,11 @@ export async function GET(request) {
       )
     }
 
+    // Over-fetch when verifying: a large share of catalogue streams are dead,
+    // so we need spare candidates to still fill a page after filtering.
+    const verify = searchParams.get('verify') !== '0'
+    const wanted = Math.min(Math.max(parseInt(searchParams.get('limit')) || 48, 1), 100)
+
     const { channels, pagination } = queryChannels(index, {
       q: searchParams.get('q') || '',
       country: searchParams.get('country') || '',
@@ -38,8 +44,15 @@ export async function GET(request) {
       // over HTTPS, so browsers block them as mixed content.
       secureOnly: searchParams.get('includeInsecure') !== '1',
       page: searchParams.get('page') || 1,
-      limit: searchParams.get('limit') || 48,
+      limit: verify ? Math.min(wanted * 3, 300) : wanted,
     })
+
+    let list = channels
+    let checked = 0
+    if (verify) {
+      checked = list.length
+      list = (await keepWorking(list)).slice(0, wanted)
+    }
 
     return apiResponse(
       {
@@ -53,10 +66,15 @@ export async function GET(request) {
           language: searchParams.get('language') || null,
           region: searchParams.get('region') || null,
         },
-        pagination,
-        channels,
+        pagination: verify
+          ? { ...pagination, perPage: wanted, pages: Math.max(Math.ceil(pagination.total / wanted), 1), page: Math.min(pagination.page, Math.max(Math.ceil(pagination.total / wanted), 1)) }
+          : pagination,
+        verified: verify,
+        checked,
+        live: list.length,
+        channels: list,
       },
-      { cacheControl: 'public, max-age=600, stale-while-revalidate=3600' },
+      { cacheControl: verify ? 'public, max-age=120, stale-while-revalidate=600' : 'public, max-age=600, stale-while-revalidate=3600' },
     )
   } catch (err) {
     return apiError('The live TV catalogue is temporarily unavailable. Please try again shortly.', {

@@ -27,6 +27,7 @@ export default function LiveTvPage() {
   const [channels, setChannels]   = useState([])
   const [facets, setFacets]       = useState({ countries: [], categories: [], languages: [], regions: [], total: 0 })
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 })
+  const [liveCount, setLiveCount]  = useState(null)
   const [query, setQuery]         = useState('')
   const [search, setSearch]       = useState('')
   const [country, setCountry]     = useState('')
@@ -90,6 +91,7 @@ export default function LiveTvPage() {
         if (!d.success) throw new Error(d?.error?.message || 'Could not load channels.')
         setChannels(d.channels || [])
         setPagination(d.pagination || { page: 1, pages: 1, total: 0 })
+        setLiveCount(d.verified ? (d.live ?? (d.channels || []).length) : null)
       })
       .catch(err => { if (!cancelled) setError(err.message || 'Could not load channels.') })
       .finally(() => { if (!cancelled) setLoading(false) })
@@ -133,7 +135,7 @@ export default function LiveTvPage() {
         <h1 className="lt-title">Watch <span>live channels</span> free</h1>
         <p className="lt-intro">
           {facets.total ? `${facets.total.toLocaleString()} free-to-air channels` : 'Thousands of free-to-air channels'} from around the world,
-          streamed straight in your browser. No sign-up, no app.
+          checked live before they are shown, and streamed straight in your browser. No sign-up, no app.
         </p>
 
         <div className="lt-controls">
@@ -173,9 +175,11 @@ export default function LiveTvPage() {
         </div>
 
         <div className="lt-meta" ref={gridRef}>
-          {loading ? 'Loading channels…'
+          {loading ? 'Checking which channels are live…'
             : error ? ''
-            : `${pagination.total.toLocaleString()} channel${pagination.total === 1 ? '' : 's'}${hasFilters ? ' matched' : ''}`}
+            : liveCount !== null
+              ? `${liveCount} live channel${liveCount === 1 ? '' : 's'}${hasFilters ? ' matched' : ''}`
+              : `${pagination.total.toLocaleString()} channel${pagination.total === 1 ? '' : 's'}${hasFilters ? ' matched' : ''}`}
         </div>
 
         {error && (
@@ -193,8 +197,11 @@ export default function LiveTvPage() {
 
         {!error && !loading && channels.length === 0 && (
           <div className="lt-empty">
-            <h3>No channels found</h3>
-            <p>Try a different search term, or clear the filters to see everything.</p>
+            <h3>No live channels right now</h3>
+            <p>
+              Every channel matching this filter is currently offline — public IPTV streams go down often.
+              Try another country, category or search term.
+            </p>
           </div>
         )}
 
@@ -267,9 +274,6 @@ export default function LiveTvPage() {
               <button type="button" className="lt-share" onClick={() => shareChannel(active)}>
                 {copied ? '✓ Link copied' : '↗ Share channel'}
               </button>
-              {active.website && (
-                <a className="lt-site" href={active.website} target="_blank" rel="noopener noreferrer">Official site</a>
-              )}
             </div>
 
             {active.streams?.length > 1 && (
@@ -277,7 +281,7 @@ export default function LiveTvPage() {
                 Source {sourceIndex + 1} of {active.streams.length}
                 {sourceIndex + 1 < active.streams.length
                   ? ' — if this one fails the next is tried automatically.'
-                  : ' — last available source. The channel may be offline or blocking browser playback.'}
+                  : ' — last available source.'}
               </p>
             )}
           </div>
