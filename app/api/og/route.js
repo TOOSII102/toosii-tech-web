@@ -75,6 +75,60 @@ const pages = {
     chips: ['150+ Commands', 'Multi-Device', 'Open Source'],
     layout: 'bot',
   },
+  '/live-tv': {
+    eyebrow: 'TOOSII LIVE TV',
+    title: 'Watch live. For free.',
+    description: 'Thousands of free-to-air channels from 177 countries, each one checked live before it is listed.',
+    accent: '#72f0ba',
+    secondary: '#75d6ff',
+    chips: ['8,000+ Channels', '177 Countries', 'No Sign-up'],
+    layout: 'tool',
+  },
+  '/api': {
+    eyebrow: 'TOOSII API',
+    title: 'Build on a free API.',
+    description: 'Media, AI, configuration and live TV endpoints — documented, and no key required.',
+    accent: '#75d6ff',
+    secondary: '#a78bfa',
+    chips: ['REST API', 'No API Key', 'Live Examples'],
+    layout: 'tool',
+  },
+  '/search': {
+    eyebrow: 'SEARCH',
+    title: 'Find it in one place.',
+    description: 'Search every Toosii Tech tool, download and media source from a single box.',
+    accent: '#75d6ff',
+    secondary: '#72f0ba',
+    chips: ['Unified Search', 'Tools + Media', 'Instant'],
+    layout: 'tool',
+  },
+  '/library': {
+    eyebrow: 'MY LIBRARY',
+    title: 'Everything you saved.',
+    description: 'Your downloads, saved media and history, kept in one private library.',
+    accent: '#c084fc',
+    secondary: '#75d6ff',
+    chips: ['Saved Media', 'Downloads', 'Private'],
+    layout: 'tool',
+  },
+  '/tools/config-inspector': {
+    eyebrow: 'CONFIG INSPECTOR',
+    title: 'Read any config safely.',
+    description: 'Inspect OpenVPN, V2Ray, sing-box and encrypted tunnel files with every secret redacted.',
+    accent: '#72f0ba',
+    secondary: '#75d6ff',
+    chips: ['Encrypted Formats', 'Secrets Redacted', 'Instant'],
+    layout: 'tool',
+  },
+  '/tools/dramabox': {
+    eyebrow: 'DRAMABOX',
+    title: 'Short drama, full binge.',
+    description: 'Stream trending short-form drama series free, with no account and no waiting.',
+    accent: '#f472b6',
+    secondary: '#c084fc',
+    chips: ['Short Drama', 'Free Streaming', 'Trending'],
+    layout: 'tool',
+  },
 }
 
 function pageFor(path, searchParams = new URLSearchParams()) {
@@ -137,6 +191,9 @@ function pageFor(path, searchParams = new URLSearchParams()) {
   if (path.startsWith('/projects')) return { eyebrow: 'PORTFOLIO', title: 'Things actually built.', description: 'Real projects, real users, and tools that keep working.', accent: '#75d6ff', secondary: '#a78bfa', chips: ['Projects', 'Tools', 'Open Source'], layout: 'tool' }
   if (path.startsWith('/contact')) return { eyebrow: 'CONTACT', title: 'Let’s build together.', description: 'Reach Toosii Tech for collaborations, projects, and support.', accent: '#72f0ba', secondary: '#75d6ff', chips: ['Collaborate', 'Support', 'Kenya'], layout: 'tool' }
   if (path.startsWith('/team')) return { eyebrow: 'THE TEAM', title: 'Built by real people.', description: 'A small team building useful tools for real users.', accent: '#25d366', secondary: '#75d6ff', chips: ['Team', 'Engineering', 'Kenya'], layout: 'tool' }
+  if (path.startsWith('/privacy-policy')) return { eyebrow: 'PRIVACY POLICY', title: 'What we collect, plainly.', description: 'How Toosii Tech handles data, analytics, and the information you submit.', accent: '#75d6ff', secondary: '#72f0ba', chips: ['Privacy', 'Data Handling', 'Transparency'], layout: 'tool' }
+  if (path.startsWith('/terms')) return { eyebrow: 'TERMS OF USE', title: 'The ground rules.', description: 'How to use Toosii Tech tools, APIs, and media features responsibly.', accent: '#75d6ff', secondary: '#a78bfa', chips: ['Terms', 'Fair Use', 'API Limits'], layout: 'tool' }
+  if (path.startsWith('/copyright')) return { eyebrow: 'COPYRIGHT & TAKEDOWN', title: 'Rights, respected.', description: 'How to report infringing material and how Toosii Tech responds.', accent: '#fbbf24', secondary: '#75d6ff', chips: ['Copyright', 'Takedown', 'Contact'], layout: 'tool' }
   if (path.startsWith('/blog')) return { eyebrow: 'TOOSII TECH BLOG', title: 'Ideas worth shipping.', description: 'Developer insights, bot tutorials, AI thoughts, and real lessons.', accent: '#fbbf24', secondary: '#75d6ff', chips: ['Development', 'AI', 'Tutorials'], layout: 'tool' }
   return { eyebrow: 'TOOSII TECH', title: 'Free tools that work.', description: 'A professional developer platform from Kenya.', accent: '#72f0ba', secondary: '#75d6ff', chips: ['Free Tools', 'No Sign-up', 'Toosii Tech'], layout: 'tool' }
 }
@@ -233,7 +290,7 @@ export async function GET(request) {
         <div style={{ position: 'absolute', bottom: -220, left: -140, width: 600, height: 430, borderRadius: 999, background: `${page.secondary}18`, filter: 'blur(8px)' }} />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: page.accent, fontSize: 20, fontWeight: 800, letterSpacing: 1.5 }}><span style={{ width: 14, height: 14, borderRadius: 999, background: page.accent }} /> TOOSII TECH</div>
-          <div style={{ color: '#64748b', fontSize: 18 }}>toosii.tech</div>
+          <div style={{ color: '#64748b', fontSize: 18 }}>toosiitech.org</div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', marginTop: 42, zIndex: 1 }}>
           <div style={{ color: page.accent, fontSize: 18, fontWeight: 800, letterSpacing: 2 }}>{page.eyebrow}</div>
