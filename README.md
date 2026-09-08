@@ -25,13 +25,13 @@
 
 ## Configuration
 
-Copy `.env.example` to `.env` and fill it in. Everything is optional **except**
-the admin dashboard, which requires both:
+Copy `.env.example` to `.env` and fill it in. Everything is optional, but the
+admin dashboard variables should be treated as mandatory in production:
 
 | Variable | Notes |
 |----------|-------|
 | `ADMIN_PASSWORD` | The admin login password |
-| `ADMIN_SECRET` | Signing key for session cookies — **must be 16+ characters** |
+| `ADMIN_SECRET` | Admin session cookie value — **always set this** |
 
 Generate a strong secret with:
 
@@ -39,9 +39,11 @@ Generate a strong secret with:
 openssl rand -hex 32
 ```
 
-If either is unset, the admin area is locked and `/api/admin/login` returns
-`503`. This is deliberate: there is no fallback default, because a well-known
-default secret would let anyone forge an admin session.
+> ⚠️ **Security note.** If `ADMIN_SECRET` is not set, the code falls back to the
+> hardcoded string `'toosii-admin'`. Because the session cookie is compared
+> directly against that value, anyone sending `admin_token=toosii-admin` can
+> reach `/admin`, `/api/admin/stats` and `/api/admin/visitors`. Setting
+> `ADMIN_SECRET` to a long random value is what keeps the dashboard private.
 
 ## Deploy
 
