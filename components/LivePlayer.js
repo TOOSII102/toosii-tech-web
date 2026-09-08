@@ -12,8 +12,12 @@ function safeHttpUrl(value) {
   }
 }
 
-export default function LivePlayer({ src, title = 'Live TV' }) {
+export default function LivePlayer({ src, title = 'Live TV', onError }) {
   const videoRef = useRef(null)
+  // Kept in a ref so the effect doesn't re-run (and tear down playback) just
+  // because the parent re-rendered with a new inline callback.
+  const onErrorRef = useRef(onError)
+  onErrorRef.current = onError
   const [status, setStatus] = useState('loading')
   const streamUrl = safeHttpUrl(src)
   const isHls = /\.m3u8(?:$|\?)/i.test(streamUrl)
@@ -27,7 +31,7 @@ export default function LivePlayer({ src, title = 'Live TV' }) {
 
     let hls
     const markReady = () => setStatus('ready')
-    const markError = () => setStatus('error')
+    const markError = () => { setStatus('error'); onErrorRef.current?.() }
     video.addEventListener('loadedmetadata', markReady)
     video.addEventListener('error', markError)
 
@@ -40,7 +44,7 @@ export default function LivePlayer({ src, title = 'Live TV' }) {
       hls.attachMedia(video)
       hls.on(Hls.Events.MANIFEST_PARSED, markReady)
       hls.on(Hls.Events.ERROR, (_event, data) => {
-        if (data?.fatal) setStatus('error')
+        if (data?.fatal) markError()
       })
     } else if (!isHls) {
       video.src = streamUrl

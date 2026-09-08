@@ -1,11 +1,11 @@
 import { apiError, apiResponse, optionsResponse } from '../../../../../lib/publicApi'
+import { decryptConfig, isDecryptableType } from '../../../../../lib/vpnDecrypt'
 
 export const runtime = 'nodejs'
 export const maxDuration = 10
 
 const MAX_CONTENT_LENGTH = 256 * 1024
 const SUPPORTED_TYPES = new Set(['ovpn', 'ss', 'v2ray', 'v2', 'singbox', 'sing', 'sb', 'json'])
-const ENCRYPTED_TYPES = new Set(['hc', 'hcc', 'ehi', 'dark'])
 
 function cleanType(value = '') {
   return String(value).trim().toLowerCase().replace(/[^a-z0-9]/g, '')
@@ -178,7 +178,15 @@ async function getInput(request) {
     const file = form.get('file')
     if (!file || typeof file.text !== 'function') return { error: 'Upload a configuration file in the file field.' }
     if (Number(file.size || 0) > MAX_CONTENT_LENGTH) return { error: 'Configuration files must be 256 KB or smaller.' }
-    return { type: form.get('type'), filename: file.name || 'config', content: await file.text() }
+    // Encrypted containers (.hc/.ehi/.dark/...) are binary, so the raw bytes are
+    // kept alongside the text view. Decoding those as UTF-8 mangles them.
+    const bytes = Buffer.from(await file.arrayBuffer())
+    return {
+      type: form.get('type'),
+      filename: file.name || 'config',
+      content: bytes.toString('utf8'),
+      bytes,
+    }
   }
   return { error: 'Use JSON with type and content, or multipart form data with a file field.' }
 }
@@ -187,17 +195,48 @@ export async function POST(request) {
   try {
     const input = await getInput(request)
     if (input.error) return apiError(input.error, { status: 400, code: 'INVALID_INPUT' })
-    if (typeof input.content !== 'string' || !input.content.trim()) return apiError('Configuration content is required.', { status: 400, code: 'MISSING_CONTENT' })
-    if (input.content.length > MAX_CONTENT_LENGTH) return apiError('Configuration content must be 256 KB or smaller.', { status: 413, code: 'CONTENT_TOO_LARGE' })
 
     const requestedType = cleanType(input.type)
     const extension = String(input.filename || '').split('.').pop()?.toLowerCase() || ''
     const type = requestedType || extension
 
-    if (ENCRYPTED_TYPES.has(type)) {
-      return apiError('Encrypted HC, EHI, and DARK files are not decrypted by this public inspector. Use plaintext or structured configuration formats.', { status: 422, code: 'ENCRYPTED_FORMAT_NOT_SUPPORTED' })
+    // ── Encrypted tunnel containers ──────────────────────────────────────────
+    // These are binary and app-encrypted, so they are decrypted by the external
+    // service before being summarised. This is checked BEFORE the text-content
+    // guards below, because a binary file has no meaningful text form.
+    if (isDecryptableType(type)) {
+      if (!input.bytes) {
+        return apiError('Encrypted configs must be uploaded as a file (multipart/form-data), not pasted as text.', {
+          status: 400,
+          code: 'FILE_UPLOAD_REQUIRED',
+        })
+      }
+
+      const decrypted = await decryptConfig(type, input.bytes, input.filename)
+      if (!decrypted.ok) {
+        return apiError(decrypted.message, { status: decrypted.status, code: decrypted.code })
+      }
+
+      return apiResponse({
+        operation: 'config.inspect',
+        format: decrypted.type || type,
+        app: decrypted.app,
+        filename: String(input.filename || 'config').slice(0, 120),
+        decrypted: true,
+        redacted: true,
+        // redact() strips passwords/tokens/keys; the upstream `raw` plaintext is
+        // dropped in lib/vpnDecrypt.js and never reaches this point.
+        data: redact(decrypted.data),
+        note: 'Decrypted by Toosii API. Sensitive passwords, tokens, private keys, credentials, and payload values are omitted.',
+      })
     }
-    if (!SUPPORTED_TYPES.has(type)) return apiError('Supported types are ovpn, ss, v2ray, singbox, and json.', { status: 400, code: 'UNSUPPORTED_FORMAT' })
+
+    if (typeof input.content !== 'string' || !input.content.trim()) return apiError('Configuration content is required.', { status: 400, code: 'MISSING_CONTENT' })
+    if (input.content.length > MAX_CONTENT_LENGTH) return apiError('Configuration content must be 256 KB or smaller.', { status: 413, code: 'CONTENT_TOO_LARGE' })
+
+    if (!SUPPORTED_TYPES.has(type)) {
+      return apiError('Supported types are ovpn, ss, v2ray, singbox, json, and the encrypted hc, ehi, dark, npvt, dtlink and naruto formats.', { status: 400, code: 'UNSUPPORTED_FORMAT' })
+    }
 
     let result
     if (type === 'ovpn') {
