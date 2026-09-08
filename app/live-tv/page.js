@@ -276,9 +276,7 @@ export default function LiveTvPage() {
         )}
 
         <p className="lt-credit">
-          Channel data from the free{' '}
-          <a href="https://iptv-org.github.io" target="_blank" rel="noopener noreferrer">iptv-org</a>{' '}
-          public API. Toosii Tech does not host or own these streams.
+          © {new Date().getFullYear()} Toosii Tech. All rights reserved.
         </p>
       </div>
 
