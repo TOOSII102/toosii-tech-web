@@ -17,11 +17,31 @@
 
 ## Stack
 
-- **Next.js 14** (App Router, TypeScript)
-- **Tailwind CSS** — dark theme, glassmorphism
+- **Next.js 14** (App Router, JavaScript)
+- **Plain CSS** — per-route stylesheets, dark theme, glassmorphism
 - **gifted-baileys** — WhatsApp Multi-Device for session generation
 - **GiftedTech API** — video/audio downloads
 - **Framer Motion** — animations
+
+## Configuration
+
+Copy `.env.example` to `.env` and fill it in. Everything is optional **except**
+the admin dashboard, which requires both:
+
+| Variable | Notes |
+|----------|-------|
+| `ADMIN_PASSWORD` | The admin login password |
+| `ADMIN_SECRET` | Signing key for session cookies — **must be 16+ characters** |
+
+Generate a strong secret with:
+
+```bash
+openssl rand -hex 32
+```
+
+If either is unset, the admin area is locked and `/api/admin/login` returns
+`503`. This is deliberate: there is no fallback default, because a well-known
+default secret would let anyone forge an admin session.
 
 ## Deploy
 
