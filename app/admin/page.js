@@ -228,10 +228,10 @@
                   <h2 className="ad-card-title">📦 Repository</h2>
                   <div className="ad-rows">
                     {[
-                      ['Repository',   <a href={gh.html_url} target="_blank" rel="noopener" className="ad-link">{gh.full_name}</a>],
+                      ['Repository',   <a key="repo" href={gh.html_url} target="_blank" rel="noopener" className="ad-link">{gh.full_name}</a>],
                       ['Description',  gh.description],
-                      ['Language',     <span className="ad-chip ad-chip--blue">{gh.language}</span>],
-                      ['Visibility',   <span className={`ad-chip ${gh.private ? 'ad-chip--red' : 'ad-chip--green'}`}>{gh.private ? '🔒 Private' : '🌐 Public'}</span>],
+                      ['Language',     <span key="lang" className="ad-chip ad-chip--blue">{gh.language}</span>],
+                      ['Visibility',   <span key="vis" className={`ad-chip ${gh.private ? 'ad-chip--red' : 'ad-chip--green'}`}>{gh.private ? '🔒 Private' : '🌐 Public'}</span>],
                       ['Last Push',    timeAgo(gh.pushed_at)],
                       ['Watchers',     gh.watchers_count],
                       ['Size',         `${gh.size} KB`],
@@ -298,7 +298,7 @@
                         {va.debug.tokenMismatch ? (
                           <>
                             <div className="ad-va-setup-icon">🔑</div>
-                            <div className="ad-va-setup-title">VERCEL_TOKEN doesn't match this project</div>
+                            <div className="ad-va-setup-title">VERCEL_TOKEN doesn&apos;t match this project</div>
                             <div className="ad-va-setup-body">
                               The token belongs to a different Vercel account than this project (<code>{va.debug.projectId}</code>).
                             </div>
@@ -438,7 +438,7 @@
               </div>
 
               {Object.keys(health).length === 0 && !checkingHealth && (
-                <p className="ad-muted">Click "Check All" to run health checks.</p>
+                <p className="ad-muted">Click &quot;Check All&quot; to run health checks.</p>
               )}
 
               {checkingHealth && (
@@ -531,7 +531,7 @@
                   ['Platform',        sv.platform],
                   ['Memory Used',     `${sv.memoryMB} MB`],
                   ['Uptime',          formatUptime(sv.uptime)],
-                  ['Environment',     <span className={`ad-chip ${sv.env === 'production' ? 'ad-chip--green' : 'ad-chip--blue'}`}>{sv.env}</span>],
+                  ['Environment',     <span key="env" className={`ad-chip ${sv.env === 'production' ? 'ad-chip--green' : 'ad-chip--blue'}`}>{sv.env}</span>],
                   ['Total Requests',  sv.totalRequests],
                 ].map(([label, val]) => (
                   <div key={label} className="ad-row">

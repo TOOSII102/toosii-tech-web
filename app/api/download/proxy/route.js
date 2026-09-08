@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { tagMp3Buffer } from '../../../../lib/id3'
+import { safeFetch } from '../../../../lib/safeFetch'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -25,7 +26,13 @@ export async function GET(request) {
     // otherwise faithfully proxy through (that's what caused downloads to save as
     // "video.mp4.json" and fail: the browser detected the real Content-Type didn't
     // match the .mp4 filename because the body was actually an error payload).
-    const isInstagramCdn = /(^|\.)cdninstagram\.com$|(^|\.)fbcdn\.net$/i.test(new URL(fileUrl).hostname)
+    const isInstagramCdn = (() => {
+      try {
+        return /(^|\.)cdninstagram\.com$|(^|\.)fbcdn\.net$/i.test(new URL(fileUrl).hostname)
+      } catch {
+        return false
+      }
+    })()
     const instagramHdrs = isInstagramCdn ? { 'Referer': 'https://www.instagram.com/', 'Origin': 'https://www.instagram.com' } : {}
 
     // The download manager (lib/downloadManager.js) always sends a Range header so it
@@ -37,7 +44,7 @@ export async function GET(request) {
       return match ? parseInt(match[1], 10) : 0
     })()
 
-    const res = await fetch(fileUrl, {
+    const res = await safeFetch(fileUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'Accept':     '*/*',
@@ -58,14 +65,15 @@ export async function GET(request) {
     const contentType = res.headers.get('content-type') || 'application/octet-stream'
     const isMp3 = contentType.toLowerCase().includes('audio/mpeg') || /\.mp3(?:$|[?#])/i.test(filename) || /\.mp3(?:$|[?#])/i.test(fileUrl)
 
-    // If we were expecting a video file but the upstream actually sent back JSON/HTML
-    // (a CDN error page, an expired-link response, etc.), don't pass it through — that
-    // would save on the device as a mislabeled/corrupted ".mp4" that the browser then
-    // flags as failed once it notices the mismatch. Fail cleanly instead.
+    // If the upstream sent back JSON/HTML/plain text (a CDN error page, an expired-link
+    // response, an internal endpoint's output, etc.) it is never a real media file —
+    // reject it. This check used to be skipped whenever the request "looked like" an
+    // mp3, which let `?name=anything.mp3` smuggle arbitrary fetched content back to the
+    // caller inside a fake ID3-tagged file.
     const looksLikeErrorPayload = /^(application\/json|text\/html|text\/plain)/i.test(contentType)
-    if (!isMp3 && looksLikeErrorPayload) {
+    if (looksLikeErrorPayload) {
       return NextResponse.json(
-        { error: 'The video link is no longer valid (it may have expired or been blocked by the source). Please try downloading again.' },
+        { error: 'The link is no longer valid (it may have expired or been blocked by the source). Please try downloading again.' },
         { status: 502 }
       )
     }
@@ -136,6 +144,9 @@ export async function GET(request) {
       headers: { ...passHeaders, 'Content-Length': String(chunk.length), 'Content-Range': `bytes ${requestedStart}-${totalSize - 1}/${totalSize}` },
     })
   } catch (e) {
+    if (e?.code === 'BLOCKED_URL' || e?.code === 'TOO_MANY_REDIRECTS') {
+      return NextResponse.json({ error: e.message }, { status: 400 })
+    }
     return NextResponse.json({ error: 'Proxy error: ' + e.message }, { status: 500 })
   }
 }

@@ -107,7 +107,7 @@ export default function InstallPrompt() {
             </p>
             {platform === 'ios' && (
               <ol className="install-prompt-steps">
-                <li>Tap the <strong>Share</strong> icon <span className="install-prompt-share-icon" aria-hidden="true">⬆</span> in Safari's toolbar</li>
+                <li>Tap the <strong>Share</strong> icon <span className="install-prompt-share-icon" aria-hidden="true">⬆</span> in Safari&apos;s toolbar</li>
                 <li>Scroll down and choose <strong>Add to Home Screen</strong></li>
                 <li>Tap <strong>Add</strong> to confirm</li>
               </ol>

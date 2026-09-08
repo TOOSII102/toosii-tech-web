@@ -39,7 +39,7 @@
         <div className="al-card">
          <div className="al-logo"><img src="/logo.png" alt="Toosii Tech" className="al-logo-img" /></div>
           <h1 className="al-title">Forgot Password</h1>
-          <p className="al-subtitle">We'll email you a sign-in link</p>
+          <p className="al-subtitle">We&apos;ll email you a sign-in link</p>
 
           {status === 'sent' ? (
             <>

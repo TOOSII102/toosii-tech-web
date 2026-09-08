@@ -17,11 +17,33 @@
 
 ## Stack
 
-- **Next.js 14** (App Router, TypeScript)
-- **Tailwind CSS** — dark theme, glassmorphism
+- **Next.js 14** (App Router, JavaScript)
+- **Plain CSS** — per-route stylesheets, dark theme, glassmorphism
 - **gifted-baileys** — WhatsApp Multi-Device for session generation
 - **GiftedTech API** — video/audio downloads
 - **Framer Motion** — animations
+
+## Configuration
+
+Copy `.env.example` to `.env` and fill it in. Everything is optional, but the
+admin dashboard variables should be treated as mandatory in production:
+
+| Variable | Notes |
+|----------|-------|
+| `ADMIN_PASSWORD` | The admin login password |
+| `ADMIN_SECRET` | Admin session cookie value — **always set this** |
+
+Generate a strong secret with:
+
+```bash
+openssl rand -hex 32
+```
+
+> ⚠️ **Security note.** If `ADMIN_SECRET` is not set, the code falls back to the
+> hardcoded string `'toosii-admin'`. Because the session cookie is compared
+> directly against that value, anyone sending `admin_token=toosii-admin` can
+> reach `/admin`, `/api/admin/stats` and `/api/admin/visitors`. Setting
+> `ADMIN_SECRET` to a long random value is what keeps the dashboard private.
 
 ## Deploy
 

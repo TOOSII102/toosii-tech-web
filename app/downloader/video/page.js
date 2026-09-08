@@ -338,7 +338,7 @@ export default function VideoDownloader({ shared = null }) {
                     {result.duration && <span className="badge">⏱ {result.duration}</span>}
                   </div>
                   <p className="expire-note">⚡ Download now — this link expires soon</p>
-                  {isRestrictiveWebView() && <p className="vd-webview-note">⚠ Downloads may not save properly inside this in-app browser. For a reliable save, tap ⋮ and choose "Open in Chrome" or "Open in Safari".</p>}
+                  {isRestrictiveWebView() && <p className="vd-webview-note">⚠ Downloads may not save properly inside this in-app browser. For a reliable save, tap ⋮ and choose &quot;Open in Chrome&quot; or &quot;Open in Safari&quot;.</p>}
                   <div className="dl-buttons">
                     <DownloadLink href={proxyUrl(result.download_url, result.title)} filename={(result.title ? result.title.replace(/[^a-z0-9\s-]/gi, '').trim().slice(0, 60) : 'video') + '.mp4'} label={`⬇ Download ${result.quality || 'Video'}`} className="btn-primary" style={{ width: 'fit-content' }} />
                     <button type="button" onClick={() => shareVideo({ url, title: result.title, thumbnail: result.thumbnail, platform: result.platform })} className="btn-secondary">↗ Share Video</button>
