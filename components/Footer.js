@@ -43,6 +43,8 @@ export default function Footer() {
           <ul>
             <li><Link href="/">Home</Link></li>
             <li><Link href="/about">About</Link></li>
+            <li><Link href="/search">Search</Link></li>
+            <li><Link href="/api">Toosii API</Link></li>
             <li><Link href="/bot">TOOSII XD ULTRA Bot</Link></li>
             <li><Link href="/projects">Portfolio</Link></li>
             <li><Link href="/blog">Blog</Link></li>
@@ -54,16 +56,27 @@ export default function Footer() {
         <div className="footer-links">
           <h4>Free Tools</h4>
           <ul>
+            <li><Link href="/tools">All Tools</Link></li>
             <li><Link href="/tools/ai">Toosii AI</Link></li>
-            <li><Link href="/tools/dramabox">DramaBox Streaming</Link></li>
-            <li><Link href="/downloader/video">Video Downloader</Link></li>
-            <li><Link href="/downloader/audio">MP3 Downloader</Link></li>
-            <li><Link href="/downloader/spotify">Spotify Downloader</Link></li>
             <li><Link href="/tools/vocal-remover">Vocal Remover</Link></li>
+            <li><Link href="/tools/config-inspector">Config Inspector</Link></li>
             <li><Link href="/session">Session Generator</Link></li>
             <li><Link href="/tools/firelogo">Fire Logo Maker</Link></li>
             <li><Link href="/tools/story">AI Story Generator</Link></li>
             <li><Link href="/tools/tempemail">Temp Email</Link></li>
+            <li><Link href="/tools/apk">APK Search</Link></li>
+          </ul>
+        </div>
+
+        <div className="footer-links">
+          <h4>Media</h4>
+          <ul>
+            <li><Link href="/live-tv">Live TV</Link></li>
+            <li><Link href="/tools/movies">Movies &amp; Series</Link></li>
+            <li><Link href="/tools/dramabox">DramaBox Streaming</Link></li>
+            <li><Link href="/downloader/video">Video Downloader</Link></li>
+            <li><Link href="/downloader/audio">MP3 Downloader</Link></li>
+            <li><Link href="/downloader/spotify">Spotify Downloader</Link></li>
           </ul>
         </div>
 
