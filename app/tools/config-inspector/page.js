@@ -6,8 +6,9 @@ import '../tools.css'
 import './config-inspector.css'
 
 const MAX_BYTES = 256 * 1024
-const ACCEPTED = '.ovpn,.ss,.json,.v2,.v2ray,.sing,.singbox,.sb,.hc,.hcc,.ehi,.dark'
-const ENCRYPTED_EXTENSIONS = new Set(['hc', 'hcc', 'ehi', 'dark'])
+const ACCEPTED = '.ovpn,.ss,.json,.v2,.v2ray,.sing,.singbox,.sb,.hc,.hcc,.ehi,.dark,.npvt,.npv,.dtlink,.naruto,.ssc'
+// Encrypted tunnel containers — these are decrypted server-side, then redacted.
+const ENCRYPTED_EXTENSIONS = new Set(['hc', 'hcc', 'ehi', 'dark', 'npvt', 'npv', 'dtlink', 'naruto', 'ssc'])
 
 function extensionOf(name = '') {
   return String(name).split('.').pop()?.toLowerCase() || ''
@@ -95,7 +96,7 @@ export default function ConfigInspectorPage() {
             <div className="badge config-inspector-badge"><span>🛡️</span> Configuration Inspector</div>
             <h1 className="section-title">Upload a config. <span className="gradient-text">Get a safe result.</span></h1>
             <p className="section-sub">
-              Inspect supported VPN and proxy configuration files through Toosii API. The result is normalized for copying, while passwords, private keys, tokens, and payload secrets stay redacted.
+              Inspect VPN and proxy configuration files through Toosii API — including encrypted HTTP Custom, HTTP Injector, Dark Tunnel and NPV Tunnel containers. Results are normalized for copying, while passwords, private keys, tokens, and payload secrets stay redacted.
             </p>
           </div>
         </section>
@@ -134,12 +135,12 @@ export default function ConfigInspectorPage() {
                 </button>
 
                 <div className="config-format-row" aria-label="Supported formats">
-                  {['.ovpn', '.ss', '.json', '.v2ray', '.singbox'].map(format => <span key={format}>{format}</span>)}
+                  {['.ovpn', '.ss', '.json', '.v2ray', '.singbox', '.hc', '.ehi', '.dark', '.npvt', '.naruto'].map(format => <span key={format}>{format}</span>)}
                 </div>
 
                 {encryptedNotice && (
                   <div className="config-warning" role="status">
-                    <strong>Encrypted format detected.</strong> HC, HCC, EHI, and DARK files are not decrypted by this public inspector. They will be rejected without exposing keys or credentials.
+                    <strong>Encrypted format detected.</strong> This file is decrypted on the server so its settings can be summarised. Passwords, tokens, private keys and payloads stay redacted, and the raw decrypted text is never returned.
                   </div>
                 )}
 
