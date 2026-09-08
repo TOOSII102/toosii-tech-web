@@ -25,12 +25,14 @@ function ChannelLogo({ src, alt }) {
 
 export default function LiveTvPage() {
   const [channels, setChannels]   = useState([])
-  const [facets, setFacets]       = useState({ countries: [], categories: [], total: 0 })
+  const [facets, setFacets]       = useState({ countries: [], categories: [], languages: [], regions: [], total: 0 })
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 })
   const [query, setQuery]         = useState('')
   const [search, setSearch]       = useState('')
   const [country, setCountry]     = useState('')
   const [category, setCategory]   = useState('')
+  const [language, setLanguage]   = useState('')
+  const [region, setRegion]       = useState('')
   const [page, setPage]           = useState(1)
   const [loading, setLoading]     = useState(true)
   const [error, setError]         = useState('')
@@ -55,7 +57,16 @@ export default function LiveTvPage() {
     let cancelled = false
     fetch('/api/v1/live-tv?facets=1')
       .then(r => r.json())
-      .then(d => { if (!cancelled && d.success) setFacets({ countries: d.countries || [], categories: d.categories || [], total: d.total || 0 }) })
+      .then(d => {
+        if (cancelled || !d.success) return
+        setFacets({
+          countries: d.countries || [],
+          categories: d.categories || [],
+          languages: d.languages || [],
+          regions: d.regions || [],
+          total: d.total || 0,
+        })
+      })
       .catch(() => {})
     return () => { cancelled = true }
   }, [])
@@ -69,6 +80,8 @@ export default function LiveTvPage() {
     if (search)   params.set('q', search)
     if (country)  params.set('country', country)
     if (category) params.set('category', category)
+    if (language) params.set('language', language)
+    if (region)   params.set('region', region)
 
     fetch(`/api/v1/live-tv?${params}`)
       .then(r => r.json())
@@ -81,7 +94,7 @@ export default function LiveTvPage() {
       .catch(err => { if (!cancelled) setError(err.message || 'Could not load channels.') })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [search, country, category, page])
+  }, [search, country, category, language, region, page])
 
   const goToPage = useCallback(next => {
     setPage(next)
@@ -96,6 +109,7 @@ export default function LiveTvPage() {
       id: channel.id,
       country: channel.countryName || '',
       category: channel.categories?.[0] || '',
+      language: channel.languages?.[0] || '',
     })
     if (channel.logo) params.set('thumbnail', channel.logo)
     const link = `${window.location.origin}/live-tv/share?${params}`
@@ -109,8 +123,8 @@ export default function LiveTvPage() {
     } catch { /* user dismissed the share sheet */ }
   }, [sourceIndex])
 
-  const resetFilters = () => { setQuery(''); setSearch(''); setCountry(''); setCategory(''); setPage(1) }
-  const hasFilters = Boolean(search || country || category)
+  const resetFilters = () => { setQuery(''); setSearch(''); setCountry(''); setCategory(''); setLanguage(''); setRegion(''); setPage(1) }
+  const hasFilters = Boolean(search || country || category || language || region)
 
   return (
     <div className="lt-page">
@@ -131,16 +145,28 @@ export default function LiveTvPage() {
             onChange={e => setQuery(e.target.value)}
             aria-label="Search live TV channels"
           />
+          <select className="lt-select" value={region} onChange={e => { setRegion(e.target.value); setPage(1) }} aria-label="Filter by region">
+            <option value="">All regions</option>
+            {(facets.regions || []).map(r => (
+              <option key={r.code} value={r.code}>{r.name} ({r.count})</option>
+            ))}
+          </select>
           <select className="lt-select" value={country} onChange={e => { setCountry(e.target.value); setPage(1) }} aria-label="Filter by country">
             <option value="">All countries</option>
-            {facets.countries.map(c => (
+            {(facets.countries || []).map(c => (
               <option key={c.code} value={c.code}>{c.flag ? `${c.flag} ` : ''}{c.name} ({c.count})</option>
             ))}
           </select>
           <select className="lt-select" value={category} onChange={e => { setCategory(e.target.value); setPage(1) }} aria-label="Filter by category">
             <option value="">All categories</option>
-            {facets.categories.map(c => (
+            {(facets.categories || []).map(c => (
               <option key={c.id} value={c.id}>{c.name} ({c.count})</option>
+            ))}
+          </select>
+          <select className="lt-select" value={language} onChange={e => { setLanguage(e.target.value); setPage(1) }} aria-label="Filter by language">
+            <option value="">All languages</option>
+            {(facets.languages || []).map(l => (
+              <option key={l.code} value={l.code}>{l.name} ({l.count})</option>
             ))}
           </select>
           {hasFilters && <button type="button" className="lt-clear" onClick={resetFilters}>Clear</button>}
@@ -188,8 +214,10 @@ export default function LiveTvPage() {
                   <span className="lt-card-sub">
                     {channel.flag ? `${channel.flag} ` : ''}{channel.countryName || '—'}
                   </span>
-                  {channel.categories?.length > 0 && (
-                    <span className="lt-card-tag">{channel.categories[0]}</span>
+                  {(channel.categories?.length > 0 || channel.format) && (
+                    <span className="lt-card-tag">
+                      {channel.categories?.[0]}{channel.categories?.[0] && channel.format ? ' · ' : ''}{channel.format}
+                    </span>
                   )}
                 </span>
               </button>

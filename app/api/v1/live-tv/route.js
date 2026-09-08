@@ -20,6 +20,9 @@ export async function GET(request) {
           total: index.totalSecure,
           countries: index.countries,
           categories: index.categories,
+          languages: index.languages,
+          regions: index.regions,
+          blockedChannels: index.blockedCount,
         },
         { cacheControl: 'public, max-age=3600, stale-while-revalidate=86400' },
       )
@@ -29,6 +32,8 @@ export async function GET(request) {
       q: searchParams.get('q') || '',
       country: searchParams.get('country') || '',
       category: searchParams.get('category') || '',
+      language: searchParams.get('language') || '',
+      region: searchParams.get('region') || '',
       // Insecure (http://) streams are excluded by default: the site is served
       // over HTTPS, so browsers block them as mixed content.
       secureOnly: searchParams.get('includeInsecure') !== '1',
@@ -45,6 +50,8 @@ export async function GET(request) {
           q: searchParams.get('q') || null,
           country: searchParams.get('country') || null,
           category: searchParams.get('category') || null,
+          language: searchParams.get('language') || null,
+          region: searchParams.get('region') || null,
         },
         pagination,
         channels,
