@@ -103,6 +103,56 @@
   }
   .al-input::placeholder { color: #475569; }
 
+  /* ── Password field with show/hide toggle ── */
+  .al-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  /* Leave room for the eye button so long passwords never run underneath it. */
+  .al-input--password {
+    padding-right: 3.1rem;
+  }
+
+  .al-eye {
+    position: absolute;
+    right: 0.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* 44px keeps it a comfortable tap target on mobile */
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #94a3b8;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 0.2s, background 0.2s;
+  }
+  .al-eye:hover { color: #e2e8f0; }
+  .al-eye:active { background: rgba(255,255,255,0.06); }
+  .al-eye:focus-visible {
+    outline: none;
+    color: #25d366;
+    box-shadow: 0 0 0 2px rgba(37,211,102,0.45);
+  }
+  /* Tint the icon green while the password is visible, as a clear state cue. */
+  .al-eye[aria-pressed='true'] { color: #25d366; }
+
+  /* Hide the browser's own reveal control so there aren't two eye icons. */
+  .al-input--password::-ms-reveal,
+  .al-input--password::-ms-clear { display: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .al-eye { transition: none; }
+  }
+
   .al-error {
     display: flex;
     align-items: center;
