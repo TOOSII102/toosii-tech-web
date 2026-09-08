@@ -5,11 +5,11 @@ export const runtime = 'edge'
 const pages = {
   '/': {
     eyebrow: 'TOOSII TECH',
-    title: 'Infinite possibilities.',
-    description: 'Free tools, AI features, a WhatsApp bot suite, and HD movie streaming in one platform.',
+    title: 'Everything, in one place.',
+    description: 'Live TV from 177 countries, HD movies, downloaders, AI tools, a 150-command WhatsApp bot and a free public API.',
     accent: '#72f0ba',
     secondary: '#75d6ff',
-    chips: ['Free Tools', 'AI Features', 'WhatsApp Bot'],
+    chips: ['8,400+ Live Channels', '17 Free Tools', 'Free API'],
     layout: 'home',
   },
   '/tools/movies': {

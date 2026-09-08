@@ -6,9 +6,9 @@ import './home.css'
 import { createShareMetadata } from '../lib/shareMetadata'
 
 export const metadata = createShareMetadata({
-  title: 'Toosii Tech — Free Tools, WhatsApp Bot & Movie Streaming',
-  description: '11+ free tools, a WhatsApp bot with 150+ commands, HD movie streaming, and free developer utilities — no account, no cost, always free.',
-  keywords: 'Toosii Tech, free web tools, WhatsApp bot Kenya, movie streaming free, video downloader, MP3 downloader, vocal remover, temp email, APK download, AI chat free, Kenya developer',
+  title: 'Toosii Tech — Live TV, Free Tools, WhatsApp Bot & Movie Streaming',
+  description: '8,400+ live TV channels from 177 countries, HD movies, video and MP3 downloaders, AI tools, a WhatsApp bot with 150+ commands, and a free public API. Built in Kenya — no account, no cost.',
+  keywords: 'Toosii Tech, live TV free, free IPTV, free web tools, WhatsApp bot Kenya, movie streaming free, video downloader, MP3 downloader, vocal remover, free public API, temp email, AI chat free, Kenya developer',
   path: '/',
 })
 
@@ -103,7 +103,7 @@ export default function Home() {
 
           <h1 className="hero-title">
             One Platform.<br />
-            <span className="gradient-text">Infinite Possibilities.</span>
+            <span className="gradient-text">Everything Free.</span>
           </h1>
 
           <p className="hero-sub">
