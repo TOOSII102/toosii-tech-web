@@ -39,6 +39,8 @@ export default function LiveTvPage() {
   const [error, setError]         = useState('')
   const [active, setActive]       = useState(null)
   const [sourceIndex, setSourceIndex] = useState(0)
+  const [resolving, setResolving]  = useState(false)
+  const [offlineMsg, setOfflineMsg] = useState('')
   const [copied, setCopied]       = useState(false)
   const gridRef = useRef(null)
 
@@ -97,6 +99,35 @@ export default function LiveTvPage() {
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [search, country, category, language, region, page])
+
+  // A channel passed its health check when the grid was built, but that can be
+  // minutes old. Re-confirm before playing, and if it has since died, drop it
+  // from the grid instead of showing a broken player.
+  const openChannel = useCallback(async channel => {
+    setOfflineMsg('')
+    setSourceIndex(0)
+    setResolving(true)
+    setActive(channel)
+    try {
+      const res = await fetch(`/api/v1/live-tv/resolve?id=${encodeURIComponent(channel.id)}`)
+      const data = await res.json()
+      if (data?.success && data.stream?.url) {
+        setActive(prev => (prev && prev.id === channel.id
+          ? { ...prev, streams: [data.stream, ...(prev.streams || []).filter(s => s.url !== data.stream.url)] }
+          : prev))
+      } else {
+        setActive(null)
+        setChannels(list => list.filter(c => c.id !== channel.id))
+        setLiveCount(n => (typeof n === 'number' && n > 0 ? n - 1 : n))
+        setOfflineMsg(`${channel.name} just went offline and has been removed from the list.`)
+      }
+    } catch {
+      // Network hiccup — fall back to the stream we already have rather than
+      // blocking playback entirely.
+    } finally {
+      setResolving(false)
+    }
+  }, [])
 
   const goToPage = useCallback(next => {
     setPage(next)
@@ -182,6 +213,10 @@ export default function LiveTvPage() {
               : `${pagination.total.toLocaleString()} channel${pagination.total === 1 ? '' : 's'}${hasFilters ? ' matched' : ''}`}
         </div>
 
+        {offlineMsg && (
+          <div className="lt-offline" role="status">{offlineMsg}</div>
+        )}
+
         {error && (
           <div className="lt-empty">
             <h3>Couldn&apos;t load channels</h3>
@@ -212,7 +247,7 @@ export default function LiveTvPage() {
                 type="button"
                 key={channel.id}
                 className="lt-card"
-                onClick={() => { setSourceIndex(0); setActive(channel) }}
+                onClick={() => openChannel(channel)}
                 aria-label={`Watch ${channel.name}`}
               >
                 <ChannelLogo src={channel.logo} alt={channel.name} />
@@ -259,8 +294,10 @@ export default function LiveTvPage() {
               <button type="button" className="lt-close" onClick={closePlayer} aria-label="Close player">✕</button>
             </div>
 
+            {resolving && <p className="lt-resolving">Checking this channel is still live…</p>}
+
             <LivePlayer
-              key={`${active.id}-${sourceIndex}`}
+              key={`${active.id}-${sourceIndex}-${active.streams?.[0]?.url || ''}`}
               src={active.streams?.[sourceIndex]?.url}
               title={active.name}
               // Public IPTV streams go offline constantly. When one fails, roll

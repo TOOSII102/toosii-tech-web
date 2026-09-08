@@ -288,3 +288,19 @@
   .lt-card, .lt-pager button, .lt-clear { transition: none; }
   .lt-skeleton { animation: none; }
 }
+
+.lt-offline {
+  margin-bottom: 1rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  background: rgba(251, 191, 36, 0.08);
+  border-radius: 12px;
+  color: #fcd34d;
+  font-size: 0.85rem;
+}
+
+.lt-resolving {
+  margin: 0.9rem 0 0;
+  color: #72f0ba;
+  font-size: 0.8rem;
+}
