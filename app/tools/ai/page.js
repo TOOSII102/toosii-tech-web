@@ -197,16 +197,28 @@ export default function ToosiiAI() {
     const hasContent = text || zipFiles.length || attachedImage
     if (!hasContent || streaming) return
     const finalText = text || (zipFiles.length ? `Analyze the ${zipName} codebase.` : 'Describe this image.')
-    const imageSnap = attachedImage
+    // Keep the conversation's newest image in context: a follow-up like
+    // "what is in that picture?" must still reach the vision pipeline.
+    const prevImageSnap = !attachedImage
+      ? (() => {
+          for (let i = messages.length - 1; i >= 0; i--) {
+            const u = messages[i].imageUrl
+            if (u && u.startsWith('data:')) return { dataUrl: u, base64: u.split(',')[1], mimeType: (u.match(/^data:([^;]+);/) || [])[1] || 'image/jpeg' }
+          }
+          return null
+        })()
+      : null
+    const imageSnap = attachedImage ?? prevImageSnap
     const displayText = zipFiles.length && !text ? finalText : (zipFiles.length ? `[${zipName}] ${text}` : text)
     const uid = Math.random().toString(36); const aid = Math.random().toString(36)
-    const userMsg = { id: uid, role: 'user', content: displayText, ...(imageSnap ? { imageUrl: imageSnap.dataUrl } : {}) }
+    const userMsg = { id: uid, role: 'user', content: displayText, ...(attachedImage ? { imageUrl: attachedImage.dataUrl } : {}) }
     const aiMsg  = { id: aid, role: 'assistant', content: '', pending: true }
     setMessages(p => [...p, userMsg, aiMsg]); setInput(''); setAttachedImage(null); setStreaming(true)
     const sysMsgs = [{ role: 'system', content: SYSTEM_PROMPT }]
     if (zipFiles.length) sysMsgs.push({ role: 'system', content: buildZipContext(zipName, zipFiles) })
-    const history = [...messages, userMsg].map(m => ({ role: m.role, content: m.content }))
-    const payload = [...sysMsgs, ...history.map(m => m.id === uid && imageSnap ? { ...m, imageBase64: imageSnap.base64, imageMimeType: imageSnap.mimeType } : m)]
+    const payload = [...sysMsgs, ...[...messages, userMsg].map(({ id: mid, ...m }) => (
+      mid === uid && imageSnap ? { ...m, imageBase64: imageSnap.base64, imageMimeType: imageSnap.mimeType } : m
+    ))]
     try {
       abortRef.current = new AbortController()
       const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: payload, model }), signal: abortRef.current.signal })
@@ -243,14 +255,32 @@ export default function ToosiiAI() {
 
   const handleImage = useCallback((e) => {
     const file = e.target.files?.[0]; if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      const dataUrl = reader.result
-      setAttachedImage({ dataUrl, base64: dataUrl.split(',')[1], mimeType: file.type })
+    const attach = (dataUrl, mimeType) => {
+      setAttachedImage({ dataUrl, base64: dataUrl.split(',')[1], mimeType })
       if (!VISION_MODELS.has(model)) {
         const best = VISION_PRIORITY.find(id => models.some(m => m.id === id))
         if (best) { setModel(best); toast('Switched to ' + (models.find(m => m.id === best)?.label ?? best) + ' for images') }
       }
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = reader.result
+      // Downscale large photos (mobile camera/gallery shots can be 5–12 MB)
+      // so uploads are fast and stay under the server-side 8 MB cap.
+      try {
+        const img = new Image()
+        img.onload = () => {
+          const MAX = 1280
+          if (img.width <= MAX && img.height <= MAX) return attach(dataUrl, file.type)
+          const s = MAX / Math.max(img.width, img.height)
+          const w = Math.round(img.width * s), h = Math.round(img.height * s)
+          const c = document.createElement('canvas'); c.width = w; c.height = h
+          c.getContext('2d').drawImage(img, 0, 0, w, h)
+          attach(c.toDataURL('image/jpeg', 0.85), 'image/jpeg')
+        }
+        img.onerror = () => attach(dataUrl, file.type)
+        img.src = dataUrl
+      } catch { attach(dataUrl, file.type) }
     }
     reader.readAsDataURL(file)
     if (imageRef.current) imageRef.current.value = ''

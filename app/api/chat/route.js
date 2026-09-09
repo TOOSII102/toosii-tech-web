@@ -1,5 +1,6 @@
 import OpenAI from 'openai'
 import Anthropic from '@anthropic-ai/sdk'
+import { createHash } from 'crypto'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -137,24 +138,28 @@ const MAX_IMAGE_BYTES = 8 * 1024 * 1024
 
 async function hostImage(bytes, mime) {
   const ext = MIME_EXT[mime] || 'jpg'
-  // Primary temporary host: litterbox (catbox), 1 hour TTL.
+  const blob = () => new Blob([bytes], { type: mime || 'image/jpeg' })
+  // Primary temporary host: litterbox (catbox), 1 hour TTL. Two attempts —
+  // it is fast and reliable, transient failures do happen.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const fd = new FormData()
+      fd.set('reqtype', 'fileupload')
+      fd.set('time', '1h')
+      fd.set('fileToUpload', blob(), `upload.${ext}`)
+      const r = await fetch('https://litterbox.catbox.moe/resources/internals/api.php', { method: 'POST', body: fd, signal: AbortSignal.timeout(25_000) })
+      const t = (await r.text()).trim()
+      if (r.ok && /^https:\/\/litter\.catbox\.moe\//.test(t)) return t
+    } catch {}
+  }
+  // Backup host: uguu.se (pomf-style, returns a direct file URL).
   try {
     const fd = new FormData()
-    fd.set('reqtype', 'fileupload')
-    fd.set('time', '1h')
-    fd.set('fileToUpload', new Blob([bytes], { type: mime || 'image/jpeg' }), `upload.${ext}`)
-    const r = await fetch('https://litterbox.catbox.moe/resources/internals/api.php', { method: 'POST', body: fd, signal: AbortSignal.timeout(25_000) })
-    const t = (await r.text()).trim()
-    if (r.ok && /^https:\/\/litter\.catbox\.moe\//.test(t)) return t
-  } catch {}
-  // Backup host: tmpfiles.org.
-  try {
-    const fd = new FormData()
-    fd.set('file', new Blob([bytes], { type: mime || 'image/jpeg' }), `upload.${ext}`)
-    const r = await fetch('https://tmpfiles.org/api/v1/upload', { method: 'POST', body: fd, signal: AbortSignal.timeout(25_000) })
+    fd.set('files[]', blob(), `upload.${ext}`)
+    const r = await fetch('https://uguu.se/upload.php', { method: 'POST', body: fd, signal: AbortSignal.timeout(25_000) })
     const j = await r.json().catch(() => null)
-    const u = j?.data?.url
-    if (r.ok && typeof u === 'string' && u.startsWith('https://tmpfiles.org/')) return u.replace('https://tmpfiles.org/', 'https://tmpfiles.org/dl/')
+    const u = j?.success && j?.files?.[0]?.url
+    if (r.ok && typeof u === 'string' && u.startsWith('https://')) return u
   } catch {}
   throw new Error('The image could not be processed right now. Please try again in a moment.')
 }
@@ -168,6 +173,21 @@ async function ocrImage(imageUrl) {
 
 const VISION_REFERENCES = ['toosii-qwen', 'toosii-deepseek-v3', 'toosii-gemini', REFERENCE_AI_MODEL]
 
+// OCR results cached per image, so follow-up questions about the same picture
+// skip re-hosting + re-extraction and answer in ~2s. In-memory, best-effort.
+const VISION_CACHE = globalThis.__toosiiVisionCache || (globalThis.__toosiiVisionCache = new Map())
+const VISION_CACHE_TTL = 30 * 60 * 1000
+function visionCacheGet(key) {
+  const e = VISION_CACHE.get(key)
+  if (e && Date.now() - e.ts < VISION_CACHE_TTL) return e
+  VISION_CACHE.delete(key)
+  return null
+}
+function visionCacheSet(key, e) {
+  if (VISION_CACHE.size >= 100) VISION_CACHE.delete(VISION_CACHE.keys().next().value)
+  VISION_CACHE.set(key, { ...e, ts: Date.now() })
+}
+
 async function requestFreeVision(msgs) {
   const imgMsg = [...msgs].reverse().find(m => m.imageBase64)
   if (!imgMsg) throw new Error('No image attached')
@@ -175,9 +195,16 @@ async function requestFreeVision(msgs) {
   const bytes = Buffer.from(String(imgMsg.imageBase64), 'base64')
   if (!bytes.length || bytes.length > MAX_IMAGE_BYTES) throw new Error('That image is too large — please upload one under 8 MB.')
 
-  const imageUrl = await hostImage(bytes, imgMsg.imageMimeType)
-  let ocrText = ''
-  try { ocrText = await ocrImage(imageUrl) } catch {}
+  const cacheKey = createHash('sha256').update(imgMsg.imageBase64).digest('hex').slice(0, 24)
+  let entry = visionCacheGet(cacheKey)
+  if (!entry) {
+    const imageUrl = await hostImage(bytes, imgMsg.imageMimeType)
+    let ocrText = ''
+    try { ocrText = await ocrImage(imageUrl) } catch {}
+    entry = { imageUrl, ocrText }
+    visionCacheSet(cacheKey, entry)
+  }
+  const { ocrText } = entry
 
   const extracted = ocrText
     ? `Text extracted from the image (may contain recognition errors):\n"""${ocrText}"""`
