@@ -9,6 +9,12 @@ const nextConfig = {
       { protocol: 'https', hostname: 'movieapi.xcasper.space' },
     ],
   },
+  async redirects() {
+    return [
+      // Legacy duplicate page — the downloader page is the canonical one.
+      { source: '/tools/spotify', destination: '/downloader/spotify', permanent: true },
+    ]
+  },
   experimental: {
     serverComponentsExternalPackages: ['gifted-baileys', 'pino'],
     outputFileTracingIncludes: {

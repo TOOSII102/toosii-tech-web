@@ -9,9 +9,9 @@ import InstallPrompt from '../components/InstallPrompt'
 import { createShareMetadata } from '../lib/shareMetadata'
 
 export const metadata = createShareMetadata({
-  title: 'Toosii Tech — Free Tools, WhatsApp Bot & Movie Streaming',
-  description: 'A developer platform from Kenya. 11+ free web tools, a WhatsApp bot with 150+ commands, HD movie streaming, video & MP3 downloads, vocal removal, and more — no account, no cost, always free.',
-  keywords: 'Toosii Tech, free web tools, WhatsApp bot, movie streaming, video downloader, MP3 downloader, vocal remover, temp email, APK download, developer platform, Kenya, African tech',
+  title: 'Toosii Tech — Live TV, Free Tools, WhatsApp Bot & Movie Streaming',
+  description: '8,400+ live TV channels from 177 countries, HD movies, video and MP3 downloaders, 17 free tools, a WhatsApp bot with 150+ commands and a free public API. Built in Kenya — no account, no cost.',
+  keywords: 'Toosii Tech, live TV free, free web tools, WhatsApp bot, movie streaming, video downloader, MP3 downloader, vocal remover, free public API, temp email, APK download, developer platform, Kenya, African tech',
   manifest: '/manifest.webmanifest',
   path: '/',
 })

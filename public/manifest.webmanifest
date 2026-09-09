@@ -1,7 +1,7 @@
 {
   "name": "Toosii Tech",
   "short_name": "Toosii Tech",
-  "description": "Toosii Tech tools, API, ToosiiFlix, anime, Live TV, and download utilities.",
+  "description": "8,400+ live TV channels, HD movies, media downloaders, 17 free tools, a 150-command WhatsApp bot and a free public API.",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
@@ -9,12 +9,14 @@
   "theme_color": "#090b0f",
   "orientation": "portrait-primary",
   "icons": [
-    { "src": "/logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
-    { "name": "ToosiiFlix", "short_name": "Movies", "url": "/tools/movies", "icons": [{ "src": "/logo.png", "sizes": "192x192" }] },
-    { "name": "My Library", "short_name": "Library", "url": "/library", "icons": [{ "src": "/logo.png", "sizes": "192x192" }] },
-    { "name": "API Portal", "short_name": "API", "url": "/api", "icons": [{ "src": "/logo.png", "sizes": "192x192" }] }
+    { "name": "Live TV", "short_name": "Live TV", "url": "/live-tv", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Toosii AI", "short_name": "AI Chat", "url": "/tools/ai", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "ToosiiFlix", "short_name": "Movies", "url": "/tools/movies", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "API Portal", "short_name": "API", "url": "/api", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] }
   ]
 }
