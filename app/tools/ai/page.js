@@ -70,8 +70,10 @@ function renderContent(content) {
 }
 
 const SYSTEM_PROMPT = 'You are Toosii, an expert AI coding assistant built by Toosii Tech from Kenya. Write clean, efficient code and explain concepts clearly. Always format code in markdown fenced blocks with the language name. Be concise and professional.'
-const VISION_MODELS = new Set(['gpt-4o','gpt-4o-mini','claude-3-5-sonnet-20241022','claude-3-5-haiku-20241022','grok-2-vision-1212','gemini-2.0-flash','gemini-1.5-flash','gemini-1.5-pro'])
-const VISION_PRIORITY = ['gemini-2.0-flash','gemini-1.5-flash','gemini-1.5-pro','gpt-4o-mini','gpt-4o','claude-3-5-haiku-20241022','grok-2-vision-1212']
+const VISION_MODELS = new Set(['toosii-vision','gpt-4o','gpt-4o-mini','claude-3-5-sonnet-20241022','claude-3-5-haiku-20241022','grok-2-vision-1212','gemini-2.0-flash','gemini-1.5-flash','gemini-1.5-pro'])
+// Key-free Toosii Vision is always available; the server upgrades to a keyed
+// vision provider automatically when one is configured.
+const VISION_PRIORITY = ['toosii-vision','gemini-2.0-flash','gemini-1.5-flash','gemini-1.5-pro','gpt-4o-mini','gpt-4o','claude-3-5-haiku-20241022','grok-2-vision-1212']
 const SUGGESTIONS = ['Explain async/await with examples','Write a Python REST API','Debug my JavaScript code','What database should I use?']
 
 function buildZipContext(zipName, files) {
@@ -221,7 +223,7 @@ export default function ToosiiAI() {
           let p; try { p = JSON.parse(raw) } catch { continue }
           if (p.done) { done = true; break }
           if (p.error) throw new Error(p.error)
-          if (p.modelSwitch) { setModel(p.modelSwitch); toast('Auto-switched to ' + p.modelSwitch) }
+          if (p.modelSwitch) { setModel(p.modelSwitch); toast('Auto-switched to ' + (models.find(m => m.id === p.modelSwitch)?.label ?? p.modelSwitch)) }
           if (p.content) { full += p.content; setMessages(prev => prev.map(m => m.id === aid ? { ...m, content: full, pending: false } : m)) }
         }
       }
@@ -235,7 +237,7 @@ export default function ToosiiAI() {
         setMessages(prev => prev.map(m => m.id === aid ? { ...m, content: '⚠️ ' + (err?.message ?? 'Something went wrong. Try again.'), pending: false } : m))
       }
     } finally { setStreaming(false); abortRef.current = null }
-  }, [input, messages, model, streaming, zipFiles, zipName, attachedImage, activeConvId, saveConv, clearZip, toast])
+  }, [input, messages, model, models, streaming, zipFiles, zipName, attachedImage, activeConvId, saveConv, clearZip, toast])
 
   const handleKey = useCallback((e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }, [sendMessage])
 
@@ -247,7 +249,7 @@ export default function ToosiiAI() {
       setAttachedImage({ dataUrl, base64: dataUrl.split(',')[1], mimeType: file.type })
       if (!VISION_MODELS.has(model)) {
         const best = VISION_PRIORITY.find(id => models.some(m => m.id === id))
-        if (best) { setModel(best); toast('Switched to ' + best + ' for vision') }
+        if (best) { setModel(best); toast('Switched to ' + (models.find(m => m.id === best)?.label ?? best) + ' for images') }
       }
     }
     reader.readAsDataURL(file)
@@ -428,7 +430,7 @@ export default function ToosiiAI() {
                 </button>
             }
           </div>
-          <p className="tai-footer-note">Toosii Qwen · Toosii DeepSeek · Toosii Gemini · Groq · OpenAI · Claude · Grok — streaming · .zip · vision · voice</p>
+          <p className="tai-footer-note">Toosii Qwen · Toosii DeepSeek · Toosii Gemini · Toosii Vision — streaming · reads images · .zip analysis · voice</p>
         </div>
       </div>
     </div>

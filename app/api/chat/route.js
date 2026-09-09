@@ -2,6 +2,7 @@ import OpenAI from 'openai'
 import Anthropic from '@anthropic-ai/sdk'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 
 const GROQ_MODELS = new Set(['llama-3.3-70b-versatile','llama-3.1-8b-instant','mixtral-8x7b-32768','gemma2-9b-it'])
 const REFERENCE_AI_MODEL = 'toosii-gptlogic'
@@ -13,7 +14,9 @@ const REFERENCE_AI_MODELS = {
   'toosii-gemini': { path: '/api/gemini', acceptsPrompt: false },
   'toosii-gptlogic': { path: '/api/gptlogic', acceptsPrompt: true },
 }
-const VISION_MODELS = new Set(['gpt-4o','gpt-4o-mini','claude-3-5-sonnet-20241022','claude-3-5-haiku-20241022','grok-2-vision-1212','gemini-2.0-flash','gemini-1.5-flash','gemini-1.5-pro'])
+const VISION_MODELS = new Set(['toosii-vision','gpt-4o','gpt-4o-mini','claude-3-5-sonnet-20241022','claude-3-5-haiku-20241022','grok-2-vision-1212','gemini-2.0-flash','gemini-1.5-flash','gemini-1.5-pro'])
+// Keyed providers first (full scene understanding), then the always-available
+// key-free Toosii Vision pipeline (image hosting + text extraction + chat).
 const VISION_PRIORITY = [
   { id: 'gemini-2.0-flash',          key: 'GEMINI_API_KEY' },
   { id: 'gemini-1.5-flash',          key: 'GEMINI_API_KEY' },
@@ -21,6 +24,7 @@ const VISION_PRIORITY = [
   { id: 'gpt-4o',                    key: 'OPENAI_API_KEY' },
   { id: 'claude-3-5-haiku-20241022', key: 'ANTHROPIC_API_KEY' },
   { id: 'grok-2-vision-1212',        key: 'XAI_API_KEY' },
+  { id: 'toosii-vision',             key: null },
 ]
 const GENERAL_MODEL_PRIORITY = [
   { id: 'toosii-qwen',               key: null },
@@ -40,6 +44,7 @@ const GENERAL_MODEL_PRIORITY = [
 const CONTEXT_BUDGET = { groq: 24_000, default: 120_000 }
 
 function getProvider(model) {
+  if (model === 'toosii-vision')   return 'freevision'
   if (REFERENCE_AI_MODELS[model]) return 'reference'
   if (model.startsWith('claude-'))  return 'anthropic'
   if (model.startsWith('grok-'))    return 'grok'
@@ -78,7 +83,7 @@ function buildOAIMessages(msgs, vision) {
     return { role: m.role, content: m.content ?? '' }
   })
 }
-function buildReferenceRequest(model, msgs) {
+function buildReferenceParams(model, msgs) {
   const reference = REFERENCE_AI_MODELS[model] || REFERENCE_AI_MODELS[REFERENCE_AI_MODEL]
   const conversation = msgs.filter(m => m.role !== 'system').slice(-8).map(m => `${m.role}: ${String(m.content || '').slice(0, 1400)}`).join('\n')
   const latest = [...msgs].reverse().find(m => m.role === 'user')?.content || 'Hello'
@@ -88,10 +93,9 @@ function buildReferenceRequest(model, msgs) {
     'Never identify yourself by an underlying provider or model name. Always identify yourself only as Toosii AI, built by Toosii Tech.',
     conversation ? `Conversation context:\n${conversation}` : '',
   ].filter(Boolean).join('\n\n').slice(0, 7200)
-  const params = reference.acceptsPrompt
+  return reference.acceptsPrompt
     ? new URLSearchParams({ q: String(latest).slice(0, 2400), prompt })
     : new URLSearchParams({ q: prompt.slice(0, 8000) })
-  return `${REFERENCE_AI_ENDPOINT}${reference.path}?${params.toString()}`
 }
 
 function brandReferenceText(value) {
@@ -108,13 +112,97 @@ function extractReferenceText(payload) {
   return value ? brandReferenceText(value.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/<\/?think>/gi, '').trim()) : ''
 }
 
-async function requestReferenceAI(model, msgs) {
-  const res = await fetch(buildReferenceRequest(model, msgs), { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(25_000) })
+async function callReference(model, qParams) {
+  const reference = REFERENCE_AI_MODELS[model] || REFERENCE_AI_MODELS[REFERENCE_AI_MODEL]
+  const url = `${REFERENCE_AI_ENDPOINT}${reference.path}?${qParams.toString()}`
+  const res = await fetch(url, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(25_000) })
   const payload = await res.json().catch(() => null)
   if (!res.ok || payload?.status === false) throw new Error('Toosii AI fallback is temporarily unavailable')
   const text = extractReferenceText(payload)
   if (!text) throw new Error('Toosii AI fallback returned an empty response')
   return text
+}
+
+async function requestReferenceAI(model, msgs) {
+  return callReference(model, buildReferenceParams(model, msgs))
+}
+
+// ── Key-free vision pipeline (Toosii Vision) ────────────────────────────────
+// No API key available? We still let users upload images: the image is hosted
+// temporarily, text is extracted with a free OCR service, and a free chat
+// model then answers the user's question about the image content.
+
+const MIME_EXT = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/webp': 'webp', 'image/gif': 'gif' }
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024
+
+async function hostImage(bytes, mime) {
+  const ext = MIME_EXT[mime] || 'jpg'
+  // Primary temporary host: litterbox (catbox), 1 hour TTL.
+  try {
+    const fd = new FormData()
+    fd.set('reqtype', 'fileupload')
+    fd.set('time', '1h')
+    fd.set('fileToUpload', new Blob([bytes], { type: mime || 'image/jpeg' }), `upload.${ext}`)
+    const r = await fetch('https://litterbox.catbox.moe/resources/internals/api.php', { method: 'POST', body: fd, signal: AbortSignal.timeout(25_000) })
+    const t = (await r.text()).trim()
+    if (r.ok && /^https:\/\/litter\.catbox\.moe\//.test(t)) return t
+  } catch {}
+  // Backup host: tmpfiles.org.
+  try {
+    const fd = new FormData()
+    fd.set('file', new Blob([bytes], { type: mime || 'image/jpeg' }), `upload.${ext}`)
+    const r = await fetch('https://tmpfiles.org/api/v1/upload', { method: 'POST', body: fd, signal: AbortSignal.timeout(25_000) })
+    const j = await r.json().catch(() => null)
+    const u = j?.data?.url
+    if (r.ok && typeof u === 'string' && u.startsWith('https://tmpfiles.org/')) return u.replace('https://tmpfiles.org/', 'https://tmpfiles.org/dl/')
+  } catch {}
+  throw new Error('The image could not be processed right now. Please try again in a moment.')
+}
+
+async function ocrImage(imageUrl) {
+  const r = await fetch(`${REFERENCE_AI_ENDPOINT}/api/ocr?url=${encodeURIComponent(imageUrl)}`, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(20_000) })
+  const j = await r.json().catch(() => null)
+  const text = j?.success && typeof j?.data?.text === 'string' ? j.data.text.trim() : ''
+  return text.slice(0, 2000)
+}
+
+const VISION_REFERENCES = ['toosii-qwen', 'toosii-deepseek-v3', 'toosii-gemini', REFERENCE_AI_MODEL]
+
+async function requestFreeVision(msgs) {
+  const imgMsg = [...msgs].reverse().find(m => m.imageBase64)
+  if (!imgMsg) throw new Error('No image attached')
+  const question = String(imgMsg.content || 'Describe this image.').slice(0, 1200)
+  const bytes = Buffer.from(String(imgMsg.imageBase64), 'base64')
+  if (!bytes.length || bytes.length > MAX_IMAGE_BYTES) throw new Error('That image is too large — please upload one under 8 MB.')
+
+  const imageUrl = await hostImage(bytes, imgMsg.imageMimeType)
+  let ocrText = ''
+  try { ocrText = await ocrImage(imageUrl) } catch {}
+
+  const extracted = ocrText
+    ? `Text extracted from the image (may contain recognition errors):\n"""${ocrText}"""`
+    : 'No readable text was found in the image.'
+  const prompt = [
+    'You are Toosii Vision, the image-reading mode of Toosii AI, built by Toosii Tech.',
+    'The user uploaded an image. ' + extracted,
+    `The user's request about the image: """${question}"""`,
+    ocrText
+      ? 'Answer the request based on the extracted text. If the text looks garbled or incomplete, answer with what is available and note the uncertainty briefly.'
+      : 'Explain politely that the image contains no readable text, so the free vision mode can only read text from images (screenshots, documents, chats, signs). Invite the user to describe the image or type any text they see, and promise to help from there.',
+    'Never mention other AI brands, models, or OCR engines. You are Toosii Vision by Toosii Tech. Be concise and friendly.',
+  ].join('\n\n')
+
+  let lastErr = null
+  for (const refModel of VISION_REFERENCES) {
+    try {
+      const reference = REFERENCE_AI_MODELS[refModel]
+      const params = reference.acceptsPrompt
+        ? new URLSearchParams({ q: prompt.slice(0, 2400), prompt: 'Answer as Toosii Vision, built by Toosii Tech.' })
+        : new URLSearchParams({ q: prompt.slice(0, 8000) })
+      return await callReference(refModel, params)
+    } catch (err) { lastErr = err }
+  }
+  throw lastErr ?? new Error('Toosii Vision is temporarily unavailable')
 }
 
 function buildAnthropicMessages(msgs, vision) {
@@ -134,9 +222,16 @@ export async function POST(req) {
   if (!Array.isArray(rawMessages) || rawMessages.length === 0) return new Response(JSON.stringify({ error: 'messages array is required' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
 
   let model = (typeof body.model === 'string' ? body.model.trim() : '') || 'toosii-qwen'
-  const originalModel = model
   const hasImage = rawMessages.some(m => m.imageBase64)
-  if (hasImage && !VISION_MODELS.has(model)) { const best = VISION_PRIORITY.find(v => process.env[v.key])?.id; if (best) model = best }
+  // Text-only chat on the vision entry? Behave like the default text model, silently.
+  if (model === 'toosii-vision' && !hasImage) model = 'toosii-qwen'
+  const originalModel = model
+  // Image attached: route to a true vision model when its API key is configured,
+  // otherwise to the always-available key-free Toosii Vision pipeline.
+  if (hasImage && (!VISION_MODELS.has(model) || model === 'toosii-vision')) {
+    const best = VISION_PRIORITY.find(v => !v.key || process.env[v.key])?.id
+    if (best) model = best
+  }
 
   const priorityList = hasImage ? VISION_PRIORITY : GENERAL_MODEL_PRIORITY
   const fallbacks = priorityList.filter(v => !v.key || process.env[v.key]).map(v => v.id).filter(id => id !== model)
@@ -155,6 +250,11 @@ export async function POST(req) {
           try {
             if (ap === 'reference') {
               const text = await requestReferenceAI(attemptModel, msgs)
+              if (attemptModel !== originalModel) send({ modelSwitch: attemptModel })
+              send({ content: text }); contentSent = true; succeeded = true; break
+            }
+            if (ap === 'freevision') {
+              const text = await requestFreeVision(msgs)
               if (attemptModel !== originalModel) send({ modelSwitch: attemptModel })
               send({ content: text }); contentSent = true; succeeded = true; break
             }

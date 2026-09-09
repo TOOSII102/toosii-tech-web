@@ -5,6 +5,7 @@ const MODELS = [
   { id: 'toosii-deepseek-v3',         label: 'Toosii DeepSeek V3', group: 'Toosii (Free)'  },
   { id: 'toosii-deepseek-r1',         label: 'Toosii DeepSeek R1', group: 'Toosii (Free)'  },
   { id: 'toosii-gemini',              label: 'Toosii Gemini',      group: 'Toosii (Free)'  },
+  { id: 'toosii-vision',              label: 'Toosii Vision',      group: 'Toosii (Free)'  },
   { id: 'llama-3.3-70b-versatile',    label: 'Llama 3.3 70B',      group: 'Groq (Free)'   },
   { id: 'llama-3.1-8b-instant',       label: 'Llama 3.1 8B',       group: 'Groq (Free)'   },
   { id: 'mixtral-8x7b-32768',         label: 'Mixtral 8x7B',       group: 'Groq (Free)'   },
