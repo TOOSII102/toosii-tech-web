@@ -62,6 +62,9 @@ export default function Footer() {
             <li><Link href="/tools/config-inspector">Config Inspector</Link></li>
             <li><Link href="/session">Session Generator</Link></li>
             <li><Link href="/tools/firelogo">Fire Logo Maker</Link></li>
+            <li><Link href="/tools/imagine">AI Image Generator</Link></li>
+            <li><Link href="/tools/remove-bg">Background Remover</Link></li>
+            <li><Link href="/tools/lyrics">Lyrics Finder</Link></li>
             <li><Link href="/tools/story">AI Story Generator</Link></li>
             <li><Link href="/tools/tempemail">Temp Email</Link></li>
             <li><Link href="/tools/apk">APK Search</Link></li>

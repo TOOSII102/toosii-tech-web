@@ -78,6 +78,14 @@ const categories = [
     color: '#06b6d4',
     tools: [
       {
+        icon: '🎵',
+        title: 'Lyrics Finder',
+        desc: 'Full lyrics for any song — Bongo, Afrobeats, Gengetone, gospel and international hits.',
+        href: '/tools/lyrics',
+        label: 'Find Lyrics',
+        badge: 'New',
+      },
+      {
         icon: '🎤',
         title: 'Vocal Remover',
         desc: 'Separate the vocals and instrumental from any song — studio quality, completely free.',
@@ -97,6 +105,22 @@ const categories = [
     label: 'Creative Tools',
     color: '#f97316',
     tools: [
+      {
+        icon: '🎨',
+        title: 'AI Image Generator',
+        desc: 'Describe anything and get a stunning AI-generated image in seconds — HD, no watermark.',
+        href: '/tools/imagine',
+        label: 'Create Image',
+        badge: 'New',
+      },
+      {
+        icon: '✂️',
+        title: 'Background Remover',
+        desc: 'Upload a photo and get a clean transparent PNG — perfect for profiles and product shots.',
+        href: '/tools/remove-bg',
+        label: 'Remove Background',
+        badge: 'New',
+      },
       {
         icon: '🔥',
         title: 'Fire Logo Maker',
@@ -136,7 +160,7 @@ const categories = [
 ]
 
 const stats = [
-  { num: '12+', label: 'Free Tools' },
+  { num: '15+', label: 'Free Tools' },
   { num: '100%', label: 'No Sign-Up' },
   { num: '0', label: 'Ads or Paywalls' },
   { num: '24/7', label: 'Always Available' },
@@ -150,7 +174,7 @@ export default function ToolsHub() {
       <section className="hero" style={{ paddingBottom: '2rem' }}>
         <div className="page-wrapper">
               <div className="hero-badge badge">
-            <span>🛠️</span> 12 Free Tools — No Account Required
+            <span>🛠️</span> 15 Free Tools — No Account Required
           </div>
           <h1 className="hero-title">
             Every Tool You Need.<br />

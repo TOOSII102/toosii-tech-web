@@ -76,6 +76,9 @@ export default function Home() {
     { icon: '🔥', title: 'Fire Logo Maker',      desc: 'Striking fire-style logo, instant.', href: '/tools/firelogo', color: '#f97316' },
     { icon: '📖', title: 'AI Story Generator',  desc: 'Idea → full creative story in 20s.', href: '/tools/story',    color: '#a855f7' },
     { icon: '📧', title: 'Temp Email',           desc: 'Instant disposable email, no trace.', href: '/tools/tempemail', color: '#ec4899' },
+    { icon: '🎨', title: 'AI Image Generator',   desc: 'Type anything, get stunning AI art.', href: '/tools/imagine', color: '#a78bfa' },
+    { icon: '✂️', title: 'Background Remover',   desc: 'Transparent PNG cutouts in seconds.', href: '/tools/remove-bg', color: '#22d3ee' },
+    { icon: '🎶', title: 'Lyrics Finder',        desc: 'Full lyrics for any song, instantly.', href: '/tools/lyrics', color: '#4ade80' },
   ]
 
   const botFeatures = [

@@ -1,6 +1,7 @@
 import OpenAI from 'openai'
 import Anthropic from '@anthropic-ai/sdk'
 import { createHash } from 'crypto'
+import { hostImage } from '../../../lib/imageHost'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -133,36 +134,7 @@ async function requestReferenceAI(model, msgs) {
 // temporarily, text is extracted with a free OCR service, and a free chat
 // model then answers the user's question about the image content.
 
-const MIME_EXT = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/webp': 'webp', 'image/gif': 'gif' }
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024
-
-async function hostImage(bytes, mime) {
-  const ext = MIME_EXT[mime] || 'jpg'
-  const blob = () => new Blob([bytes], { type: mime || 'image/jpeg' })
-  // Primary temporary host: litterbox (catbox), 1 hour TTL. Two attempts —
-  // it is fast and reliable, transient failures do happen.
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      const fd = new FormData()
-      fd.set('reqtype', 'fileupload')
-      fd.set('time', '1h')
-      fd.set('fileToUpload', blob(), `upload.${ext}`)
-      const r = await fetch('https://litterbox.catbox.moe/resources/internals/api.php', { method: 'POST', body: fd, signal: AbortSignal.timeout(25_000) })
-      const t = (await r.text()).trim()
-      if (r.ok && /^https:\/\/litter\.catbox\.moe\//.test(t)) return t
-    } catch {}
-  }
-  // Backup host: uguu.se (pomf-style, returns a direct file URL).
-  try {
-    const fd = new FormData()
-    fd.set('files[]', blob(), `upload.${ext}`)
-    const r = await fetch('https://uguu.se/upload.php', { method: 'POST', body: fd, signal: AbortSignal.timeout(25_000) })
-    const j = await r.json().catch(() => null)
-    const u = j?.success && j?.files?.[0]?.url
-    if (r.ok && typeof u === 'string' && u.startsWith('https://')) return u
-  } catch {}
-  throw new Error('The image could not be processed right now. Please try again in a moment.')
-}
 
 async function ocrImage(imageUrl) {
   const r = await fetch(`${REFERENCE_AI_ENDPOINT}/api/ocr?url=${encodeURIComponent(imageUrl)}`, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(20_000) })
