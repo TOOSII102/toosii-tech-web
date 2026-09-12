@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { partnerSpotifySearch } from '../../../../lib/partnerApi'
 
 export async function GET(req) {
   const q = new URL(req.url).searchParams.get('q')?.trim()
@@ -9,6 +10,7 @@ export async function GET(req) {
       `https://api.deezer.com/search?q=${encodeURIComponent(q)}&limit=16`,
       { next: { revalidate: 30 } }
     )
+    if (!res.ok) throw new Error(`Deezer ${res.status}`)
     const data = await res.json()
     const tracks = (data.data || []).map(t => ({
       id:       t.id,
@@ -21,8 +23,18 @@ export async function GET(req) {
       link:     t.link || '',
       explicit: t.explicit_lyrics || false,
     }))
-    return NextResponse.json({ results: tracks })
+    if (tracks.length) return NextResponse.json({ results: tracks, source: 'deezer' })
   } catch (e) {
-    return NextResponse.json({ error: 'Search failed', message: e.message }, { status: 500 })
+    console.error('[spotify:deezer]', e.message)
   }
+
+  // Fallback: Partner API Spotify search.
+  try {
+    const partner = await partnerSpotifySearch(q)
+    if (partner?.length) return NextResponse.json({ results: partner, source: 'fallback' })
+  } catch (e) {
+    console.error('[spotify:fallback]', e.message)
+  }
+
+  return NextResponse.json({ error: 'Search failed', message: 'Both music sources are unavailable. Try again shortly.' }, { status: 500 })
 }

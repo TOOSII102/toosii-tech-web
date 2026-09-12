@@ -20,8 +20,8 @@ export default function Home() {
   const stats = [
     { num: '8,400+', label: 'Live TV Channels', accent: '#72f0ba' },
     { num: '150+',   label: 'Bot Commands',     accent: '#25d366' },
-    { num: '17',     label: 'Free Tools',       accent: '#3b82f6' },
-    { num: '15',     label: 'API Endpoints',    accent: '#8b5cf6' },
+    { num: '23',     label: 'Free Tools',       accent: '#3b82f6' },
+    { num: '40+',    label: 'API Endpoints',    accent: '#8b5cf6' },
   ]
 
   const pillars = [
@@ -79,6 +79,13 @@ export default function Home() {
     { icon: '🎨', title: 'AI Image Generator',   desc: 'Type anything, get stunning AI art.', href: '/tools/imagine', color: '#a78bfa' },
     { icon: '✂️', title: 'Background Remover',   desc: 'Transparent PNG cutouts in seconds.', href: '/tools/remove-bg', color: '#22d3ee' },
     { icon: '🎶', title: 'Lyrics Finder',        desc: 'Full lyrics for any song, instantly.', href: '/tools/lyrics', color: '#4ade80' },
+    { icon: '⚽', title: 'Live Football Scores', desc: 'EPL, La Liga, Serie A — live.', href: '/tools/scores', color: '#22c55e' },
+    { icon: '💱', title: 'Currency Converter',   desc: 'KES, USD, UGX & 100+ live rates.', href: '/tools/currency', color: '#f59e0b' },
+    { icon: '🌍', title: 'Translator',           desc: 'English ↔ Swahili & 100+ languages.', href: '/tools/translate', color: '#38bdf8' },
+    { icon: '🔗', title: 'URL Shortener',        desc: 'Tiny short links with custom aliases.', href: '/tools/shortener', color: '#f472b6' },
+    { icon: '📖', title: 'Bible Search',         desc: 'Any verse in seconds, share in a tap.', href: '/tools/bible', color: '#fbbf24' },
+    { icon: '🎓', title: 'KCSE Results',         desc: 'Check your KNEC result free.', href: '/tools/kcse', color: '#ef4444' },
+    { icon: '📚', title: 'Dictionary',           desc: 'Definitions, audio, synonyms.', href: '/tools/dictionary', color: '#22d3ee' },
   ]
 
   const botFeatures = [

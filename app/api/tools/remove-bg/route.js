@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { hostImage } from '../../../../lib/imageHost'
+import { partnerRemoveBackground } from '../../../../lib/partnerApi'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -24,23 +25,43 @@ export async function POST(req) {
     }
 
     const imageUrl = await hostImage(bytes, mime)
-    const upstream = await fetch(`${KAALIX}/api/removebg?url=${encodeURIComponent(imageUrl)}`, {
-      signal: AbortSignal.timeout(45_000),
-      headers: { Accept: 'image/*' },
-    })
-    const contentType = upstream.headers.get('content-type') || ''
-    if (!upstream.ok || !contentType.startsWith('image/')) {
-      throw new Error('Background removal is busy — try again in a few seconds.')
-    }
-    const result = Buffer.from(await upstream.arrayBuffer())
-    if (!result.length) throw new Error('Background removal returned an empty image.')
 
-    return new Response(result, {
-      headers: {
-        'Content-Type': contentType.split(';')[0] || 'image/png',
-        'Cache-Control': 'no-store',
-      },
-    })
+    try {
+      const upstream = await fetch(`${KAALIX}/api/removebg?url=${encodeURIComponent(imageUrl)}`, {
+        signal: AbortSignal.timeout(45_000),
+        headers: { Accept: 'image/*' },
+      })
+      const contentType = upstream.headers.get('content-type') || ''
+      if (upstream.ok && contentType.startsWith('image/')) {
+        const result = Buffer.from(await upstream.arrayBuffer())
+        if (result.length) {
+          return new Response(result, {
+            headers: {
+              'Content-Type': contentType.split(';')[0] || 'image/png',
+              'Cache-Control': 'no-store',
+            },
+          })
+        }
+      }
+    } catch (e) {
+      console.error('[remove-bg:primary]', e.message)
+    }
+
+    // Fallback: Partner API background remover.
+    const partner = await partnerRemoveBackground(imageUrl)
+    if (partner?.buffer) {
+      return new Response(partner.buffer, {
+        headers: {
+          'Content-Type': partner.contentType || 'image/png',
+          'Cache-Control': 'no-store',
+        },
+      })
+    }
+
+    return NextResponse.json(
+      { error: 'Background removal is busy — try again in a few seconds.' },
+      { status: 502 },
+    )
   } catch (e) {
     console.error('[remove-bg]', e.message)
     const known = e.message.startsWith('Background removal') || e.message.startsWith('The image')

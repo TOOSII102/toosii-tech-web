@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { partnerChat } from '../../../../lib/partnerApi'
 
 const EP = 'https://eliteprotech-apis.zone.id'
 const RBOTS_BASE = 'https://r-bots-free-apis.co08.art'
@@ -119,6 +120,12 @@ export async function POST(req) {
         const d3 = await r3.json()
         if (d3.success && d3.text) return NextResponse.json({ reply: d3.text, model: 'Toosii AI' })
       }
+    } catch (_) {}
+
+    // Fallback 3: Partner AI (Partner AI → GPT → Qwen → DeepSeek V3).
+    try {
+      const partner = await partnerChat(wrapped)
+      if (partner?.reply) return NextResponse.json({ reply: partner.reply, model: 'Toosii AI' })
     } catch (_) {}
 
     return NextResponse.json({ error: 'No response from AI. Please try again.' }, { status: 502 })

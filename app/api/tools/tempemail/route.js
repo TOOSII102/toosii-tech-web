@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { partnerTempEmail } from '../../../../lib/partnerApi'
 
 const EP = 'https://eliteprotech-apis.zone.id'
 
@@ -48,6 +49,18 @@ export async function GET(request) {
     }
   } catch {
     /* fall through to fallback */
+  }
+
+  /* Fallback: Partner API temporary mail */
+  try {
+    const fallbackEmails = []
+    const partner = await partnerTempEmail()
+    if (partner) fallbackEmails.push(partner)
+    if (fallbackEmails.length > 0) {
+      return NextResponse.json({ email: fallbackEmails[0], emails: fallbackEmails, fallback: true })
+    }
+  } catch {
+    /* fall through to local generation */
   }
 
   /* Fallback: generate locally from known reliable domains */

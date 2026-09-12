@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { partnerJoke } from '../../../lib/partnerApi'
 
 const SOURCE_URL = 'https://official-joke-api.appspot.com/random_joke'
 const SOURCE_NAME = 'Official Joke API'
@@ -32,6 +33,29 @@ export async function GET() {
     })
   } catch (error) {
     console.error('[fun]', error.message)
+
+    // Fallback: Partner API jokes.
+    const partner = await partnerJoke()
+    if (partner) {
+      return NextResponse.json({
+        success: true,
+        api: 'Toosii API',
+        source: 'Toosii Fallback',
+        sourceUrl: 'https://apispartner2-production-3679.up.railway.app',
+        joke: {
+          id: null,
+          type: partner.type || 'general',
+          setup: partner.setup,
+          punchline: partner.punchline,
+        },
+      }, {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+        },
+      })
+    }
+
     return NextResponse.json({
       success: false,
       api: 'Toosii API',

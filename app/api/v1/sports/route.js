@@ -1,4 +1,5 @@
 import { apiError, apiResponse, optionsResponse } from '../../../../lib/publicApi'
+import { partnerLeagueMatches } from '../../../../lib/partnerApi'
 
 const LEAGUES = {
   'eng.1': { name: 'English Premier League', sport: 'soccer', league: 'eng.1' },
@@ -58,14 +59,12 @@ export async function GET(request) {
     })
 
     if (!response.ok) {
-      return apiError('The live sports source is temporarily unavailable.', {
-        status: 502,
-        code: 'UPSTREAM_UNAVAILABLE',
-      })
+      throw new Error(`ESPN ${response.status}`)
     }
 
     const data = await response.json()
     const events = Array.isArray(data.events) ? data.events.map(normalizeEvent) : []
+    if (!events.length) throw new Error('ESPN returned no events')
 
     return apiResponse({
       operation: 'sports.scoreboard',
@@ -75,6 +74,18 @@ export async function GET(request) {
       events,
     }, { cacheControl: 'public, max-age=20, s-maxage=20' })
   } catch {
+    // Fallback: Partner API league fixtures.
+    const partner = await partnerLeagueMatches(leagueKey)
+    if (partner) {
+      return apiResponse({
+        operation: 'sports.scoreboard',
+        league: { code: leagueKey, name: partner.competition || league.name },
+        source: 'Toosii Fallback',
+        eventCount: partner.events.length,
+        events: partner.events,
+      }, { cacheControl: 'public, max-age=20, s-maxage=20' })
+    }
+
     return apiError('The live sports source did not respond in time.', {
       status: 504,
       code: 'UPSTREAM_TIMEOUT',

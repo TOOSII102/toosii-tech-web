@@ -157,10 +157,80 @@ const categories = [
       },
     ],
   },
+  {
+    label: 'Everyday Essentials',
+    color: '#fbbf24',
+    tools: [
+      {
+        icon: '⚽',
+        title: 'Live Football Scores',
+        desc: 'Live scores from the Premier League, La Liga, Serie A, Bundesliga, Ligue 1 and more — plus standings and top scorers.',
+        href: '/tools/scores',
+        label: 'See Live Scores',
+        badge: 'New',
+      },
+      {
+        icon: '💱',
+        title: 'Currency Converter',
+        desc: 'Convert KES to USD, UGX, TZS, EUR and 100+ more with daily exchange rates — built for remittances and pricing.',
+        href: '/tools/currency',
+        label: 'Convert Money',
+        badge: 'New',
+      },
+      {
+        icon: '🌍',
+        title: 'Translator',
+        desc: 'Translate text between English, Swahili and 100+ other languages in one tap.',
+        href: '/tools/translate',
+        label: 'Translate Text',
+        badge: 'New',
+      },
+      {
+        icon: '🔗',
+        title: 'URL Shortener',
+        desc: 'Shorten long links with TinyURL, vgd and more — custom aliases supported, ready for WhatsApp and SMS.',
+        href: '/tools/shortener',
+        label: 'Shorten Link',
+        badge: 'New',
+      },
+      {
+        icon: '✨',
+        title: 'Fancy Text Generator',
+        desc: 'Bold, cursive, gothic, circled and 30+ other Unicode styles — perfect for statuses and bios.',
+        href: '/tools/fancy-text',
+        label: 'Make It Fancy',
+        badge: 'New',
+      },
+      {
+        icon: '📖',
+        title: 'Bible Search',
+        desc: 'Look up any verse instantly — John 3:16, Psalm 23 and more — and share it with one tap.',
+        href: '/tools/bible',
+        label: 'Read a Verse',
+        badge: 'New',
+      },
+      {
+        icon: '🎓',
+        title: 'KCSE Results Checker',
+        desc: 'Fetch your KNEC KCSE result with your index number and full name — grade, mean score and subjects.',
+        href: '/tools/kcse',
+        label: 'Check Result',
+        badge: 'New',
+      },
+      {
+        icon: '📚',
+        title: 'Dictionary',
+        desc: 'Definitions, pronunciation audio, synonyms and antonyms for any word — free, no sign-up.',
+        href: '/tools/dictionary',
+        label: 'Look Up a Word',
+        badge: 'New',
+      },
+    ],
+  },
 ]
 
 const stats = [
-  { num: '15+', label: 'Free Tools' },
+  { num: '23+', label: 'Free Tools' },
   { num: '100%', label: 'No Sign-Up' },
   { num: '0', label: 'Ads or Paywalls' },
   { num: '24/7', label: 'Always Available' },
@@ -174,7 +244,7 @@ export default function ToolsHub() {
       <section className="hero" style={{ paddingBottom: '2rem' }}>
         <div className="page-wrapper">
               <div className="hero-badge badge">
-            <span>🛠️</span> 15 Free Tools — No Account Required
+            <span>🛠️</span> 23 Free Tools — No Account Required
           </div>
           <h1 className="hero-title">
             Every Tool You Need.<br />

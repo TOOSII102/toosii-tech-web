@@ -10,7 +10,7 @@ const endpoints = [
   { method: 'GET', path: '/api/tools/dramabox?action=trending&page=1', category: 'Media', description: 'Browse the short-drama catalogue and episode metadata.' },
   { method: 'GET', path: '/api/search/youtube?q=kenya%20music', category: 'Media Search', description: 'Search YouTube with normalized video metadata.' },
   { method: 'GET', path: '/api/search/spotify?q=afrobeats', category: 'Media Search', description: 'Search Spotify track metadata.' },
-  { method: 'GET', path: '/api/news?q=kenya&limit=10', category: 'News', description: 'Read current Africa headlines with source attribution.' },
+  { method: 'GET', path: '/api/news?q=kenya&limit=10&source=bbc', category: 'News', description: 'Read current Africa headlines with source attribution. Optional ?source=bbc|ntv|citizen|kbc|tech|kenyans (Kenyan sources: ntv, citizen, kbc, tech, kenyans).' },
   { method: 'GET', path: '/api/education?q=climate%20technology&limit=5', category: 'Education', description: 'Search public scholarly works metadata.' },
   { method: 'GET', path: '/api/fun', category: 'Fun', description: 'Return a normalized random joke response.' },
   { method: 'POST', path: '/api/download/video', category: 'Downloaders', description: 'Resolve a public multi-platform video URL into download metadata.' },
@@ -37,6 +37,16 @@ const endpoints = [
   { method: 'GET', path: '/api/v1/utils/slugify?text=Toosii%20API%20Release', category: 'Utilities', description: 'Convert text into a clean URL-friendly slug.' },
   { method: 'GET', path: '/api/v1/utils/hash?text=Toosii%20Tech&algorithm=sha256', category: 'Utilities', description: 'Create a SHA-256, SHA-384, or SHA-512 text hash.' },
   { method: 'GET', path: '/api/v1/sports?league=eng.1', category: 'Sports', description: 'Get a normalized live scoreboard for a supported league.' },
+  { method: 'GET', path: '/api/tools/shorten?url=https%3A%2F%2Fexample.com&service=tinyurl', category: 'Essentials', description: 'Shorten a URL via TinyURL, vgd, random, dagd or Bitly, with optional custom alias.' },
+  { method: 'GET', path: '/api/tools/translate?text=karibu&to=en', category: 'Essentials', description: 'Translate text into a target ISO language code (100+ languages).' },
+  { method: 'GET', path: '/api/tools/fancytext?q=toosii', category: 'Essentials', description: 'Restyle text into a fancy Unicode font (specific style number or random).' },
+  { method: 'GET', path: '/api/tools/fancytext/styles?q=toosii', category: 'Essentials', description: 'Preview a text in every available fancy Unicode font at once.' },
+  { method: 'GET', path: '/api/tools/currency?amount=100&from=USD&to=KES', category: 'Essentials', description: 'Convert between any two ISO currency codes using daily exchange rates.' },
+  { method: 'GET', path: '/api/tools/livescore', category: 'Essentials', description: 'Get all currently listed football matches grouped by league, with live statuses.' },
+  { method: 'GET', path: '/api/tools/league?league=epl&type=standings', category: 'Essentials', description: 'Get matches, upcoming fixtures, standings or top scorers for a top football league.' },
+  { method: 'GET', path: '/api/tools/bible?q=john%203:16', category: 'Essentials', description: 'Look up Bible verses by book, chapter and verse reference.' },
+  { method: 'GET', path: '/api/tools/knec?index=12345678&name=Full%20Name', category: 'Essentials', description: 'Check a KCSE result using the candidate index number and full name.' },
+  { method: 'GET', path: '/api/tools/dictionary?q=serendipity', category: 'Essentials', description: 'Get word definitions, phonetics with audio, synonyms and antonyms.' },
 ]
 
 export async function GET() {
