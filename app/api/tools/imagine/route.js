@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { partnerImageGeneration } from '../../../../lib/partnerApi'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -25,24 +26,43 @@ export async function POST(req) {
     const qs = new URLSearchParams({ width: String(width), height: String(height), nologo: 'true', enhance: 'true' })
     const url = `${KAALIX}/api/pollinations/prompt/${encodeURIComponent(prompt)}?${qs.toString()}`
 
-    const upstream = await fetch(url, { signal: AbortSignal.timeout(55_000), headers: { Accept: 'image/*' } })
-    const contentType = upstream.headers.get('content-type') || ''
-    if (!upstream.ok || !contentType.startsWith('image/')) {
-      throw new Error('Image generator is busy — try again in a few seconds.')
+    try {
+      const upstream = await fetch(url, { signal: AbortSignal.timeout(55_000), headers: { Accept: 'image/*' } })
+      const contentType = upstream.headers.get('content-type') || ''
+      if (upstream.ok && contentType.startsWith('image/')) {
+        const bytes = Buffer.from(await upstream.arrayBuffer())
+        if (bytes.length) {
+          return NextResponse.json({
+            image: `data:${contentType.split(';')[0]};base64,${bytes.toString('base64')}`,
+            prompt,
+            width,
+            height,
+            source: 'Toosii Tech',
+          })
+        }
+      }
+    } catch (e) {
+      console.error('[imagine:primary]', e.message)
     }
-    const bytes = Buffer.from(await upstream.arrayBuffer())
-    if (!bytes.length) throw new Error('Image generator returned an empty image.')
 
-    const base64 = bytes.toString('base64')
-    return NextResponse.json({
-      image: `data:${contentType.split(';')[0]};base64,${base64}`,
-      prompt,
-      width,
-      height,
-      source: 'Toosii Tech',
-    })
+    // Fallback: Partner AI image generators (Flux → Magic Studio → text2img).
+    const partner = await partnerImageGeneration(prompt)
+    if (partner?.image) {
+      return NextResponse.json({
+        image: partner.image,
+        prompt,
+        width,
+        height,
+        source: 'Toosii Tech',
+      })
+    }
+
+    return NextResponse.json(
+      { error: 'Image generator is busy — try again in a few seconds.' },
+      { status: 502 },
+    )
   } catch (e) {
     console.error('[imagine]', e.message)
-    return NextResponse.json({ error: e.message.startsWith('Image generator') ? e.message : 'Generation failed. Please try again.' }, { status: 502 })
+    return NextResponse.json({ error: 'Generation failed. Please try again.' }, { status: 502 })
   }
 }

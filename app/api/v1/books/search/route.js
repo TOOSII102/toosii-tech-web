@@ -1,4 +1,5 @@
 import { apiError, apiResponse, optionsResponse, readTextParam } from '../../../../../lib/publicApi'
+import { partnerBooks } from '../../../../../lib/partnerApi'
 
 function readLimit(value) {
   if (!value) return 5
@@ -35,10 +36,7 @@ export async function GET(request) {
     })
 
     if (!response.ok) {
-      return apiError('The book search source is temporarily unavailable.', {
-        status: 502,
-        code: 'UPSTREAM_UNAVAILABLE',
-      })
+      throw new Error(`Open Library ${response.status}`)
     }
 
     const data = await response.json()
@@ -52,15 +50,31 @@ export async function GET(request) {
       coverUrl: book.cover_i ? `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg` : null,
     })) : []
 
-    return apiResponse({
-      operation: 'books.search',
-      source: 'Open Library',
-      query: query.value,
-      count: results.length,
-      totalMatches: data.numFound || data.num_found || 0,
-      results,
-    }, { cacheControl: 'public, max-age=60, s-maxage=300' })
+    if (results.length) {
+      return apiResponse({
+        operation: 'books.search',
+        source: 'Open Library',
+        query: query.value,
+        count: results.length,
+        totalMatches: data.numFound || data.num_found || 0,
+        results,
+      }, { cacheControl: 'public, max-age=60, s-maxage=300' })
+    }
+    throw new Error('Open Library returned no docs')
   } catch {
+    // Fallback: Partner API book search.
+    const partner = await partnerBooks(query.value)
+    if (partner) {
+      return apiResponse({
+        operation: 'books.search',
+        source: 'Toosii Fallback',
+        query: query.value,
+        count: Math.min(partner.length, limit),
+        totalMatches: partner.length,
+        results: partner.slice(0, limit),
+      }, { cacheControl: 'public, max-age=60, s-maxage=300' })
+    }
+
     return apiError('The book search source did not respond in time.', {
       status: 504,
       code: 'UPSTREAM_TIMEOUT',

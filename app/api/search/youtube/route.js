@@ -1,3 +1,5 @@
+import { partnerYouTubeSearch } from '../../../../lib/partnerApi'
+
 export const runtime = 'edge'
 
 function fmtViews(n) {
@@ -92,6 +94,12 @@ export async function GET(req) {
     const data = await res.json()
     const results = parseInnerTube(data)
     if (results.length) return Response.json({ results, source: 'innertube' })
+  } catch { /* fall through */ }
+
+  /* ── Fallback: Partner API YouTube search ── */
+  try {
+    const partner = await partnerYouTubeSearch(q)
+    if (partner?.length) return Response.json({ results: partner, source: 'fallback' })
   } catch { /* fall through */ }
 
   return Response.json({ results: [], error: 'Search unavailable — try again shortly' })

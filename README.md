@@ -11,8 +11,19 @@
 |------|-------------|
 | `/` | Home — bot info, features, quick links |
 | `/session` | Session Generator — pair code or QR code login |
+| `/tools` | Tools hub — all 23 free tools |
 | `/downloader/video` | YouTube Video Downloader (720p MP4) |
 | `/downloader/audio` | YouTube MP3 Downloader |
+| `/tools/ai` | Toosii AI — free conversational AI chat |
+| `/tools/scores` | Live football scores, standings & top scorers |
+| `/tools/currency` | Currency converter with daily exchange rates (KES-centric) |
+| `/tools/translate` | Translator — English ↔ Swahili + 100 languages |
+| `/tools/shortener` | URL shortener (TinyURL, vgd, custom aliases) |
+| `/tools/fancy-text` | Fancy Unicode text generator (30+ styles) |
+| `/tools/bible` | Bible verse search |
+| `/tools/kcse` | KCSE (KNEC) results checker |
+| `/tools/dictionary` | Dictionary with pronunciation audio |
+| `/api` | Public API docs with live request console |
 | `/about` | About Toosii Tech — background, skills, bot story |
 
 ## Stack
@@ -21,6 +32,11 @@
 - **Plain CSS** — per-route stylesheets, dark theme, glassmorphism
 - **gifted-baileys** — WhatsApp Multi-Device for session generation
 - **GiftedTech API** — video/audio downloads
+- **Partner API** — free key-less REST collection (600+ endpoints) used as the
+  fallback behind the primary providers (lyrics, news, sports, AI chat, image
+  generation, background removal, movies, YouTube/Spotify search, temp mail,
+  APKs) and as the engine for the Everyday Essentials tools (live scores,
+  currency, translator, URL shortener, fancy text, Bible, KCSE, dictionary)
 - **Framer Motion** — animations
 
 ## Configuration

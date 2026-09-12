@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { PARTNER_NEWS_SOURCES, partnerNews } from '../../../lib/partnerApi'
 
 const SOURCE_URL = 'https://feeds.bbci.co.uk/news/world/africa/rss.xml'
 const SOURCE_NAME = 'BBC News Africa RSS'
@@ -26,6 +27,40 @@ export async function GET(request) {
   const query = (searchParams.get('q') || '').trim().toLowerCase()
   const requestedLimit = Number.parseInt(searchParams.get('limit') || '10', 10)
   const limit = Number.isFinite(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 20) : 10
+  const source = (searchParams.get('source') || 'bbc').trim().toLowerCase()
+  const wantsKenyanSource = ['ntv', 'citizen', 'kbc', 'kenyans', 'tech'].includes(source)
+
+  // Non-BBC sources are served straight from Partner API (Kenya's NTV, Citizen, KBC, tech news).
+  if (wantsKenyanSource) {
+    try {
+      const partner = await partnerNews(source)
+      if (!partner) throw new Error(`Partner source ${source} empty`)
+      const articles = partner.articles
+        .filter(article => !query || `${article.title} ${article.description}`.toLowerCase().includes(query))
+        .slice(0, limit)
+        .map(article => ({ ...article, source: partner.sourceName }))
+      return NextResponse.json({
+        success: true,
+        api: 'Toosii API',
+        source: partner.sourceName,
+        query: query || null,
+        count: articles.length,
+        articles,
+      }, {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+        },
+      })
+    } catch (error) {
+      console.error('[news:fallback]', error.message)
+      return NextResponse.json({
+        success: false,
+        api: 'Toosii API',
+        error: 'News service is temporarily unavailable. Try again shortly.',
+      }, { status: 502 })
+    }
+  }
 
   try {
     const response = await fetch(SOURCE_URL, {
@@ -52,22 +87,50 @@ export async function GET(request) {
       })
       .slice(0, limit)
 
-    return NextResponse.json({
-      success: true,
-      api: 'Toosii API',
-      source: SOURCE_NAME,
-      sourceUrl: SOURCE_URL,
-      query: query || null,
-      count: articles.length,
-      articles,
-    }, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
-      },
-    })
+    if (articles.length) {
+      return NextResponse.json({
+        success: true,
+        api: 'Toosii API',
+        source: SOURCE_NAME,
+        sourceUrl: SOURCE_URL,
+        query: query || null,
+        count: articles.length,
+        articles,
+      }, {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+        },
+      })
+    }
+    throw new Error('RSS feed had no articles')
   } catch (error) {
     console.error('[news]', error.message)
+
+    // Fallback chain: Partner BBC → NTV Kenya → Citizen Digital.
+    for (const fallbackSource of ['bbc', 'ntv', 'citizen']) {
+      const partner = await partnerNews(fallbackSource)
+      if (!partner) continue
+      const articles = partner.articles
+        .filter(article => !query || `${article.title} ${article.description}`.toLowerCase().includes(query))
+        .slice(0, limit)
+        .map(article => ({ ...article, source: partner.sourceName }))
+      return NextResponse.json({
+        success: true,
+        api: 'Toosii API',
+        source: partner.sourceName,
+        query: query || null,
+        count: articles.length,
+        articles,
+        fallback: true,
+      }, {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+        },
+      })
+    }
+
     return NextResponse.json({
       success: false,
       api: 'Toosii API',

@@ -137,6 +137,7 @@ const endpoints = [
     params: [
       { name: 'q', type: 'string', required: false, description: 'Optional keyword filter applied to headline titles and descriptions.' },
       { name: 'limit', type: 'integer', required: false, description: 'Number of articles from 1 to 20. Defaults to 10.' },
+      { name: 'source', type: 'string', required: false, description: 'bbc (default), ntv, citizen, kbc, tech, or kenyans — the Kenyan sources (ntv, citizen, kbc, tech, kenyans) are served by secondary providers.' },
     ],
   },
   {
@@ -365,9 +366,119 @@ const endpoints = [
     path: '/api/v1/sports?league=eng.1',
     params: [{ name: 'league', type: 'string', required: false, description: 'eng.1, esp.1, ita.1, ger.1, fra.1, or uefa.champions.' }],
   },
+  {
+    id: 'partner-shorten',
+    category: 'Essentials',
+    method: 'GET',
+    title: 'URL shortener',
+    description: 'Shorten a URL through TinyURL, vgd, random, dagd or Bitly, with an optional custom alias.',
+    path: '/api/tools/shorten?url=https%3A%2F%2Fexample.com&service=tinyurl',
+    params: [
+      { name: 'url', type: 'string', required: true, description: 'The http(s) URL to shorten.' },
+      { name: 'service', type: 'string', required: false, description: 'tinyurl (default), vgd, random, dagd, or bitly.' },
+      { name: 'alias', type: 'string', required: false, description: 'Custom alias ending (supported by vgd, random and dagd).' },
+    ],
+  },
+  {
+    id: 'partner-translate',
+    category: 'Essentials',
+    method: 'GET',
+    title: 'Text translation',
+    description: 'Translate text into any target ISO language code — 100+ languages including Swahili.',
+    path: '/api/tools/translate?text=karibu%20sana&to=en',
+    params: [
+      { name: 'text', type: 'string', required: true, description: 'Text to translate (up to 5000 characters).' },
+      { name: 'to', type: 'string', required: false, description: 'Target ISO language code. Defaults to sw (Swahili).' },
+    ],
+  },
+  {
+    id: 'partner-fancytext',
+    category: 'Essentials',
+    method: 'GET',
+    title: 'Fancy text generator',
+    description: 'Restyle short text into a fancy Unicode font — a specific style number or a random style.',
+    path: '/api/tools/fancytext?q=toosii',
+    params: [
+      { name: 'q', type: 'string', required: true, description: 'Text to restyle (up to 60 characters).' },
+      { name: 'style', type: 'string', required: false, description: 'Style number, or "random". Defaults to random.' },
+    ],
+  },
+  {
+    id: 'partner-fancytext-styles',
+    category: 'Essentials',
+    method: 'GET',
+    title: 'Fancy text style preview',
+    description: 'Preview a text in every available fancy Unicode font at once.',
+    path: '/api/tools/fancytext/styles?q=toosii',
+    params: [{ name: 'q', type: 'string', required: true, description: 'Text to preview (up to 60 characters).' }],
+  },
+  {
+    id: 'partner-currency',
+    category: 'Essentials',
+    method: 'GET',
+    title: 'Currency conversion',
+    description: 'Convert an amount between any two ISO currency codes using daily exchange rates.',
+    path: '/api/tools/currency?amount=100&from=USD&to=KES',
+    params: [
+      { name: 'amount', type: 'number', required: false, description: 'Amount to convert. Defaults to 1.' },
+      { name: 'from', type: 'string', required: false, description: 'Source currency code. Defaults to USD.' },
+      { name: 'to', type: 'string', required: false, description: 'Target currency code. Defaults to KES.' },
+    ],
+  },
+  {
+    id: 'partner-livescore',
+    category: 'Essentials',
+    method: 'GET',
+    title: 'Live football scores',
+    description: 'Get all currently listed football matches grouped by league, with live statuses and kick-off times.',
+    path: '/api/tools/livescore',
+    params: [],
+  },
+  {
+    id: 'partner-league',
+    category: 'Essentials',
+    method: 'GET',
+    title: 'League data (matches, standings, scorers)',
+    description: 'Get matches, upcoming fixtures, standings or top scorers for a top football league.',
+    path: '/api/tools/league?league=epl&type=standings',
+    params: [
+      { name: 'league', type: 'string', required: false, description: 'epl (default), laliga, seriea, bundesliga, ligue1, or ucl.' },
+      { name: 'type', type: 'string', required: false, description: 'matches (default), upcoming, standings, or scorers.' },
+    ],
+  },
+  {
+    id: 'partner-bible',
+    category: 'Essentials',
+    method: 'GET',
+    title: 'Bible verse search',
+    description: 'Look up Bible verses by book, chapter and verse reference (World English Bible).',
+    path: '/api/tools/bible?q=john%203:16',
+    params: [{ name: 'q', type: 'string', required: true, description: 'Reference such as "john 3:16" or "psalm 23".' }],
+  },
+  {
+    id: 'partner-knec',
+    category: 'Essentials',
+    method: 'GET',
+    title: 'KCSE results checker',
+    description: 'Check a KCSE result using the candidate index number and full name as registered with KNEC.',
+    path: '/api/tools/knec?index=12345678&name=John%20Doe',
+    params: [
+      { name: 'index', type: 'string', required: true, description: 'KCSE index number (7 to 12 digits).' },
+      { name: 'name', type: 'string', required: true, description: 'Full candidate name exactly as registered.' },
+    ],
+  },
+  {
+    id: 'partner-dictionary',
+    category: 'Essentials',
+    method: 'GET',
+    title: 'Dictionary lookup',
+    description: 'Get word definitions, phonetics with audio, synonyms and antonyms.',
+    path: '/api/tools/dictionary?q=serendipity',
+    params: [{ name: 'q', type: 'string', required: true, description: 'The word to look up (letters only, up to 40 characters).' }],
+  },
 ]
 
-const categories = ['Core', 'Data', 'Media', 'Media Search', 'News', 'Education', 'Fun', 'Downloaders', 'AI', 'Audio Tools', 'Config', 'Utilities', 'Tools', 'Bot', 'Sports']
+const categories = ['Core', 'Data', 'Media', 'Media Search', 'News', 'Education', 'Fun', 'Downloaders', 'AI', 'Audio Tools', 'Config', 'Utilities', 'Tools', 'Bot', 'Sports', 'Essentials']
 const DEFAULT_API_ORIGIN = 'https://www.toosiitech.org'
 const buildPublicEndpointUrl = (origin, path) => `${origin}${path}`
 

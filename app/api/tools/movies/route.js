@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { brandPublicResponse } from '../../../../lib/brandPublicResponse'
+import { partnerMovieSearch } from '../../../../lib/partnerApi'
 
 const DAVEX_BASE = 'https://davexmovieapi.zone.id'
 const LEGACY_BASE = 'https://movieapi.xcasper.space'
@@ -163,7 +164,7 @@ function safeFilename(title, res, season, episode) {
 }
 
 /* ── Trailers: sourced from YouTube (search + resolve), not DAVE ── */
-const YT_TRAILER_API = 'https://apiskeith2-production-3020.up.railway.app'
+const YT_TRAILER_API = 'https://apispartner2-production-3020.up.railway.app'
 const YT_TRAILER_RESOLVE_PATHS = ['/download/video', '/download/ytmp4', '/download/dlmp4', '/download/mp4']
 
 async function searchYoutubeTrailer(title) {
@@ -729,14 +730,33 @@ export async function GET(req) {
       if (!q.trim()) return NextResponse.json(listResponse([], { operation: 'movies.search' }))
       if (type === 'anime') return NextResponse.json(listResponse(normalizeAnimeCollection(await daveJson('/anime/search?q=' + encodeURIComponent(q) + '&page=1&per_page=20')), { operation: 'anime.search' }))
       if (type === 'live') return NextResponse.json(listResponse(normalizeLiveCollection(await daveJson('/live/search?q=' + encodeURIComponent(q) + '&page=1&per_page=20')), { operation: 'live.search' }))
+      let searchItems = []
+      let searchProvider = ''
       try {
         const path = '/search?q=' + encodeURIComponent(q) + '&type=' + daveType(type) + '&page=1&per_page=20'
-        return NextResponse.json(listResponse(normalizeCollection(await daveJson(path)), { operation: 'movies.search', provider: 'Toosii Primary' }))
+        searchItems = normalizeCollection(await daveJson(path))
+        searchProvider = 'Toosii Primary'
       } catch (error) {
         console.warn('[movies:dave-primary-search]', error.message)
-        const legacy = await legacyJson('/api/search?keyword=' + encodeURIComponent(q) + (type ? '&type=' + encodeURIComponent(type) : ''))
-        return NextResponse.json(listResponse(normalizeLegacyCollection(legacy), { operation: 'movies.search', provider: 'Toosii Fallback' }))
       }
+      if (!searchItems.length) {
+        try {
+          const legacy = await legacyJson('/api/search?keyword=' + encodeURIComponent(q) + (type ? '&type=' + encodeURIComponent(type) : ''))
+          searchItems = normalizeLegacyCollection(legacy)
+          searchProvider = 'Toosii Fallback'
+        } catch (error) {
+          console.warn('[movies:legacy-search]', error.message)
+        }
+      }
+      if (!searchItems.length) {
+        // Fallback: Partner API moviebox search (MovieBox.ph catalogue).
+        const partner = await partnerMovieSearch(q)
+        if (partner?.length) {
+          searchItems = partner.slice(0, 20)
+          searchProvider = 'Toosii API'
+        }
+      }
+      return NextResponse.json(listResponse(searchItems, { operation: 'movies.search', provider: searchProvider || 'None' }))
     }
 
     if (action === 'suggest') {
