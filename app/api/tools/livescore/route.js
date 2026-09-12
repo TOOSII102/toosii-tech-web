@@ -1,8 +1,10 @@
 import { apiError, apiResponse, optionsResponse } from '../../../../lib/publicApi'
 import { partnerLiveScores, PARTNER_API_NAME } from '../../../../lib/partnerApi'
+import { hubLiveScores } from '../../../../lib/apiHub'
 
 export async function GET() {
-  const result = await partnerLiveScores()
+  let result = await partnerLiveScores()
+  if (!result) result = await hubLiveScores()
   if (!result) {
     return apiError('Live scores are unavailable right now. Try again shortly.', {
       status: 502,

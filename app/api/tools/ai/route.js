@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { partnerChat } from '../../../../lib/partnerApi'
+import { hubChat } from '../../../../lib/apiHub'
 
 const EP = 'https://eliteprotech-apis.zone.id'
 const RBOTS_BASE = 'https://r-bots-free-apis.co08.art'
@@ -126,6 +127,12 @@ export async function POST(req) {
     try {
       const partner = await partnerChat(wrapped)
       if (partner?.reply) return NextResponse.json({ reply: partner.reply, model: 'Toosii AI' })
+    } catch (_) {}
+
+    // Fallback 4: API hub (GPT → DeepSeek → Qwen → Gemini).
+    try {
+      const hub = await hubChat(wrapped)
+      if (hub?.reply) return NextResponse.json({ reply: hub.reply, model: 'Toosii AI' })
     } catch (_) {}
 
     return NextResponse.json({ error: 'No response from AI. Please try again.' }, { status: 502 })

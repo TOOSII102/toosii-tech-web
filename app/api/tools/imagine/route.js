@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { partnerImageGeneration } from '../../../../lib/partnerApi'
+import { hubImageGeneration } from '../../../../lib/apiHub'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -50,6 +51,18 @@ export async function POST(req) {
     if (partner?.image) {
       return NextResponse.json({
         image: partner.image,
+        prompt,
+        width,
+        height,
+        source: 'Toosii Tech',
+      })
+    }
+
+    // Fallback: API hub image generators (Flux → DALL·E → Ideogram → Bing).
+    const hub = await hubImageGeneration(prompt)
+    if (hub?.image) {
+      return NextResponse.json({
+        image: hub.image,
         prompt,
         width,
         height,

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { partnerLyrics } from '../../../../lib/partnerApi'
+import { hubLyrics } from '../../../../lib/apiHub'
 
 export const dynamic = 'force-dynamic'
 
@@ -38,6 +39,12 @@ export async function GET(req) {
     const partner = await partnerLyrics(q)
     if (partner) {
       return NextResponse.json({ ...partner, source: 'Toosii Tech' })
+    }
+
+    // Fallback: API hub lyrics.
+    const hub = await hubLyrics(q)
+    if (hub) {
+      return NextResponse.json({ ...hub, source: 'Toosii Tech' })
     }
 
     return NextResponse.json({ error: `No lyrics found for "${q}". Check the spelling or add the artist name.` }, { status: 404 })

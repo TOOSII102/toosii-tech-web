@@ -1,5 +1,6 @@
 import { apiError, apiResponse, optionsResponse } from '../../../../lib/publicApi'
 import { partnerCurrencyConversion, PARTNER_API_NAME } from '../../../../lib/partnerApi'
+import { hubCurrencyConversion } from '../../../../lib/apiHub'
 
 export async function GET(request) {
   const searchParams = new URL(request.url).searchParams
@@ -20,7 +21,8 @@ export async function GET(request) {
     return apiError('amount is too large.', { code: 'AMOUNT_TOO_LARGE' })
   }
 
-  const result = await partnerCurrencyConversion(amount, from, to)
+  let result = await partnerCurrencyConversion(amount, from, to)
+  if (!result) result = await hubCurrencyConversion(amount, from, to)
   if (!result) {
     return apiError('Exchange rates are unavailable right now. Try again shortly.', {
       status: 502,

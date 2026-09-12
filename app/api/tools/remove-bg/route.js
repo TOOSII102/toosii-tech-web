@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { hostImage } from '../../../../lib/imageHost'
 import { partnerRemoveBackground } from '../../../../lib/partnerApi'
+import { hubRemoveBackground } from '../../../../lib/apiHub'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -53,6 +54,17 @@ export async function POST(req) {
       return new Response(partner.buffer, {
         headers: {
           'Content-Type': partner.contentType || 'image/png',
+          'Cache-Control': 'no-store',
+        },
+      })
+    }
+
+    // Fallback: API hub background remover.
+    const hub = await hubRemoveBackground(imageUrl)
+    if (hub?.buffer) {
+      return new Response(hub.buffer, {
+        headers: {
+          'Content-Type': hub.contentType || 'image/png',
           'Cache-Control': 'no-store',
         },
       })

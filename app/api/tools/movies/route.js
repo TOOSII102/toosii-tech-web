@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { brandPublicResponse } from '../../../../lib/brandPublicResponse'
 import { partnerMovieSearch } from '../../../../lib/partnerApi'
+import { hubMovieSearch } from '../../../../lib/apiHub'
 
 const DAVEX_BASE = 'https://davexmovieapi.zone.id'
 const LEGACY_BASE = 'https://movieapi.xcasper.space'
@@ -754,6 +755,14 @@ export async function GET(req) {
         if (partner?.length) {
           searchItems = partner.slice(0, 20)
           searchProvider = 'Toosii API'
+        }
+      }
+      if (!searchItems.length) {
+        // Fallback: API hub movie search (TMDB catalogue).
+        const hub = await hubMovieSearch(q)
+        if (hub?.length) {
+          searchItems = hub.slice(0, 20)
+          searchProvider = 'Toosii Hub'
         }
       }
       return NextResponse.json(listResponse(searchItems, { operation: 'movies.search', provider: searchProvider || 'None' }))

@@ -1,5 +1,6 @@
 import { apiError, apiResponse, optionsResponse } from '../../../../lib/publicApi'
 import { partnerShorten, PARTNER_API_NAME } from '../../../../lib/partnerApi'
+import { hubShorten } from '../../../../lib/apiHub'
 
 const SERVICES = ['tinyurl', 'vgd', 'random', 'dagd', 'bitly']
 
@@ -22,7 +23,8 @@ export async function GET(request) {
     })
   }
 
-  const result = await partnerShorten(url, service, alias)
+  let result = await partnerShorten(url, service, alias)
+  if (!result) result = await hubShorten(url)
   if (!result) {
     return apiError('Shortening failed. Try a different service or check the URL.', {
       status: 502,
